@@ -195,6 +195,44 @@ tbody tr:hover td{background:var(--accent-soft)}
 .lock-in button:disabled{opacity:.6}
 .lock-in .lock-msg{color:var(--bad);min-height:1.4em}
 .lock-in .lock-foot{font-size:11px;color:var(--ink-3);text-align:right;letter-spacing:.1em}
+
+/* ---- スマホ表示 ---- */
+@media (max-width:640px){
+  .band-in{padding-inline:16px;align-items:flex-start}
+  .band .meta{text-align:left;font-size:11px}
+  .switch{position:static}
+  .switch-in{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding-inline:8px;overflow:visible}
+  .sw{min-width:0;padding:8px 10px 7px;border-bottom-width:2px}
+  .sw .n{font-size:13px}
+  .wrap{padding-inline:12px;gap:28px;padding-block:20px 40px}
+  .sh h2{font-size:16px}
+  .sh p{font-size:11.5px}
+  .kpi{padding:12px 14px}
+  .kpi .v{font-size:21px}
+  .kpi .spark{width:46px;height:18px;right:10px;top:12px}
+  .summary>div{padding:16px}
+  .summary li{font-size:13px}
+  .panel{padding:14px}
+  .cv{height:240px}.cv.tall{height:320px}
+  .tbar{margin-bottom:0}
+  .tw{overflow:visible;border:0;background:transparent;box-shadow:none}
+  .tw table{min-width:0!important;display:block}
+  .tw thead{display:none}
+  .tw tbody{display:flex;flex-direction:column;gap:10px}
+  .tw tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow)}
+  .tw tbody tr.we,.tw tbody tr.cur{background:var(--accent-soft)}
+  .tw tbody tr:hover td,.tw tbody tr.we td,.tw tbody tr.cur td{background:transparent!important}
+  .tw td{border:0;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline;gap:8px;white-space:normal;text-align:right;min-width:0;font-size:12.5px}
+  .tw td::before{content:attr(data-label);color:var(--ink-3);font-size:10.5px;text-align:left;font-family:var(--f-ui);flex-shrink:0}
+  .tw td:first-child{grid-column:1/-1;justify-content:flex-start;font-size:14px;font-weight:700;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--rule)}
+  .tw td:first-child::before,.tw td.name::before{display:none}
+  .tw td.name{grid-column:1/-1;display:block;text-align:left;font-weight:600;font-size:13.5px;min-width:0}
+  .tw td.adv{grid-column:1/-1;display:block;text-align:left;min-width:0}
+  .tw td.adv::before{display:block;margin-bottom:2px}
+  .tw td:empty{display:none}
+  .meter{width:36px}
+  .ibar{width:44px}
+}
 </style>
 
 <header class="band"><div class="band-in">
@@ -337,6 +375,10 @@ function cutAdv(r,unit){
   if(r.wwk!=null&&r.wwe!=null&&Math.abs(r.wwe-r.wwk)>=1) return `平日 ${cutN(r.wwk)}・土日 ${cutN(r.wwe)}`;
   return pre+cutN(r.wpd);
 }
+function labelTables(){
+  document.querySelectorAll('.tw table').forEach(tb=>{const hs=[...tb.querySelectorAll('thead th')].map(h=>h.innerText.trim());
+    tb.querySelectorAll('tbody tr').forEach(tr=>[...tr.children].forEach((td,i)=>{td.dataset.label=hs[i]||''}));});
+}
 function render(){
   const S=A[scope],k25=S.kpi.p25,k26=S.kpi.p26,m25=S.kpi.m25,nc=S.nc;
   switcher();
@@ -410,6 +452,7 @@ function render(){
   const over=S.lesson.filter(r=>r.wy>r.gp).map(r=>short(r.name));
   document.getElementById('lessonNote').innerHTML=over.length?`廃棄高が荒利益高を上回った単品：<b>${over.join('、')}</b>。売れるほど利益が減る状態だったため、今年は少量スタートにします。`:`前年10月、上位単品はすべて荒利益高が廃棄高を上回っていました。廃棄の大きい単品から、ピーク後の追加調理を見直します。`;
   renderWx();
+  labelTables();
   draw();
 }
 
