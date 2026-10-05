@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 .DS_Store
 _site/
+# 元データ（売上・担当者名を含む）はGitHubに上げない
+data/

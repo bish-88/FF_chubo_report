@@ -184,15 +184,27 @@ tbody tr:hover td{background:var(--accent-soft)}
 .ov-in{background:var(--panel);border-radius:10px;padding:16px;max-width:min(960px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px}
 .ov-in img{max-width:100%;border:1px solid var(--rule)}
 .ov-in p{margin:0;font-size:13px;color:var(--ink-2)}
+.lock{min-height:70vh;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+.lock-in{background:var(--panel);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);padding:28px 28px 20px;width:min(380px,100%);display:flex;flex-direction:column;gap:10px}
+.lock-in h1{margin:0;font-size:19px;font-weight:700}
+.lock-in p{margin:0;font-size:13px;color:var(--ink-2)}
+.lock-in label{font-size:12px;font-weight:600;color:var(--ink-2);margin-top:6px}
+.lock-in input{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--rule-2);border-radius:6px;background:var(--bg);color:var(--ink)}
+.lock-in input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.lock-in button{font:inherit;font-weight:700;padding:10px;border:0;border-radius:6px;background:var(--ty);color:#fff;cursor:pointer}
+.lock-in button:disabled{opacity:.6}
+.lock-in .lock-msg{color:var(--bad);min-height:1.4em}
+.lock-in .lock-foot{font-size:11px;color:var(--ink-3);text-align:right;letter-spacing:.1em}
 </style>
 
 <header class="band"><div class="band-in">
-    <div class="dept" id="dept" role="group" aria-label="部門切り替え"><button data-d="FF" aria-pressed="true">FF</button><button data-d="厨房" aria-pressed="false">厨房</button></div>
-  <div class="meta">比較：<b>2026年10/1〜10/4</b> vs <b>2025年10/1〜10/4</b><br>2026＝木〜日／2025＝水〜土　データ：10/4締め</div>
+    <div class="dept" id="dept" data-locked role="group" aria-label="部門切り替え"><button data-d="FF" aria-pressed="true">FF</button><button data-d="厨房" aria-pressed="false">厨房</button></div>
+  <div class="meta" data-locked>比較：<b>2026年10/1〜10/4</b> vs <b>2025年10/1〜10/4</b><br>2026＝木〜日／2025＝水〜土　データ：10/4締め</div>
 </div></header>
-<nav class="switch" aria-label="店舗切り替え"><div class="switch-in" id="sw"></div></nav>
+<nav class="switch" aria-label="店舗切り替え" data-locked><div class="switch-in" id="sw"></div></nav>
 
-<main class="wrap">
+<section class="lock" id="lock" hidden><form class="lock-in" id="lockForm" autocomplete="off"><h1>FF・厨房 実績レビュー</h1><p>このレポートは関係者限定です。パスワードを入力してください。</p><label for="pw">パスワード</label><input id="pw" type="password" inputmode="numeric" required><button type="submit">開く</button><p class="lock-msg" id="lockMsg" role="alert"></p><p class="lock-foot">Made by Biswash</p></form></section>
+<main class="wrap" data-locked>
   <section class="sec">
     <div class="sh"><span class="lbl">SUMMARY</span><h2 id="scopeTitle"></h2><p>荒利益高は廃棄控除後。前年比は同日比較。</p></div>
     <div class="kpis" id="kpis"></div>
@@ -278,13 +290,14 @@ tbody tr:hover td{background:var(--accent-soft)}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-const ALLD=__DATA__;
-let DEPT='FF',A=ALLD.FF;
+let ALLD=__DATA__;
+const ENC=__ENC__;
+let DEPT='FF',A=ALLD?ALLD.FF:null;
 const METHOD={"FF": "<li>FF合計＝からあげクン・ホットFF・常温FF・サーマル常温・マチカフェの全SUBCLASS合計。中華まんは今年の販売がないため、前年分も含めて集計から外しています。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。マチカフェは都度抽出で廃棄が出ないため、廃棄と生産判断の分析から除外。</li>\n<li>前年比較の名寄せ：カリパン Ｙ→ＫＹ、ＨＯＴ ジャイアントポークフランク→常温、ＨＯＴ なんこつ入りつくね棒→常温 を同一商品として比較しています。</li>\n<li>2026年はジャイアントポークフランク・なんこつつくね棒が常温FFへ移ったため、ホットFF減・常温FF増の一部は分類変更によるものです。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>2026年の4日間は日曜を含み、2025年は水曜を含みます。前年10月の曜日平均では日曜の荒利益高が最も低く、今年はやや不利な条件での比較です。</li>\n<li>天気：前年10月は気象庁 大阪の日別実績（降水2mm以上を雨の日）。予報は吹田市の10/4 19時発表で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年4日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。前年の祝日は10/13（月）の1日だけです。</li>", "厨房": "<li>厨房合計＝まちかど厨房（販売）の弁当・調理パン・惣菜の合計。おにぎり・その他は販売実績がないため対象外。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。厨房は全カテゴリーを廃棄分析の対象にしています。</li>\n<li>商品名の末尾が違う弁当（例：…弁当 と …弁当１）は、データどおり別の単品として集計しています。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>2026年の4日間は日曜を含み、2025年は水曜を含みます。前年10月の曜日平均では日曜の荒利益高が最も低く、今年はやや不利な条件での比較です。</li>\n<li>天気：前年10月は気象庁 大阪の日別実績（降水2mm以上を雨の日）。予報は吹田市の10/4 19時発表で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年4日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。前年の祝日は10/13（月）の1日だけです。</li>"};
 const STORES=['上新田','朝日町','元町一','豊津中','青山台'];
 const CCM={'からあげクン':'--c-kara','マチカフェ':'--c-machi','ホットFF':'--c-hot','常温FF':'--c-jo','サーマル常温':'--c-thermal','弁当':'--c-machi','調理パン':'--c-kara','惣菜':'--c-jo'};
 const CC=new Proxy({},{get:(_,k)=>CCM[k]});
-let CATS=A.cats, WC=A.cats.filter(c=>!A.excl.includes(c));
+let CATS=A?A.cats:[], WC=A?A.cats.filter(c=>!A.excl.includes(c)):[];
 function setDept(d){DEPT=d;A=ALLD[d];CATS=A.cats;WC=A.cats.filter(c=>!A.excl.includes(c));
   document.querySelectorAll('#dept button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===d));
   const ex=A.excl.length?A.excl.join('・')+'除く':'';document.querySelectorAll('.exl').forEach(e=>e.textContent=ex);
@@ -578,8 +591,30 @@ function addCopyButtons(){
 }
 
 document.querySelectorAll('#dept button').forEach(b=>b.onclick=()=>setDept(b.dataset.d));
-setDept('FF');
-addCopyButtons();
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
-new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+function boot(data){
+  ALLD=data;A=ALLD.FF;
+  document.getElementById('lock')?.remove();
+  document.querySelectorAll('[data-locked]').forEach(e=>e.hidden=false);
+  setDept('FF');
+  addCopyButtons();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+  new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+}
+const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function unlock(pw){
+  const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+  const k=await crypto.subtle.deriveKey({name:'PBKDF2',salt:b64(ENC.s),iterations:ENC.it,hash:'SHA-256'},key,{name:'AES-GCM',length:256},false,['decrypt']);
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(ENC.i)},k,b64(ENC.c));
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+if(ALLD){boot(ALLD);}
+else{
+  document.querySelectorAll('[data-locked]').forEach(e=>e.hidden=true);
+  const f=document.getElementById('lockForm'),inp=document.getElementById('pw'),msg=document.getElementById('lockMsg'),btn=f.querySelector('button');
+  document.getElementById('lock').hidden=false;inp.focus();
+  f.addEventListener('submit',async e=>{e.preventDefault();btn.disabled=true;msg.textContent='確認しています…';
+    try{const d=await unlock(inp.value);msg.textContent='';boot(d);}
+    catch(err){msg.textContent='パスワードが違います。もう一度入力してください。';inp.select();}
+    finally{btn.disabled=false;}});
+}
 </script>

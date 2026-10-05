@@ -125,7 +125,21 @@ def dept(df,cats,excl,colors,ff):
 D={'FF':dept(FF,['からあげクン','マチカフェ','ホットFF','常温FF','サーマル常温'],['マチカフェ'],['--c1','--c2','--c3','--c4','--c5'],True),
    '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False)}
 tpl=open(os.path.join(ROOT,'scripts','template.html'),encoding='utf-8').read()
+PW=os.environ.get('REPORT_PASSWORD','')
+payload=json.dumps(D,ensure_ascii=False)
+if PW:
+    import base64, secrets, hashlib
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    it=1000000; salt=secrets.token_bytes(16); iv=secrets.token_bytes(12)
+    key=hashlib.pbkdf2_hmac('sha256',PW.encode(),salt,it,32)
+    ct=AESGCM(key).encrypt(iv,payload.encode('utf-8'),None)
+    e=lambda b:base64.b64encode(b).decode()
+    tpl=tpl.replace('__ENC__',json.dumps({'s':e(salt),'i':e(iv),'c':e(ct),'it':it})); payload='null'
+    print('データをパスワードで暗号化しました')
+else:
+    tpl=tpl.replace('__ENC__','null')
+    print('注意：REPORT_PASSWORD が未設定のため、暗号化していません（GitHubに上げないでください）')
 head='<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-open(os.path.join(ROOT,'index.html'),'w',encoding='utf-8').write(head+tpl.replace('__DATA__',json.dumps(D,ensure_ascii=False)).replace('<header class="band">','</head>\n<body>\n<header class="band">',1)+'\n</body>\n</html>\n')
+open(os.path.join(ROOT,'index.html'),'w',encoding='utf-8').write(head+tpl.replace('__DATA__',payload).replace('<header class="band">','</head>\n<body>\n<header class="band">',1)+'\n</body>\n</html>\n')
 print('index.html を更新しました')
 

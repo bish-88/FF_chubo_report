@@ -7,33 +7,45 @@
 - 単品ごとの増産／減産の判断と、減らす数の目安
 - 曜日・祝日・天気によるチャンスとリスク、今後2週間の仕込みカレンダー
 - 表・グラフをPowerPoint／Excelへコピーするボタン
+- パスワードによるデータの暗号化
 
-`index.html` をブラウザで開くと、そのまま見られます。
+## 見方
+
+GitHub Pages のURLを開き、パスワードを入力すると表示されます。データはパスワードで暗号化されていて、パスワードを知らない人には中身が見えません。
 
 ## データの更新方法
 
-1. 新しいCSVを `data/FF/`（FF）または `data/厨房/`（厨房）に入れます。
+元のCSVには売上や担当者名が入っているため、GitHubには上げません（`data/` は `.gitignore` で除外しています）。更新は手元のパソコンで行います。
+
+1. 新しいCSVを手元の `data/FF/`（FF）または `data/厨房/`（厨房）に入れます。
    - 店舗システムから出したCSV（Shift_JIS）をそのまま入れてください。
    - 同じ期間のファイルが重複しないようにしてください（古い「〜4まで」のファイルは、新しいファイルと入れ替えます）。
-2. GitHubに上げる（コミット・プッシュ）と、GitHub Actions が自動でレポートを作り直して公開します。
+2. パスワードを指定してレポートを作ります。
 
-手元のパソコンで作り直す場合：
+   ```bash
+   pip install pandas numpy cryptography
+   REPORT_PASSWORD=（パスワード） python scripts/build.py
+   ```
 
-```bash
-pip install pandas numpy
-python scripts/build.py
-```
+   Windows（PowerShell）の場合：
+
+   ```powershell
+   $env:REPORT_PASSWORD="（パスワード）"; python scripts/build.py
+   ```
+
+3. できた `index.html` をGitHubに上げる（コミット・プッシュ）と、数分でGitHub Pagesに反映されます。
+
+`REPORT_PASSWORD` を付けずに作った `index.html` は暗号化されていません。その場合はGitHubに上げないでください。
 
 ## フォルダ構成
 
 | 場所 | 中身 |
 |---|---|
-| `index.html` | ダッシュボード本体（データ入り） |
-| `data/FF/` | FFのCSV（からあげクン・ホットFF・常温FF・サーマル常温・マチカフェ・中華まん） |
-| `data/厨房/` | 店内厨房のCSV（弁当・調理パン・惣菜） |
+| `index.html` | ダッシュボード本体（データは暗号化済み） |
+| `data/FF/`（手元のみ） | FFのCSV（からあげクン・ホットFF・常温FF・サーマル常温・マチカフェ・中華まん） |
+| `data/厨房/`（手元のみ） | 店内厨房のCSV（弁当・調理パン・惣菜） |
 | `scripts/build.py` | CSVを集計して `index.html` を作るスクリプト |
 | `scripts/template.html` | ダッシュボードの見た目と動き |
-| `.github/workflows/pages.yml` | 自動でレポートを作り、GitHub Pages に公開する設定 |
 
 ## 集計の決まり
 
