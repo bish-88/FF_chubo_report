@@ -1,0 +1,585 @@
+<title>FF・厨房 10月実績レビュー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: report band header + sticky store switcher; 12-col grid of panels below, collapsing to one column on phones */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --ink:#0e1a2b; --ink-2:#465467; --ink-3:#8290a1; --rule:#e2e7ee; --rule-2:#cdd5df;
+  --band:#0b1d33; --band-ink:#f1f5fa; --band-2:#93a7bf;
+  --accent:#1f5fa6; --accent-soft:#eaf1fa;
+  --ly:#c3ccd6; --ty:#163f6e;
+  --good:#16704a; --good-bg:#e7f4ed; --warn:#94650a; --warn-bg:#fbf2dc; --bad:#b0302a; --bad-bg:#fbeceb;
+  --c-kara:#d9822b; --c-machi:#1f5fa6; --c-hot:#8e6bb8; --c-jo:#2a9d8f; --c-thermal:#c2a23a;
+  --f-sat:#1f5fa6; --f-sun:#d9822b; --f-rain:#8e6bb8;
+  --shadow:0 1px 2px rgba(14,26,43,.05),0 1px 1px rgba(14,26,43,.03);
+  --f-ui:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
+  --f-num:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0d131b; --panel:#151d28; --ink:#e9eef5; --ink-2:#aeb9c7; --ink-3:#7c8a9b; --rule:#233040; --rule-2:#304054;
+  --band:#08111d; --band-ink:#f1f5fa; --band-2:#8297b0; --accent:#6ea6e6; --accent-soft:#18283c; --ly:#4a5868; --ty:#3f86d3;
+  --good:#5fcf95; --good-bg:#132b20; --warn:#e8b552; --warn-bg:#33270f; --bad:#f08680; --bad-bg:#3a1a1a;
+  --c-kara:#c4701d; --c-machi:#3f86d3; --c-hot:#8a6cc0; --c-jo:#119a82; --c-thermal:#a88a20; --f-sat:#3f86d3; --f-sun:#c4701d; --f-rain:#8a6cc0;
+  --shadow:none; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d131b; --panel:#151d28; --ink:#e9eef5; --ink-2:#aeb9c7; --ink-3:#7c8a9b; --rule:#233040; --rule-2:#304054;
+  --band:#08111d; --band-ink:#f1f5fa; --band-2:#8297b0; --accent:#6ea6e6; --accent-soft:#18283c; --ly:#4a5868; --ty:#3f86d3;
+  --good:#5fcf95; --good-bg:#132b20; --warn:#e8b552; --warn-bg:#33270f; --bad:#f08680; --bad-bg:#3a1a1a;
+  --c-kara:#c4701d; --c-machi:#3f86d3; --c-hot:#8a6cc0; --c-jo:#119a82; --c-thermal:#a88a20; --f-sat:#3f86d3; --f-sun:#c4701d; --f-rain:#8a6cc0;
+  --shadow:none; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:13.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.band{background:var(--band);color:var(--band-ink)}
+.band-in{max-width:1240px;margin:0 auto;padding-inline:24px;padding-block:14px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px 24px}
+.band .eyebrow{font-size:10.5px;letter-spacing:.18em;color:var(--band-2);font-weight:700}
+.band h1{margin:4px 0 0;font-size:clamp(22px,2.8vw,28px);font-weight:900;letter-spacing:.02em;line-height:1.3}
+.band .meta{font-size:11.5px;color:var(--band-2);text-align:right;line-height:1.7}
+.band .meta b{color:var(--band-ink);font-weight:600}
+.dept{display:inline-flex;border:1px solid var(--band-2);border-radius:4px;overflow:hidden}
+.dept button{font:inherit;font-size:14px;font-weight:700;letter-spacing:.06em;background:transparent;color:var(--band-2);border:0;padding:8px 26px;cursor:pointer}
+.dept button+button{border-left:1px solid var(--band-2)}
+.dept button[aria-pressed="true"]{background:var(--band-ink);color:var(--band)}
+.dept button:focus-visible{outline:2px solid var(--band-ink);outline-offset:-3px}
+.madeby{border-top:1px solid var(--rule-2);padding-top:14px;text-align:right;font-family:var(--f-num);font-size:12px;font-weight:600;letter-spacing:.14em;color:var(--ink-2)}
+.switch{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--panel);border-bottom:1px solid var(--rule)}
+.switch-in{max-width:1240px;margin:0 auto;padding-inline:24px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.switch-in::-webkit-scrollbar{display:none}
+.sw{font:inherit;background:none;border:0;border-bottom:3px solid transparent;color:var(--ink-2);padding:11px 18px 9px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:0;white-space:nowrap;min-width:92px}
+.sw .n{font-size:14px;font-weight:700}
+.sw .d{font-size:11px;font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.sw[aria-pressed="true"]{border-bottom-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
+.sw:hover{background:var(--accent-soft)}
+.sw:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:24px;padding-block:22px 64px;display:flex;flex-direction:column;gap:30px}
+.sec{display:flex;flex-direction:column;gap:12px}
+.sh{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid var(--rule-2)}
+.sh h2{margin:0;font-size:16px;font-weight:900;letter-spacing:.02em}
+.sh .lbl{font-size:10.5px;letter-spacing:.16em;color:var(--accent);font-weight:700;font-family:var(--f-num)}
+.sh p{margin:0;color:var(--ink-3);font-size:12px;margin-left:auto}
+.g{display:grid;gap:14px}
+.g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g-73{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.g-3{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr)}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.panel h3{margin:0;font-size:13px;font-weight:700}
+.panel .sub{font-size:11.5px;color:var(--ink-3);margin:0}
+.cv{position:relative;height:270px}.cv.tall{height:380px}.cv.pie{height:210px}.cv.sm{height:220px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11.5px;color:var(--ink-2)}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:0}
+.summary{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);background:var(--panel);border:1px solid var(--rule);border-radius:4px}
+.summary>div{padding:18px 22px;min-width:0}
+.summary>div+div{border-left:1px solid var(--rule)}
+.summary h3{margin:0 0 8px;font-size:11px;letter-spacing:.16em;color:var(--accent);font-weight:700}
+.summary ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.summary li{padding-left:14px;position:relative;font-size:13.5px;line-height:1.7}
+.summary li::before{content:"";position:absolute;left:0;top:.7em;width:6px;height:6px;background:var(--ink-3);border-radius:1px}
+.summary ol{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;counter-reset:a}
+.summary ol li{padding-left:28px}
+.summary ol li::before{counter-increment:a;content:counter(a);width:20px;height:20px;top:.15em;background:var(--accent);color:var(--panel);font:700 11px/20px var(--f-num);text-align:center;border-radius:3px}
+.summary b{font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--panel);border:1px solid var(--rule);border-radius:4px}
+.kpi{padding:14px 18px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.kpi+.kpi{border-left:1px solid var(--rule)}
+.kpi .k{font-size:11.5px;color:var(--ink-2);font-weight:500}
+.kpi .v{font-size:25px;font-weight:600;line-height:1.25;letter-spacing:-.01em}
+.kpi .v small{font-size:12px;color:var(--ink-3);font-weight:400;margin-left:2px}
+.kpi .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-3)}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:600;padding:0 7px;border-radius:3px;font-family:var(--f-num);font-variant-numeric:tabular-nums;line-height:1.7}
+.up{color:var(--good);background:var(--good-bg)}.down{color:var(--bad);background:var(--bad-bg)}.flat{color:var(--warn);background:var(--warn-bg)}
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{padding:8px 12px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th{font-size:11px;color:var(--ink-2);font-weight:700;background:var(--bg);letter-spacing:.02em}
+td.l,th.l{text-align:left}td.name{white-space:normal;min-width:230px}
+td.name .c{display:block;color:var(--ink-3);font-size:11px}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent-soft) 60%,transparent)}
+.tag{font-size:11px;font-weight:700;padding:1px 8px;border-radius:3px;display:inline-block;letter-spacing:.04em}
+.t-inc{background:var(--good-bg);color:var(--good)}.t-red{background:var(--bad-bg);color:var(--bad)}.t-keep{background:var(--accent-soft);color:var(--accent)}.t-watch{background:var(--warn-bg);color:var(--warn)}
+.meter{display:inline-block;width:56px;height:5px;border-radius:3px;background:var(--rule);vertical-align:middle;margin-left:8px;overflow:hidden}
+.meter>span{display:block;height:100%;background:var(--bad)}
+.link{font:inherit;background:none;border:0;color:var(--accent);font-weight:700;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
+.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.acts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.act ol{margin:0;padding:0;list-style:none}
+.act li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:9px 0;border-top:1px solid var(--rule);font-size:12.5px;align-items:center}
+.act li .s{display:block;font-size:11px;color:var(--ink-3)}
+.act li .r{text-align:right;font-weight:600}
+.act li .r small{display:block;font-weight:400;color:var(--ink-3);font-size:11px}
+.empty{font-size:12.5px;color:var(--ink-3);padding:10px 0;border-top:1px solid var(--rule)}
+.toplist{margin:0;padding:0;list-style:none;font-size:12px}
+.toplist li{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;padding:7px 0;border-top:1px solid var(--rule);align-items:baseline}
+.toplist .rk{font-family:var(--f-num);color:var(--ink-3);font-weight:600}
+.note{font-size:12.5px;color:var(--ink-2);margin:0;padding:10px 14px;background:var(--bg);border-radius:3px}
+.method{font-size:11.5px;color:var(--ink-3);line-height:1.8}
+.method ul{margin:6px 0 0;padding-left:18px}
+.seg{display:inline-flex;border:1px solid var(--rule-2);border-radius:3px;overflow:hidden}
+.seg button{font:inherit;font-size:11px;border:0;background:var(--panel);color:var(--ink-2);padding:3px 10px;cursor:pointer}
+.seg button+button{border-left:1px solid var(--rule-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+[hidden]{display:none!important}
+.sig{font-size:11px;font-weight:700;padding:1px 8px;border-radius:3px;display:inline-block}
+.s-chance{background:var(--good-bg);color:var(--good)}.s-risk{background:var(--bad-bg);color:var(--bad)}.s-normal{background:var(--bg);color:var(--ink-3)}
+tr.we td{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
+td.adv{white-space:normal;min-width:300px;text-align:left;line-height:1.55;font-size:12px}
+.ibar{display:inline-block;width:70px;height:6px;background:var(--rule);border-radius:3px;position:relative;vertical-align:middle;margin-left:8px}
+.ibar>span{position:absolute;top:0;bottom:0;border-radius:3px}
+.ibar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--ink-3)}
+.hm td.cell{font-weight:600}
+tr.cur td{background:var(--accent-soft)!important}
+@media (max-width:980px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi{border-top:1px solid var(--rule)}.kpi+.kpi{border-left:0}.g-2,.g-73,.g-3,.acts,.summary{grid-template-columns:1fr}.summary>div+div{border-left:0;border-top:1px solid var(--rule)}.sh p{margin-left:0}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---- refinement layer ---- */
+body{font-size:13.5px;letter-spacing:.01em}
+.band-in{padding-block:12px}
+.dept{border-color:color-mix(in srgb,var(--band-2) 60%,transparent);border-radius:999px;padding:3px;gap:2px;background:color-mix(in srgb,var(--band-ink) 6%,transparent)}
+.dept button{border-radius:999px;padding:6px 26px;font-size:13px;letter-spacing:.08em}
+.dept button+button{border-left:0}
+.switch{box-shadow:var(--shadow)}
+.sw{min-width:104px;padding:10px 18px 8px;gap:1px}
+.sw .n{font-size:13.5px}
+.sw .d{font-size:10.5px;opacity:.95}
+.wrap{gap:36px;padding-block:28px 56px}
+.sh{border-bottom:0;padding-bottom:0;gap:6px 12px;align-items:center}
+.sh .lbl{font-size:10px;letter-spacing:.2em;color:var(--ink-3);padding:2px 8px;border:1px solid var(--rule-2);border-radius:3px}
+.sh h2{font-size:17px;font-weight:700;letter-spacing:.03em}
+.panel,.kpis,.summary,.tw{border-radius:8px;box-shadow:var(--shadow);border-color:var(--rule)}
+.panel{padding:18px 20px}
+.panel h3{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.02em}
+.kpi{padding:16px 20px 14px;gap:4px;position:relative}
+.kpi .k{font-size:11px;letter-spacing:.06em;color:var(--ink-3);font-weight:600}
+.kpi .v{font-size:27px;font-weight:600;letter-spacing:-.015em}
+.kpi .spark{position:absolute;right:16px;top:16px;width:64px;height:24px;overflow:visible}
+.chip{border-radius:999px;padding:0 8px;font-weight:600}
+.summary>div{padding:20px 24px}
+.summary h3{color:var(--ink-3);letter-spacing:.2em;font-size:10.5px}
+.summary li::before{background:var(--accent);border-radius:50%;width:5px;height:5px;top:.75em}
+.summary ol li::before{border-radius:50%;background:var(--ty);color:#fff}
+th{background:var(--panel);color:var(--ink-3);font-size:10.5px;letter-spacing:.06em;border-bottom:1px solid var(--rule-2);padding-block:10px}
+td{padding-block:9px}
+tbody tr:hover td{background:var(--accent-soft)}
+.tag{border-radius:999px;padding:1px 10px 1px 9px;font-weight:600;font-size:10.5px;display:inline-flex;align-items:center;gap:5px}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.sig{border-radius:999px;padding:1px 10px}
+.seg{border-radius:999px;padding:2px;gap:2px;background:var(--bg);border-color:var(--rule)}
+.seg button{border-radius:999px;padding:3px 12px;background:transparent}
+.seg button+button{border-left:0}
+.seg button[aria-pressed="true"]{background:var(--ty);color:#fff}
+.note{background:var(--accent-soft);border-left:3px solid var(--ty);border-radius:0 4px 4px 0}
+.meter>span{background:var(--bad)}
+.madeby{border-top:1px solid var(--rule);color:var(--ink-3)}
+.method{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:16px 20px}
+
+.cp{font:inherit;font-size:11px;font-weight:600;color:var(--ink-2);background:var(--panel);border:1px solid var(--rule-2);border-radius:999px;padding:2px 10px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.cp:hover{color:var(--ty);border-color:var(--ty)}
+.cp:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.cp svg{width:12px;height:12px}
+.tbar{display:flex;justify-content:flex-end;margin-bottom:-6px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--band);color:var(--band-ink);padding:10px 18px;border-radius:999px;font-size:12.5px;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.ov{position:fixed;inset:0;background:rgba(8,17,29,.72);z-index:60;display:flex;align-items:center;justify-content:center;padding:24px}
+.ov-in{background:var(--panel);border-radius:10px;padding:16px;max-width:min(960px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.ov-in img{max-width:100%;border:1px solid var(--rule)}
+.ov-in p{margin:0;font-size:13px;color:var(--ink-2)}
+</style>
+
+<header class="band"><div class="band-in">
+    <div class="dept" id="dept" role="group" aria-label="部門切り替え"><button data-d="FF" aria-pressed="true">FF</button><button data-d="厨房" aria-pressed="false">厨房</button></div>
+  <div class="meta">比較：<b>2026年10/1〜10/4</b> vs <b>2025年10/1〜10/4</b><br>2026＝木〜日／2025＝水〜土　データ：10/4締め</div>
+</div></header>
+<nav class="switch" aria-label="店舗切り替え"><div class="switch-in" id="sw"></div></nav>
+
+<main class="wrap">
+  <section class="sec">
+    <div class="sh"><span class="lbl">SUMMARY</span><h2 id="scopeTitle"></h2><p>荒利益高は廃棄控除後。前年比は同日比較。</p></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="summary"><div><h3>現状</h3><ul id="sumFacts"></ul></div><div><h3>今月のアクション</h3><ol id="sumActs"></ol></div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と着地見込み</h2><div class="seg" id="segMet" style="margin-left:auto"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
+    <div class="g g-73">
+      <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025年10月</span><span><i style="background:var(--ty)"></i>2026年10月</span></div></div>
+        <div class="cv"><canvas id="cDaily" role="img" aria-label="日別の販売高・荒利益高"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3>10月 着地見込み</h3><span class="sub">前年10月 × 今年4日間の前年比</span></div>
+        <div class="cv sm"><canvas id="cFcst" role="img" aria-label="着地見込み"></canvas></div><p class="note" id="fcstNote"></p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="lbl">CATEGORY</span><h2>カテゴリー別</h2><p>グラフは上の切り替え（販売高／荒利益高）に連動</p></div>
+    <div class="g g-3">
+      <div class="panel"><div class="ph"><h3 id="cTitle">販売高（10/1〜4）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--ty)"></i>2026</span></div></div>
+        <div class="cv"><canvas id="cCat" role="img" aria-label="カテゴリー別荒利益高"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3 id="mTitle">販売高 構成比</h3><div class="seg" id="segMix"><button aria-pressed="true" data-k="p26">2026</button><button aria-pressed="false" data-k="p25">2025</button></div></div>
+        <div class="cv pie"><canvas id="cMix" role="img" aria-label="荒利益高構成比"></canvas></div><div class="legend" id="lgMix"></div></div>
+      <div class="panel"><div class="ph"><h3>廃棄高 構成比</h3><div class="seg" id="segWaste"><button aria-pressed="true" data-k="p26">2026</button><button aria-pressed="false" data-k="p25">2025</button></div></div>
+        <div class="cv pie"><canvas id="cWaste" role="img" aria-label="廃棄高構成比"></canvas></div><div class="legend" id="lgWaste"></div></div>
+    </div>
+    <div class="tw"><table id="tCat" style="min-width:1080px"></table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="lbl">WASTE</span><h2>廃棄レポート</h2><p class="exl"></p></div>
+    <div class="tw" data-only="all"><table id="tStores" style="min-width:1000px"></table></div>
+    <div class="g g-3">
+      <div class="panel"><div class="ph"><h3>日別 廃棄高（10/1〜4）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--bad)"></i>2026</span></div></div>
+        <div class="cv sm"><canvas id="cWDaily" role="img" aria-label="日別廃棄高"></canvas></div></div>
+      <div class="panel" data-only="all"><div class="ph"><h3>店舗別 廃棄率</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--bad)"></i>2026</span></div></div>
+        <div class="cv sm"><canvas id="cWStore" role="img" aria-label="店舗別廃棄率"></canvas></div></div>
+      <div class="panel" data-only="store"><div class="ph"><h3>5店舗内のポジション</h3></div><div id="rank"></div></div>
+      <div class="panel"><div class="ph"><h3>前年10月 廃棄高 TOP5</h3><span class="sub">1か月合計</span></div><ul class="toplist" id="lyTop"></ul></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="lbl">CALENDAR</span><h2>曜日・祝日・天気のチャンスとリスク</h2><p>前年10月の実績 × 大阪の天気（気象庁）／予報は吹田市 10/4 19時発表（tenki.jp）</p></div>
+    <div class="summary"><div><h3>わかったこと</h3><ul id="wxFacts"></ul></div><div><h3>今後2週間の要注意日</h3><ul id="wxDays"></ul></div></div>
+    <div class="g g-2">
+      <div class="panel"><div class="ph"><h3>要因別 販売数への影響（前年10月）</h3><div class="legend"><span><i style="background:var(--f-sat)"></i>土曜</span><span><i style="background:var(--f-sun)"></i>日曜・祝日</span><span><i style="background:var(--f-rain)"></i>雨の日</span></div></div>
+        <p class="sub">平日・晴れの日を基準にした増減。曜日・雨・気温を同時に考慮した回帰分析（31日分）。</p>
+        <div class="cv"><canvas id="cFx" role="img" aria-label="要因別の販売数への影響"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3 id="iceTitle">最高気温とマチカフェのアイス比率</h3><span class="sub">前年10月の日別</span></div>
+        <div class="cv"><canvas id="cIce" role="img" aria-label="最高気温とアイス比率"></canvas></div>
+        <p class="note" id="iceNote"></p></div>
+    </div>
+    <div class="tw"><table class="hm" id="tDay" style="min-width:820px"></table></div>
+    <div class="tw"><table id="tCal" style="min-width:1180px"></table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="lbl">SKU</span><h2>単品別 生産判断</h2><p>2026年10/1〜4 <span class="exl"></span></p></div>
+    <div class="panel"><div class="ph"><h3>販売力 × 廃棄率</h3>
+      <div class="legend"><span><i style="background:var(--good)"></i>増産</span><span><i style="background:var(--accent)"></i>維持</span><span><i style="background:var(--warn)"></i>注意</span><span><i style="background:var(--bad)"></i>減産</span><span style="color:var(--ink-3)">円の大きさ＝荒利益高</span></div></div>
+      <div class="cv tall"><canvas id="cScatter" role="img" aria-label="単品の販売数と廃棄率"></canvas></div></div>
+    <div class="tw"><table id="tProd" style="min-width:1180px"></table></div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="lbl">ACTION</span><h2>店舗 × 単品 アクション</h2></div>
+    <div class="acts">
+      <div class="panel act"><div class="ph"><h3><span class="tag t-inc">増産</span>　機会ロスの可能性</h3></div><p class="sub">4日間すべて廃棄ゼロ、かつ1日4個以上の販売。</p><ol id="lInc"></ol></div>
+      <div class="panel act"><div class="ph"><h3><span class="tag t-red">減産</span>　作りすぎ</h3></div><p class="sub" id="decSub"></p><ol id="lDec"></ol></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sh"><span class="lbl">LESSON</span><h2>前年10月の教訓</h2><p>2025年10月 1か月の単品別 廃棄高と荒利益高</p></div>
+    <div class="panel"><div class="legend"><span><i style="background:var(--bad)"></i>廃棄高</span><span><i style="background:var(--ty)"></i>荒利益高</span></div>
+      <div class="cv tall"><canvas id="cLesson" role="img" aria-label="前年10月の廃棄高上位単品"></canvas></div><p class="note" id="lessonNote"></p></div>
+  </section>
+
+  <section class="method"><b>集計方法</b><ul id="methodList"></ul></section>
+  <footer class="madeby">Made by Biswash</footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const ALLD=__DATA__;
+let DEPT='FF',A=ALLD.FF;
+const METHOD={"FF": "<li>FF合計＝からあげクン・ホットFF・常温FF・サーマル常温・マチカフェの全SUBCLASS合計。中華まんは今年の販売がないため、前年分も含めて集計から外しています。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。マチカフェは都度抽出で廃棄が出ないため、廃棄と生産判断の分析から除外。</li>\n<li>前年比較の名寄せ：カリパン Ｙ→ＫＹ、ＨＯＴ ジャイアントポークフランク→常温、ＨＯＴ なんこつ入りつくね棒→常温 を同一商品として比較しています。</li>\n<li>2026年はジャイアントポークフランク・なんこつつくね棒が常温FFへ移ったため、ホットFF減・常温FF増の一部は分類変更によるものです。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>2026年の4日間は日曜を含み、2025年は水曜を含みます。前年10月の曜日平均では日曜の荒利益高が最も低く、今年はやや不利な条件での比較です。</li>\n<li>天気：前年10月は気象庁 大阪の日別実績（降水2mm以上を雨の日）。予報は吹田市の10/4 19時発表で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年4日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。前年の祝日は10/13（月）の1日だけです。</li>", "厨房": "<li>厨房合計＝まちかど厨房（販売）の弁当・調理パン・惣菜の合計。おにぎり・その他は販売実績がないため対象外。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。厨房は全カテゴリーを廃棄分析の対象にしています。</li>\n<li>商品名の末尾が違う弁当（例：…弁当 と …弁当１）は、データどおり別の単品として集計しています。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>2026年の4日間は日曜を含み、2025年は水曜を含みます。前年10月の曜日平均では日曜の荒利益高が最も低く、今年はやや不利な条件での比較です。</li>\n<li>天気：前年10月は気象庁 大阪の日別実績（降水2mm以上を雨の日）。予報は吹田市の10/4 19時発表で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年4日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。前年の祝日は10/13（月）の1日だけです。</li>"};
+const STORES=['上新田','朝日町','元町一','豊津中','青山台'];
+const CCM={'からあげクン':'--c-kara','マチカフェ':'--c-machi','ホットFF':'--c-hot','常温FF':'--c-jo','サーマル常温':'--c-thermal','弁当':'--c-machi','調理パン':'--c-kara','惣菜':'--c-jo'};
+const CC=new Proxy({},{get:(_,k)=>CCM[k]});
+let CATS=A.cats, WC=A.cats.filter(c=>!A.excl.includes(c));
+function setDept(d){DEPT=d;A=ALLD[d];CATS=A.cats;WC=A.cats.filter(c=>!A.excl.includes(c));
+  document.querySelectorAll('#dept button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===d));
+  const ex=A.excl.length?A.excl.join('・')+'除く':'';document.querySelectorAll('.exl').forEach(e=>e.textContent=ex);
+  document.getElementById('methodList').innerHTML=METHOD[d];
+  render();}
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const yen=v=>(v<0?'-':'')+'¥'+Math.abs(Math.round(v)).toLocaleString('ja-JP');
+const n0=v=>Math.round(v).toLocaleString('ja-JP');
+const pct=(a,b)=>b?((a/b-1)*100):0;
+const wrOf=o=>(o.販売数+o.廃棄数)?o.廃棄数/(o.販売数+o.廃棄数)*100:0;
+const chip=(d,inv)=>{const g=inv?d<0:d>0;const c=Math.abs(d)<1?'flat':(g?'up':'down');return `<span class="chip ${c}">${d>=0?'+':'-'}${Math.abs(d).toFixed(1)}%</span>`};
+const ptchip=(d,inv)=>{const g=inv?d<0:d>0;return `<span class="chip ${Math.abs(d)<.3?'flat':(g?'up':'down')}">${d>=0?'+':'-'}${Math.abs(d).toFixed(1)}pt</span>`};
+const yTick=v=>Math.abs(v)>=10000?(v/10000).toFixed(v%10000?1:0)+'万':n0(v);
+const VL={increase:['t-inc','増産','--good'],keep:['t-keep','維持','--accent'],watch:['t-watch','注意','--warn'],reduce:['t-red','減産','--bad']};
+let MK='販売高';const ML=()=>MK==='販売高'?'販売高（売上）':'荒利益高';
+let scope='ALL', mixK='p26', wasteK='p26', charts=[];
+const isAll=()=>scope==='ALL';
+const short=s=>s.replace(/^(ＦＦ|ＨＯＴ)\s*/,'');
+
+function switcher(){
+  const items=['ALL',...STORES];
+  document.getElementById('sw').innerHTML=items.map(s=>{
+    const o=s==='ALL'?A.ALL.kpi:{p26:A.stores[s].p26,p25:A.stores[s].p25};
+    const d=pct(o.p26.荒利益高,o.p25.荒利益高),ds=pct(o.p26.販売高,o.p25.販売高),f=(k,v)=>`<span class="d" style="color:var(${v>=0?'--good':'--bad'})">${k} ${v>=0?'+':'-'}${Math.abs(v).toFixed(1)}%</span>`;
+    return `<button class="sw" data-s="${s}" aria-pressed="${s===scope}"><span class="n">${s==='ALL'?'全店':s}</span>${f('売上',ds)}${f('荒利',d)}</button>`}).join('');
+  document.querySelectorAll('.sw').forEach(b=>b.onclick=()=>go(b.dataset.s));
+}
+function go(s){scope=s;render();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
+
+function spark(a,b,bad){
+  const all=[...a,...b],mn=Math.min(...all),mx=Math.max(...all),r=mx-mn||1,pt=v=>v.map((y,i)=>`${(i*21.3).toFixed(1)},${(22-(y-mn)/r*20).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 64 24" aria-hidden="true"><polyline points="${pt(a)}" fill="none" stroke="var(--ly)" stroke-width="1.5" stroke-linejoin="round"/><polyline points="${pt(b)}" fill="none" stroke="var(${bad?'--bad':'--ty'})" stroke-width="2" stroke-linejoin="round"/><circle cx="${(3*21.3).toFixed(1)}" cy="${(22-(b[3]-mn)/r*20).toFixed(1)}" r="2.5" fill="var(${bad?'--bad':'--ty'})"/></svg>`;
+}
+function cutN(w){if(w>=1.25)return Math.max(1,Math.floor(w*0.8))+'個減';if(w>=0.75)return '1個減';if(w>=0.3)return '2日に1回 1個減';return '様子見';}
+function cutAdv(r,unit){
+  const pre=unit?unit+' ':'';
+  if(r.wwk!=null&&r.wwe!=null&&Math.abs(r.wwe-r.wwk)>=1) return `平日 ${cutN(r.wwk)}・土日 ${cutN(r.wwe)}`;
+  return pre+cutN(r.wpd);
+}
+function render(){
+  const S=A[scope],k25=S.kpi.p25,k26=S.kpi.p26,m25=S.kpi.m25,nc=S.nc;
+  switcher();
+  document.querySelectorAll('[data-only="all"]').forEach(e=>e.hidden=!isAll());
+  document.querySelectorAll('[data-only="store"]').forEach(e=>e.hidden=isAll());
+  document.getElementById('scopeTitle').textContent=isAll()?'全店（5店舗合計）':scope+' 店';
+  // KPI
+  const K=[['販売高（売上）',yen(k26.販売高),chip(pct(k26.販売高,k25.販売高)),'前年 '+yen(k25.販売高)],
+    ['荒利益高',yen(k26.荒利益高),chip(pct(k26.荒利益高,k25.荒利益高)),'前年 '+yen(k25.荒利益高)],
+    ['販売数',n0(k26.販売数)+'<small>個</small>',chip(pct(k26.販売数,k25.販売数)),'前年 '+n0(k25.販売数)+'個'],
+    ['廃棄高',yen(k26.廃棄高),chip(pct(k26.廃棄高,k25.廃棄高),true),'前年 '+yen(k25.廃棄高)],
+    ['廃棄率',wrOf(nc.p26).toFixed(1)+'<small>%</small>',ptchip(wrOf(nc.p26)-wrOf(nc.p25),true),'前年 '+wrOf(nc.p25).toFixed(1)+'%']];
+  const SPK=['販売高','荒利益高','販売数','廃棄高'];
+  document.getElementById('kpis').innerHTML=K.map(([k,v,c,l],i)=>`<div class="kpi">${i<4?spark(S.daily25[SPK[i]].slice(0,4),S.daily26[SPK[i]],i===3):''}<span class="k">${k}</span><span class="v num">${v}</span><span class="row">${c}<span class="num">${l}</span></span></div>`).join('');
+  // summary
+  const cats=CATS.map(c=>({c,d:pct(S.cat.p26[c].荒利益高,S.cat.p25[c].荒利益高),diff:S.cat.p26[c].荒利益高-S.cat.p25[c].荒利益高})).filter(x=>S.cat.p25[x.c].荒利益高>0);
+  const best=[...cats].sort((a,b)=>b.diff-a.diff)[0],worst=[...cats].sort((a,b)=>a.diff-b.diff)[0];
+  const gpu26=k26.荒利益高/k26.販売数,gpu25=k25.荒利益高/k25.販売数;
+  const P=S.prod, red=P.filter(r=>r.v==='reduce').sort((a,b)=>b.wy-a.wy), inc=P.filter(r=>r.v==='increase');
+  const facts=[
+    `販売高（売上） <b>${yen(k26.販売高)}</b>（前年比 ${chip(pct(k26.販売高,k25.販売高))}）、荒利益高 <b>${yen(k26.荒利益高)}</b>（${chip(pct(k26.荒利益高,k25.荒利益高))}）。荒利益率 ${(k25.荒利益高/k25.販売高*100).toFixed(1)}% → ${(k26.荒利益高/k26.販売高*100).toFixed(1)}%。販売数 ${pct(k26.販売数,k25.販売数)>=0?'+':''}${pct(k26.販売数,k25.販売数).toFixed(1)}%、廃棄高 ${pct(k26.廃棄高,k25.廃棄高)>=0?'+':''}${pct(k26.廃棄高,k25.廃棄高).toFixed(1)}%。`,
+    `荒利益高で伸びたのは <b>${best.c}</b>（${best.diff>=0?'+':''}${yen(best.diff)}）、落ちたのは <b>${worst.c}</b>（${yen(worst.diff)}）。売上では ${CATS.filter(c=>S.cat.p25[c].販売高>0).map(c=>`${c} ${(pct(S.cat.p26[c].販売高,S.cat.p25[c].販売高)>=0?'+':'')+pct(S.cat.p26[c].販売高,S.cat.p25[c].販売高).toFixed(0)}%`).join('、')}。`,
+    `1個あたり荒利益は ${yen(gpu25)} → <b>${yen(gpu26)}</b>。${gpu26<gpu25?'単価の低い商品の構成が増えています。':'構成は改善しています。'}`,
+    `廃棄率 ${wrOf(nc.p25).toFixed(1)}% → <b>${wrOf(nc.p26).toFixed(1)}%</b>。廃棄高は荒利益高の ${(k26.廃棄高/k26.荒利益高*100).toFixed(1)}%（前年 ${(k25.廃棄高/k25.荒利益高*100).toFixed(1)}%）。`];
+  {const d=S.daily26.荒利益高,wk=(d[0]+d[1])/2,we=(d[2]+d[3])/2,dw=S.daily26.廃棄高,wkw=(dw[0]+dw[1])/2,wew=(dw[2]+dw[3])/2;
+   if(we<wk*0.8) facts.push(`土日（10/3・4）の荒利益高は平日（10/1・2）の <b>${(we/wk*100).toFixed(0)}%</b> に低下。一方で廃棄高は平日の ${(wew/Math.max(wkw,1)*100).toFixed(0)}%。土日は仕込みを平日より減らす必要があります。`);}
+  if(isAll()){
+    const ss=STORES.map(s=>({s,d:pct(A.stores[s].p26.荒利益高,A.stores[s].p25.荒利益高),w:wrOf(A.stores[s].nc26)}));
+    const lo=[...ss].sort((a,b)=>a.d-b.d).filter(x=>x.d<0).map(x=>`<b>${x.s}</b>（${x.d.toFixed(1)}%）`);
+    const hw=[...ss].sort((a,b)=>b.w-a.w)[0];
+    facts.push(`前年割れの店舗：${lo.length?lo.join('、'):'なし'}。廃棄率が最も高いのは <b>${hw.s}</b>（${hw.w.toFixed(1)}%）。`);
+  }
+  document.getElementById('sumFacts').innerHTML=facts.map(f=>`<li>${f}</li>`).join('');
+  const acts=[];
+  if(inc.length) acts.push(`<b>増産：</b>${inc.slice(0,3).map(r=>short(r.name)).join('、')}。廃棄ほぼゼロで売り切れが多く、販売を逃している可能性があります。`);
+  if(red.length) acts.push(`<b>減産：</b>${red.slice(0,3).map(r=>`${short(r.name)}（廃棄率${(r.wr*100).toFixed(0)}%）`).join('、')}。${isAll()?'1店1日 約1個減':'1日1個減'}から始めます。`);
+  if(isAll()){const srt=STORES.map(s=>({s,w:wrOf(A.stores[s].nc26)})).sort((a,b)=>b.w-a.w),hw=srt[0],lw=srt[srt.length-1];acts.push(`<b>店舗：</b>${hw.s}の廃棄対策を最優先。廃棄率${lw.w.toFixed(1)}%の${lw.s}の仕込み量・タイミングを共有します。`);}
+  else{const lt=S.lesson[0];acts.push(`<b>前年の再発防止：</b>前年10月の廃棄1位は ${short(lt.name)}（1か月 ${yen(lt.wy)}）。ピーク後の追加調理を控えます。`);}
+  document.getElementById('sumActs').innerHTML=acts.map(a=>`<li>${a}</li>`).join('');
+  // forecast
+  const fc=m25.荒利益高*(k26.荒利益高/k25.荒利益高), fs=m25.販売高*(k26.販売高/k25.販売高);
+  S._fc={荒利益高:fc,販売高:fs};
+  document.getElementById('fcstNote').innerHTML=`このペースなら10月着地は 販売高（売上） <b class="num">${yen(fs)}</b>（前年 ${yen(m25.販売高)}、差 <b class="num">${fs>=m25.販売高?'+':''}${yen(fs-m25.販売高)}</b>）、荒利益高 <b class="num">${yen(fc)}</b>（前年 ${yen(m25.荒利益高)}、差 <b class="num">${fc>=m25.荒利益高?'+':''}${yen(fc-m25.荒利益高)}</b>）。前年10月は廃棄高が荒利益高の ${(m25.廃棄高/m25.荒利益高*100).toFixed(0)}%でした。`;
+  // category table
+  document.getElementById('tCat').innerHTML=`<thead><tr><th class="l">カテゴリー</th><th>販売高 2025</th><th>販売高 2026</th><th>前年比</th><th>荒利益高 2025</th><th>荒利益高 2026</th><th>前年比</th><th>販売数 2025</th><th>販売数 2026</th><th>前年比</th><th>廃棄高 2025</th><th>廃棄高 2026</th><th>廃棄率 2026</th></tr></thead><tbody>`+
+   CATS.map(c=>{const a=S.cat.p25[c],b=S.cat.p26[c],m=A.excl.includes(c);return `<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[c]});margin-right:8px"></i><b>${c}</b></td><td class="num">${yen(a.販売高)}</td><td class="num">${yen(b.販売高)}</td><td>${a.販売高?chip(pct(b.販売高,a.販売高)):'—'}</td><td class="num">${yen(a.荒利益高)}</td><td class="num">${yen(b.荒利益高)}</td><td>${a.荒利益高?chip(pct(b.荒利益高,a.荒利益高)):'—'}</td><td class="num">${n0(a.販売数)}</td><td class="num">${n0(b.販売数)}</td><td>${a.販売数?chip(pct(b.販売数,a.販売数)):'—'}</td><td class="num">${m?'—':yen(a.廃棄高)}</td><td class="num">${m?'—':yen(b.廃棄高)}</td><td class="num">${m?'—':wrOf(b).toFixed(1)+'%'}</td></tr>`}).join('')+'</tbody>';
+  // stores table (ALL)
+  if(isAll()){
+    const rows=STORES.map(s=>({s,o:A.stores[s]})).sort((a,b)=>b.o.nc26.廃棄高-a.o.nc26.廃棄高);
+    document.getElementById('tStores').innerHTML=`<thead><tr><th class="l">店舗</th><th>販売高（売上）</th><th>前年比</th><th>荒利益高</th><th>前年比</th><th>廃棄高 2026</th><th>廃棄高 2025</th><th>前年比</th><th>廃棄率 2026</th><th>廃棄率 2025</th><th>廃棄÷荒利</th><th class="l">評価</th><th class="l"></th></tr></thead><tbody>`+
+     rows.map(({s,o})=>{const w=wrOf(o.nc26),st=w>=10?['t-red','要対策']:w>=6?['t-watch','注意']:['t-inc','良好'];
+      return `<tr><td class="l"><button class="link" data-go="${s}">${s}</button></td><td class="num">${yen(o.p26.販売高)}</td><td>${chip(pct(o.p26.販売高,o.p25.販売高))}</td><td class="num">${yen(o.p26.荒利益高)}</td><td>${chip(pct(o.p26.荒利益高,o.p25.荒利益高))}</td><td class="num">${yen(o.nc26.廃棄高)}</td><td class="num">${yen(o.nc25.廃棄高)}</td><td>${chip(pct(o.nc26.廃棄高,o.nc25.廃棄高),true)}</td><td class="num">${w.toFixed(1)}%<span class="meter"><span style="width:${Math.min(100,w*6)}%"></span></span></td><td class="num">${wrOf(o.nc25).toFixed(1)}%</td><td class="num">${(o.nc26.廃棄高/o.p26.荒利益高*100).toFixed(1)}%</td><td class="l"><span class="tag ${st[0]}">${st[1]}</span></td><td class="l"><button class="link" data-go="${s}">詳細</button></td></tr>`}).join('')+'</tbody>';
+    document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+  }else{
+    const ss=STORES.map(s=>({s,d:pct(A.stores[s].p26.荒利益高,A.stores[s].p25.荒利益高),w:wrOf(A.stores[s].nc26),gp:A.stores[s].p26.荒利益高,amt:A.stores[s].p26.販売高,ds:pct(A.stores[s].p26.販売高,A.stores[s].p25.販売高)}));
+    const rk=(arr,key,desc)=>[...arr].sort((a,b)=>desc?b[key]-a[key]:a[key]-b[key]).findIndex(x=>x.s===scope)+1;
+    const me=ss.find(x=>x.s===scope);const R=[['販売高（売上）',rk(ss,'amt',true),yen(me.amt)],['売上 前年比',rk(ss,'ds',true),me.ds.toFixed(1)+'%'],['荒利益高',rk(ss,'gp',true),yen(A.stores[scope].p26.荒利益高)],['荒利 前年比',rk(ss,'d',true),(ss.find(x=>x.s===scope).d).toFixed(1)+'%'],['廃棄率（低い順）',rk(ss,'w',false),ss.find(x=>x.s===scope).w.toFixed(1)+'%']];
+    document.getElementById('rank').innerHTML=`<ul class="toplist">${R.map(([k,r,v])=>`<li><span class="rk">${r}</span><span>${k}<span style="color:var(--ink-3)"> ／5店中</span></span><span class="num" style="font-weight:600">${v}</span></li>`).join('')}</ul><p class="sub" style="margin-top:8px"><button class="link" id="backAll">全店の比較に戻る</button></p>`;
+    document.getElementById('backAll').onclick=()=>go('ALL');
+  }
+  document.getElementById('lyTop').innerHTML=S.lesson.slice(0,5).map((r,i)=>`<li><span class="rk">${i+1}</span><span>${short(r.name)}<span style="display:block;color:var(--ink-3);font-size:11px">${r.cat}・廃棄率 ${(r.wr*100).toFixed(0)}%</span></span><span class="num" style="font-weight:600">${yen(r.wy)}</span></li>`).join('');
+  // product table
+  document.getElementById('tProd').innerHTML=`<thead><tr><th class="l">判定</th><th class="l">商品名</th><th>販売数</th><th>前年同日比</th><th>${isAll()?'1店1日':'1日'}販売</th><th>販売高</th><th>売上 前年同日比</th><th>荒利益高</th><th>廃棄数</th><th>廃棄高</th><th>廃棄率</th><th>前年10月 廃棄率</th><th>完売日率</th><th class="l">生産の目安</th></tr></thead><tbody>`+
+   P.map(r=>{const [cl,lb]=VL[r.v];const adv=r.v==='reduce'?cutAdv(r,isAll()?'1店1日':'1日'):r.v==='increase'?'売切れ時 +1〜2個':r.v==='watch'?'ピーク後の追加を控える':'現状維持';
+    return `<tr><td class="l"><span class="tag ${cl}">${lb}</span></td><td class="l name">${r.name}<span class="c">${r.cat}${r.alias?'・前年は旧名/旧分類で比較':''}</span></td><td class="num">${n0(r.sold)}</td><td>${r.sold_ly==null||r.sold_ly===0?'<span style="color:var(--ink-3)">新規</span>':chip(pct(r.sold,r.sold_ly))}</td><td class="num">${r.per.toFixed(1)}</td><td class="num">${yen(r.amt)}</td><td>${r.amt_ly?chip(pct(r.amt,r.amt_ly)):'<span style="color:var(--ink-3)">新規</span>'}</td><td class="num">${yen(r.gp)}</td><td class="num">${n0(r.w)}</td><td class="num">${yen(r.wy)}</td><td class="num">${(r.wr*100).toFixed(1)}%<span class="meter"><span style="width:${Math.min(100,r.wr*300)}%"></span></span></td><td class="num">${r.ly_wr==null?'—':(r.ly_wr*100).toFixed(1)+'%'}</td><td class="num">${(r.so*100).toFixed(0)}%</td><td class="l">${adv}</td></tr>`}).join('')+'</tbody>';
+  // actions
+  const loc=r=>isAll()?`${r.store}・${r.cat}`:r.cat;
+  document.getElementById('lInc').innerHTML=S.inc.length?S.inc.map(r=>`<li><span>${short(r.name)}<span class="s">${loc(r)}</span></span><span class="r num">${r.per.toFixed(1)}個/日<small>廃棄0 → +1〜2個</small></span></li>`).join(''):'<li class="empty" style="display:block">該当なし。売り切れ続きの単品はありません。</li>';
+  document.getElementById('decSub').textContent=`廃棄率20%以上、かつ廃棄高${isAll()?'1,000':'500'}円以上。減らす数は廃棄の約8割までにしています（廃棄ゼロの日もあり、廃棄と同じ数を減らすと売り切れが出るため）。`;
+  document.getElementById('lDec').innerHTML=S.dec.length?S.dec.map(r=>`<li><span>${short(r.name)}<span class="s">${loc(r)}・廃棄率 ${(r.wr*100).toFixed(0)}%</span></span><span class="r num">${yen(r.wy)}<small>廃棄 平均${r.wpd.toFixed(1)}個/日（平日${r.wwk.toFixed(1)}・土日${r.wwe.toFixed(1)}） → ${cutAdv(r)}</small></span></li>`).join(''):'<li class="empty" style="display:block">該当なし。廃棄率20%を超える単品はありません。</li>';
+  const over=S.lesson.filter(r=>r.wy>r.gp).map(r=>short(r.name));
+  document.getElementById('lessonNote').innerHTML=over.length?`廃棄高が荒利益高を上回った単品：<b>${over.join('、')}</b>。売れるほど利益が減る状態だったため、今年は少量スタートにします。`:`前年10月、上位単品はすべて荒利益高が廃棄高を上回っていました。廃棄の大きい単品から、ピーク後の追加調理を見直します。`;
+  renderWx();
+  draw();
+}
+
+
+// ===== 曜日・祝日・天気 =====
+function catLines(typ,R){
+  const k=typ==='土'?'sat':'sun',out=[];
+  A.cats.forEach(c=>{const v=R[c].qty[k];if(Math.abs(v)>=0.08) out.push(`${c} ${v>0?'+':''}${Math.round(v*100)}%`)});
+  return out;
+}
+function renderWx(){
+  const S=A[scope],X=A.wx,ST=S.st,R=X.res,cal=S.cal,FFm=A.ff;
+  const p=v=>(v>=0?'+':'')+(v*100).toFixed(0)+'%';
+  const facts=[];
+  facts.push(`<b>雨の日</b>は${isAll()?'全店':'この店'}の荒利益高が <b>${p(ST.wet.gp)}</b>、廃棄高が <b>${p(ST.wet.wy)}</b>。${ST.wet.wy>0.05?'売れないのに廃棄が増えるため、雨予報の日は仕込みを先に減らします。':ST.wet.gp<-0.05?'売上が落ちる分、雨予報の日は仕込みを減らします。':'雨の影響は小さい'+(isAll()?'です。':'店です。')}`);
+  facts.push(`<b>土曜</b>の荒利益高は平日の <b>${(ST['土'].idx*100).toFixed(0)}%</b>、<b>日曜・祝日</b>は <b>${(ST['日祝'].idx*100).toFixed(0)}%</b>（廃棄率 ${(ST['日祝'].wr*100).toFixed(1)}%、平日 ${(ST['平日'].wr*100).toFixed(1)}%）。`);
+  if(isAll()){const s1=catLines('土',R),s2=catLines('日祝',R);facts.push(`カテゴリー別（販売数）：土曜は ${s1.length?s1.join('、'):'大きな差なし'}。日曜・祝日は ${s2.length?s2.join('、'):'大きな差なし'}。`);}
+  else{const ss=STORES.map(s=>({s,i:A[s].st['日祝'].idx})).sort((a,b)=>a.i-b.i);facts.push(`日曜・祝日に強い店は ${ss.slice(-2).reverse().map(x=>x.s+'（'+(x.i*100).toFixed(0)+'%）').join('・')}、弱い店は ${ss.slice(0,2).map(x=>x.s+'（'+(x.i*100).toFixed(0)+'%）').join('・')}。`);}
+  facts.push(FFm?`<b>気温</b>はマチカフェのアイス比率と強く連動（相関 ${X.corr.toFixed(2)}）。最高26℃以上でアイス約70%、22℃未満で約32%に下がります。`:`<b>気温</b>と厨房の販売数の関係は弱い（相関 ${X.corr.toFixed(2)}）。厨房は天気より曜日で動くカテゴリーです。`);
+  facts.push(`今年10/4（日）は雨予報（降水確率60%、最高21℃）の日でした。日曜の落ち込みの一部は天気の影響と考えられます。`);
+  document.getElementById('wxFacts').innerHTML=facts.map(f=>`<li>${f}</li>`).join('');
+  const key=cal.filter(r=>r.d<=17&&(r.sig!=='normal'||r.hol)).slice(0,6);
+  document.getElementById('wxDays').innerHTML=key.length?key.map(r=>`<li><b>10/${r.d}（${r.wd}）</b> <span class="sig s-${r.sig}">${r.sig==='chance'?'チャンス':r.sig==='risk'?'リスク':'通常'}</span> ${r.hol?'<b>'+r.hol+'</b>・':''}${r.wx}・最高${r.tmax}℃・降水${r.pop}%。${shortAdv(r)}</li>`).join(''):'<li>大きな変動が予想される日はありません。</li>';
+  document.getElementById('iceTitle').textContent=FFm?'最高気温とマチカフェのアイス比率':'最高気温と厨房の販売数';
+  document.getElementById('iceNote').innerHTML=FFm?`今後の予報は最高24〜29℃。10/17まではアイス比率60〜70%の水準が続く見込みです。前年は10/21以降に最高22℃を下回り、アイス比率が30%台へ急落しました。月の後半はホット飲料とホットFFの準備を早めます。`:`点のばらつきは気温ではなく曜日によるものです（日曜・祝日は低い位置に集中）。厨房の仕込みは曜日を最優先し、天気は雨の日の調整に使います。`;
+  document.getElementById('tDay').innerHTML=`<thead><tr><th class="l">店舗（前年10月）</th><th>平日 売上/日</th><th>平日 荒利/日</th><th>土曜</th><th>日曜・祝日</th><th>廃棄率 平日</th><th>廃棄率 土曜</th><th>廃棄率 日祝</th><th>雨の日 荒利</th><th>雨の日 廃棄</th></tr></thead><tbody>`+
+   ['ALL',...STORES].map(s=>{const o=A[s].st,ix=v=>`<span class="chip ${v>=1.05?'up':v<=0.9?'down':'flat'}">${(v*100).toFixed(0)}</span>`,wr=v=>`<span style="color:var(${v>=0.15?'--bad':'--ink'})">${(v*100).toFixed(1)}%</span>`;
+    return `<tr class="${s===scope?'cur':''}"><td class="l"><b>${s==='ALL'?'全店':s}</b></td><td class="num">${yen(o['平日'].amt)}</td><td class="num">${yen(o['平日'].gp)}</td><td class="cell">${ix(o['土'].idx)}</td><td class="cell">${ix(o['日祝'].idx)}</td><td class="num">${wr(o['平日'].wr)}</td><td class="num">${wr(o['土'].wr)}</td><td class="num">${wr(o['日祝'].wr)}</td><td>${chip(o.wet.gp*100)}</td><td>${chip(o.wet.wy*100,true)}</td></tr>`}).join('')+'</tbody>';
+  document.getElementById('tCal').innerHTML=`<thead><tr><th class="l">日付</th><th class="l">区分</th><th class="l">天気（予報）</th><th>最高</th><th>降水</th><th>予想 販売高</th><th>予想 荒利益高</th><th class="l">平日比</th><th class="l">判定</th><th class="l">仕込みの指示</th></tr></thead><tbody>`+
+   cal.map(r=>{const w=Math.min(50,Math.abs(r.idx-1)*125);
+    return `<tr class="${r.typ!=='平日'?'we':''}"><td class="l num"><b>10/${r.d}</b>（${r.wd}）</td><td class="l">${r.typ}${r.hol?`<span class="c" style="display:block;color:var(--accent);font-size:11px;font-weight:700">${r.hol}</span>`:''}</td><td class="l">${r.wx||'<span style="color:var(--ink-3)">予報なし</span>'}</td><td class="num">${r.tmax!=null?r.tmax+'℃':'—'}</td><td class="num">${r.pop!=null?r.pop+'%':'—'}</td><td class="num">${yen(r.exps)}</td><td class="num">${yen(r.exp)}</td><td class="l num">${(r.idx*100).toFixed(0)}%<span class="ibar"><span style="${r.idx>=1?'left:50%':'right:50%'};width:${w}%;background:var(${r.idx>=1?'--good':'--bad'})"></span></span></td><td class="l"><span class="sig s-${r.sig}">${r.sig==='chance'?'チャンス':r.sig==='risk'?'リスク':'通常'}</span></td><td class="adv">${advice(r)}</td></tr>`}).join('')+'</tbody>';
+}
+const ITEM=()=>A.ff?'揚げ物':'弁当・惣菜';
+function shortAdv(r){
+  const ST=A[scope].st;
+  if(r.wet) return `${ITEM()}の仕込みを控えめに（雨の日 廃棄 ${ST.wet.wy>=0?'+':''}${(ST.wet.wy*100).toFixed(0)}%）。`;
+  if(r.sig==='chance') return `平日の${(r.idx*100).toFixed(0)}%の売上。ピーク前に補充。`;
+  if(r.sig==='risk') return `平日の${(r.idx*100).toFixed(0)}%。仕込みを約${Math.round((1-r.idx)*100)}%減。`;
+  return '';
+}
+function advice(r){
+  const ST=A[scope].st,R=A.wx.res,a=[];
+  if(r.wet) a.push(`<b>雨</b>：${ITEM()}を控えめに。前年の雨の日は荒利 ${(ST.wet.gp*100).toFixed(0)}%、廃棄 ${ST.wet.wy>=0?'+':''}${(ST.wet.wy*100).toFixed(0)}%`);
+  if(r.idx<=0.88) a.push(`仕込み全体を約${Math.round((1-r.idx)*100)}%減、夕方以降の追加調理なし`);
+  else if(r.idx>=1.08) a.push(`平日より約${Math.round((r.idx-1)*100)}%多く売れる日。ピーク前に補充して売り切れを防ぐ`);
+  if(r.typ!=='平日'){const cl=catLines(r.typ,R).filter(x=>r.idx>=0.95||x.includes('-'));if(cl.length) a.push(`カテゴリー別：${cl.join('・')}（前年${r.typ==='土'?'土曜':'日祝'}）`);}
+  if(A.ff){ if(r.tmax!=null&&r.tmax>=26) a.push(`アイスコーヒーのカップ・氷を多めに（アイス比率 約70%）`);
+    else if(r.tmax!=null&&r.tmax<22) a.push(`ホット飲料・ホットFFを前出し`);}
+  if(r.hol==='ハロウィン') a.push('週末と重なる。イベント需要で売れる店は早めに増産');
+  if(r.tmax==null) a.push('<span style="color:var(--ink-3)">天気は未確定。前日の予報で見直す</span>');
+  if(!a.length) a.push('通常どおり');
+  return a.join('。')+'。';
+}
+let wxCharts=[];
+function drawWx(){
+  wxCharts.forEach(c=>c.destroy());wxCharts=[];
+  const R=A.wx.res,W=A.wx.W,C=A.cats;
+  wxCharts.push(new Chart(cFx,{type:'bar',data:{labels:C,datasets:[
+    {label:'土曜',data:C.map(c=>R[c].qty.sat*100),backgroundColor:css('--f-sat'),borderRadius:2},
+    {label:'日曜・祝日',data:C.map(c=>R[c].qty.sun*100),backgroundColor:css('--f-sun'),borderRadius:2},
+    {label:'雨の日',data:C.map(c=>R[c].qty.wet*100),backgroundColor:css('--f-rain'),borderRadius:2}]},
+    options:{indexAxis:'y',scales:{x:{ticks:{callback:v=>(v>0?'+':'')+v+'%'},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},y:{grid:{display:false}}},
+      plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${x.raw>=0?'+':''}${x.raw.toFixed(1)}%`}}}}}));
+  const ff=A.ff;
+  const pts=W.d.map((d,i)=>({x:W.tmax[i],y:ff?W.ice[i]*100:W.tq[i],d,wet:W.wet[i],sun:W.type[i]==='日祝'}));
+  const ds=ff?[{label:'晴れ・くもり',data:pts.filter(p=>!p.wet)},{label:'雨',data:pts.filter(p=>p.wet),tri:1}]
+             :[{label:'平日・土曜',data:pts.filter(p=>!p.sun)},{label:'日曜・祝日',data:pts.filter(p=>p.sun),tri:1}];
+  wxCharts.push(new Chart(cIce,{type:'scatter',data:{datasets:ds.map(d=>({label:d.label,data:d.data,backgroundColor:css(d.tri?(ff?'--f-rain':'--f-sun'):'--ty'),pointStyle:d.tri?'triangle':'circle',pointRadius:d.tri?6:5,pointBorderColor:css('--panel'),pointBorderWidth:1.5}))},
+    options:{plugins:{legend:{display:true,position:'top',align:'end',labels:{boxWidth:8,boxHeight:8,usePointStyle:true,color:css('--ink-2')}},tooltip:{callbacks:{label:x=>` 10/${x.raw.d}  最高${x.raw.x}℃  ${ff?'アイス '+x.raw.y.toFixed(0)+'%':'販売数 '+n0(x.raw.y)+'個'}`}}},
+      scales:{x:{title:{display:true,text:'最高気温（℃）',color:css('--ink-2')},grid:{color:css('--rule')},border:{display:false}},y:{min:0,max:ff?100:undefined,title:{display:true,text:ff?'アイス比率':'販売数（個/日）',color:css('--ink-2')},ticks:{callback:v=>ff?v+'%':n0(v)},grid:{color:css('--rule')},border:{display:false}}}}}));
+}
+
+function base(){
+  Object.assign(Chart.defaults,{maintainAspectRatio:false,color:css('--ink-2'),borderColor:css('--rule')});
+  Chart.defaults.font.family=css('--f-num')+','+css('--f-ui');Chart.defaults.font.size=11;
+  Chart.defaults.plugins.legend.display=false;
+  Object.assign(Chart.defaults.plugins.tooltip,{backgroundColor:css('--band'),titleColor:'#fff',bodyColor:'#e9f0f5',padding:10,cornerRadius:3,boxPadding:4});
+  Chart.defaults.animation.duration=matchMedia('(prefers-reduced-motion: reduce)').matches?0:500;
+}
+const grid=()=>({color:css('--rule')});
+function pie(id,obj,keys,lg){
+  const vals=keys.map(k=>obj[k]||0),tot=vals.reduce((a,b)=>a+b,0)||1;
+  document.getElementById(lg).innerHTML=keys.map((k,i)=>`<span><i style="background:var(${CC[k]})"></i>${k} <b class="num">${(vals[i]/tot*100).toFixed(0)}%</b></span>`).join('');
+  return new Chart(document.getElementById(id),{type:'doughnut',data:{labels:keys,datasets:[{data:vals,backgroundColor:keys.map(k=>css(CC[k])),borderColor:css('--panel'),borderWidth:2}]},
+    options:{cutout:'62%',plugins:{tooltip:{callbacks:{label:x=>` ${x.label}  ${yen(x.raw)}（${(x.raw/tot*100).toFixed(1)}%）`}}}},
+    plugins:[{id:'c',afterDraw(ch){const{ctx,chartArea:a}=ch;ctx.save();ctx.textAlign='center';ctx.fillStyle=css('--ink-3');ctx.font='11px '+css('--f-ui');ctx.fillText('合計',(a.left+a.right)/2,(a.top+a.bottom)/2-8);ctx.fillStyle=css('--ink');ctx.font='600 15px '+css('--f-num');ctx.fillText(yen(tot),(a.left+a.right)/2,(a.top+a.bottom)/2+12);ctx.restore()}}]});
+}
+function draw(){
+  charts.forEach(c=>c.destroy());charts=[];base();drawWx();
+  const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
+  const lab=S.daily25.荒利益高.map((_,i)=>(i+1)+'日');
+  document.getElementById('dTitle').textContent='日別 '+ML();document.getElementById('cTitle').textContent=ML().replace('（売上）','')+'（10/1〜4）';document.getElementById('mTitle').textContent=ML().replace('（売上）','')+' 構成比';
+  charts.push(new Chart(cDaily,{type:'line',data:{labels:lab,datasets:[
+    {label:'2025',data:S.daily25[MK],borderColor:ly,borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25},
+    {label:'2026',data:lab.map((_,i)=>S.daily26[MK][i]??null),borderColor:ty,backgroundColor:ty,borderWidth:2.5,pointRadius:4,pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.25}]},
+    options:{interaction:{mode:'index',intersect:false},scales:{y:{grace:'10%',ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{maxTicksLimit:11}}},
+      plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>` ${x.dataset.label}年  ${yen(x.raw)}`}}}}}));
+  charts.push(new Chart(cFcst,{type:'bar',data:{labels:['2025年10月 実績','2026年10月 見込み'],datasets:[{data:[S.kpi.m25[MK],S._fc[MK]],backgroundColor:[ly,ty],borderRadius:3,maxBarThickness:80}]},
+    options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>' '+yen(x.raw)}}}}}));
+  charts.push(new Chart(cCat,{type:'bar',data:{labels:CATS,datasets:[
+    {label:'2025',data:CATS.map(c=>S.cat.p25[c][MK]),backgroundColor:ly,borderRadius:2},
+    {label:'2026',data:CATS.map(c=>S.cat.p26[c][MK]),backgroundColor:ty,borderRadius:2}]},
+    options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{font:{size:10.5}}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}年  ${yen(x.raw)}`}}}}}));
+  const gm={};CATS.forEach(c=>gm[c]=S.cat[mixK][c][MK]);
+  charts.push(pie('cMix',gm,CATS,'lgMix'));
+  charts.push(pie('cWaste',S.wcat[wasteK],WC,'lgWaste'));
+  charts.push(new Chart(cWDaily,{type:'bar',data:{labels:['1日','2日','3日','4日'],datasets:[
+    {label:'2025',data:S.daily25.廃棄高.slice(0,4),backgroundColor:ly,borderRadius:2},
+    {label:'2026',data:S.daily26.廃棄高,backgroundColor:bad,borderRadius:2}]},
+    options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}年  ${yen(x.raw)}`}}}}}));
+  if(isAll()) charts.push(new Chart(cWStore,{type:'bar',data:{labels:STORES,datasets:[
+    {label:'2025',data:STORES.map(s=>wrOf(A.stores[s].nc25)),backgroundColor:ly,borderRadius:2},
+    {label:'2026',data:STORES.map(s=>wrOf(A.stores[s].nc26)),backgroundColor:bad,borderRadius:2}]},
+    options:{indexAxis:'y',onClick:(e,el)=>{if(el.length)go(STORES[el[0].index])},onHover:(e,el)=>e.native.target.style.cursor=el.length?'pointer':'default',
+      scales:{x:{beginAtZero:true,ticks:{callback:v=>v+'%'},grid:grid(),border:{display:false}},y:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}年  ${x.raw.toFixed(1)}%`,footer:()=>'クリックで店舗詳細'}}}}}));
+  const P=S.prod,mx=Math.max(...P.map(r=>r.gp),1),ymax=Math.min(60,Math.ceil(Math.max(...P.map(r=>r.wr*100),20)/5)*5+5);
+  charts.push(new Chart(cScatter,{type:'bubble',data:{datasets:['increase','keep','watch','reduce'].map(g=>({label:VL[g][1],data:P.filter(r=>r.v===g).map(r=>({x:r.per,y:r.wr*100,r:4+Math.sqrt(Math.max(r.gp,0)/mx)*17,n:r.name,gp:r.gp,wy:r.wy})),
+    backgroundColor:css(VL[g][2])+'b8',borderColor:css('--panel'),borderWidth:1.5}))},
+    options:{scales:{x:{min:0,title:{display:true,text:isAll()?'1店1日あたり販売数（個）':'1日あたり販売数（個）',color:css('--ink-2')},grid:grid(),border:{display:false}},
+      y:{min:-2,max:ymax,title:{display:true,text:'廃棄率',color:css('--ink-2')},ticks:{callback:v=>v<0?'':v+'%'},grid:{color:c=>c.tick.value===15?bad:css('--rule')},border:{display:false}}},
+      plugins:{tooltip:{callbacks:{title:x=>x[0].raw.n,label:x=>[` ${x.raw.x.toFixed(1)}個/日　廃棄率 ${x.raw.y.toFixed(1)}%`,` 荒利益高 ${yen(x.raw.gp)}　廃棄高 ${yen(x.raw.wy)}`]}}}}}));
+  const L=S.lesson;
+  charts.push(new Chart(cLesson,{type:'bar',data:{labels:L.map(r=>short(r.name).slice(0,20)),datasets:[
+    {label:'廃棄高',data:L.map(r=>r.wy),backgroundColor:bad,borderRadius:2},
+    {label:'荒利益高',data:L.map(r=>r.gp),backgroundColor:ty,borderRadius:2}]},
+    options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},y:{grid:{display:false}}},
+      plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`,afterBody:x=>`廃棄率 ${(L[x[0].dataIndex].wr*100).toFixed(1)}%`}}}}}));
+}
+function seg(id,set){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));set(b.dataset.k);draw()})}
+seg('segMix',k=>mixK=k);seg('segMet',k=>MK=k);seg('segWaste',k=>wasteK=k);
+
+// ===== コピー機能（PowerPoint・Excel貼り付け用） =====
+const ICON='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';
+function toast(msg){const d=document.createElement('div');d.className='toast';d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2600);}
+function overlay(node,msg){const o=document.createElement('div');o.className='ov';const i=document.createElement('div');i.className='ov-in';const p=document.createElement('p');p.textContent=msg;const b=document.createElement('button');b.className='cp';b.textContent='閉じる';b.style.alignSelf='flex-end';b.onclick=()=>o.remove();i.append(b,p,node);o.appendChild(i);o.onclick=e=>{if(e.target===o)o.remove()};document.body.appendChild(o);}
+function cleanTable(tbl){
+  const rows=[...tbl.querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>({h:td.tagName==='TH',t:td.innerText.replace(/\s*\n\s*/g,' ').trim(),r:getComputedStyle(td).textAlign})));
+  const thS='background:#f3f5f8;color:#465467;font-weight:bold;font-size:10pt;border:1px solid #cdd5df;padding:4px 8px;';
+  const tdS='color:#0e1a2b;font-size:10.5pt;border:1px solid #e2e7ee;padding:4px 8px;';
+  const html='<table style="border-collapse:collapse;font-family:Meiryo,Yu Gothic,sans-serif">'+rows.map(r=>'<tr>'+r.map(c=>{const col=/^-|^-¥/.test(c.t)||/^-\d/.test(c.t)?'color:#b0302a;':(/^\+\d/.test(c.t)?'color:#16704a;':'');return `<${c.h?'th':'td'} style="${c.h?thS:tdS}${col}text-align:${c.r==='left'?'left':c.r==='center'?'center':'right'}">${c.t.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</${c.h?'th':'td'}>`}).join('')+'</tr>').join('')+'</table>';
+  const tsv=rows.map(r=>r.map(c=>c.t).join('\t')).join('\n');
+  return {html,tsv};
+}
+async function copyTable(tbl){
+  const {html,tsv}=cleanTable(tbl);
+  try{await navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([tsv],{type:'text/plain'})})]);toast('表をコピーしました。PowerPoint・Excelに貼り付けできます');}
+  catch(e){try{await navigator.clipboard.writeText(tsv);toast('表をコピーしました（テキスト形式）。Excelに貼ると表になります');}
+    catch(e2){const ta=document.createElement('textarea');ta.value=tsv;ta.style.cssText='width:100%;height:240px;font-size:12px';overlay(ta,'自動コピーできませんでした。下の内容を選択してコピーしてください（Ctrl+A → Ctrl+C）。');ta.select();}}
+}
+function chartImage(panel){
+  const cv=panel.querySelector('canvas');const title=(panel.querySelector('h3')||{}).innerText||'';
+  const leg=[...panel.querySelectorAll('.legend span')].map(s=>({c:(s.querySelector('i')&&getComputedStyle(s.querySelector('i')).backgroundColor)||null,t:s.innerText.trim()}));
+  const sc=2,W=cv.width/(window.devicePixelRatio||1)*sc,Hc=cv.height/(window.devicePixelRatio||1)*sc,pad=24*sc,th=title?34*sc:0,lh=leg.length?26*sc:0;
+  const o=document.createElement('canvas');o.width=W+pad*2;o.height=Hc+pad*2+th+lh;const x=o.getContext('2d');
+  x.fillStyle=css('--panel')||'#fff';x.fillRect(0,0,o.width,o.height);
+  x.fillStyle=css('--ink');x.font=`bold ${15*sc}px ${css('--f-ui')}`;x.textBaseline='top';if(title)x.fillText(title+'（'+(scope==='ALL'?'全店':scope)+'・'+DEPT+'）',pad,pad);
+  let lx=pad;x.font=`${12*sc}px ${css('--f-ui')}`;leg.forEach(l=>{if(l.c){x.fillStyle=l.c;x.fillRect(lx,pad+th+3*sc,10*sc,10*sc);lx+=14*sc;}x.fillStyle=css('--ink-2');x.fillText(l.t,lx,pad+th);lx+=x.measureText(l.t).width+16*sc;});
+  x.drawImage(cv,pad,pad+th+lh,W,Hc);return o;
+}
+async function copyChart(panel){
+  const o=chartImage(panel);
+  try{const blob=await new Promise(r=>o.toBlob(r,'image/png'));await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('グラフを画像でコピーしました。PowerPointに貼り付けできます');}
+  catch(e){const img=new Image();img.src=o.toDataURL('image/png');overlay(img,'自動コピーできませんでした。画像を右クリック（スマホは長押し）→「画像をコピー」でコピーしてください。');}
+}
+function kpiTable(){
+  const S=A[scope],k25=S.kpi.p25,k26=S.kpi.p26,t=document.createElement('table');
+  const rows=[['指標','2026年10/1〜4','2025年10/1〜4','前年比'],['販売高（売上）',yen(k26.販売高),yen(k25.販売高),chipTxt(pct(k26.販売高,k25.販売高))],['荒利益高',yen(k26.荒利益高),yen(k25.荒利益高),chipTxt(pct(k26.荒利益高,k25.荒利益高))],['販売数',n0(k26.販売数)+'個',n0(k25.販売数)+'個',chipTxt(pct(k26.販売数,k25.販売数))],['廃棄高',yen(k26.廃棄高),yen(k25.廃棄高),chipTxt(pct(k26.廃棄高,k25.廃棄高))],['廃棄率',wrOf(S.nc.p26).toFixed(1)+'%',wrOf(S.nc.p25).toFixed(1)+'%',(wrOf(S.nc.p26)-wrOf(S.nc.p25)>=0?'+':'')+(wrOf(S.nc.p26)-wrOf(S.nc.p25)).toFixed(1)+'pt']];
+  t.innerHTML=rows.map((r,i)=>'<tr>'+r.map((c,j)=>i===0?`<th style="text-align:${j?'right':'left'}">${c}</th>`:`<td style="text-align:${j?'right':'left'}">${c}</td>`).join('')+'</tr>').join('');
+  t.style.position='absolute';t.style.left='-9999px';document.body.appendChild(t);return t;
+}
+const chipTxt=d=>(d>=0?'+':'')+d.toFixed(1)+'%';
+function addCopyButtons(){
+  document.querySelectorAll('.panel').forEach(p=>{if(!p.querySelector('canvas')||p.querySelector('.cp'))return;const ph=p.querySelector('.ph');if(!ph)return;
+    const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'グラフをコピー';b.title='画像としてコピー（PowerPoint用）';b.onclick=()=>copyChart(p);ph.appendChild(b);});
+  document.querySelectorAll('.tw').forEach(w=>{if(w.previousElementSibling&&w.previousElementSibling.classList.contains('tbar'))return;
+    const bar=document.createElement('div');bar.className='tbar';const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'表をコピー';b.title='表としてコピー（PowerPoint・Excel用）';b.onclick=()=>copyTable(w.querySelector('table'));bar.appendChild(b);w.parentNode.insertBefore(bar,w);});
+  const kh=document.querySelector('#scopeTitle').parentNode;if(!kh.querySelector('.cp')){const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'KPIを表でコピー';b.onclick=async()=>{const t=kpiTable();await copyTable(t);t.remove();};kh.querySelector('p').before(b);b.style.marginLeft='auto';kh.querySelector('p').style.marginLeft='0';}
+  [['sumFacts','現状'],['wxFacts','わかったこと']].forEach(([id,lbl])=>{const ul=document.getElementById(id),h=ul.previousElementSibling;if(h.querySelector('.cp'))return;const b=document.createElement('button');b.className='cp';b.style.marginLeft='10px';b.innerHTML=ICON+'文章をコピー';b.onclick=async()=>{const txt=[...ul.parentNode.parentNode.querySelectorAll('li')].map(l=>'・'+l.innerText.replace(/\s+/g,' ').trim()).join('\n');try{await navigator.clipboard.writeText(txt);toast('文章をコピーしました');}catch(e){const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='width:100%;height:240px';overlay(ta,'下の内容を選択してコピーしてください。');ta.select();}};h.appendChild(b);});
+}
+
+document.querySelectorAll('#dept button').forEach(b=>b.onclick=()=>setDept(b.dataset.d));
+setDept('FF');
+addCopyButtons();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
+new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+</script>
