@@ -495,7 +495,7 @@ function pie(id,obj,keys,lg){
   document.getElementById(lg).innerHTML=keys.map((k,i)=>`<span><i style="background:var(${CC[k]})"></i>${k} <b class="num">${(vals[i]/tot*100).toFixed(0)}%</b></span>`).join('');
   return new Chart(document.getElementById(id),{type:'doughnut',data:{labels:keys,datasets:[{data:vals,backgroundColor:keys.map(k=>css(CC[k])),borderColor:css('--panel'),borderWidth:2}]},
     options:{cutout:'62%',plugins:{tooltip:{callbacks:{label:x=>` ${x.label}  ${yen(x.raw)}（${(x.raw/tot*100).toFixed(1)}%）`}}}},
-    plugins:[{id:'c',afterDraw(ch){const{ctx,chartArea:a}=ch;ctx.save();ctx.textAlign='center';ctx.fillStyle=css('--ink-3');ctx.font='11px '+css('--f-ui');ctx.fillText('合計',(a.left+a.right)/2,(a.top+a.bottom)/2-8);ctx.fillStyle=css('--ink');ctx.font='600 15px '+css('--f-num');ctx.fillText(yen(tot),(a.left+a.right)/2,(a.top+a.bottom)/2+12);ctx.restore()}}]});
+    plugins:[{id:'c',afterDraw(ch){const{ctx,chartArea:a}=ch;ctx.save();ctx.textAlign='center';ctx.fillStyle=css('--ink-3');const fs=Math.min(44,Math.max(15,Math.min(a.right-a.left,a.bottom-a.top)*0.075));ctx.font=Math.round(fs*0.7)+'px '+css('--f-ui');ctx.fillText('合計',(a.left+a.right)/2,(a.top+a.bottom)/2-fs*0.55);ctx.fillStyle=css('--ink');ctx.font='600 '+Math.round(fs)+'px '+css('--f-num');ctx.fillText(yen(tot),(a.left+a.right)/2,(a.top+a.bottom)/2+fs*0.75);ctx.restore()}}]});
 }
 function draw(){
   charts.forEach(c=>c.destroy());charts=[];base();drawWx();
@@ -559,20 +559,37 @@ async function copyTable(tbl){
   catch(e){try{await navigator.clipboard.writeText(tsv);toast('表をコピーしました（テキスト形式）。Excelに貼ると表になります');}
     catch(e2){const ta=document.createElement('textarea');ta.value=tsv;ta.style.cssText='width:100%;height:240px;font-size:12px';overlay(ta,'自動コピーできませんでした。下の内容を選択してコピーしてください（Ctrl+A → Ctrl+C）。');ta.select();}}
 }
+function hiOpts(o,SC){
+  const sc={};Object.entries(o.scales||{}).forEach(([k,v])=>{sc[k]=Object.assign({},v,{ticks:Object.assign({},v.ticks||{},{font:{size:16}}),title:v.title?Object.assign({},v.title,{font:{size:16}}):v.title});});
+  return Object.assign({},o,{scales:sc,responsive:true,maintainAspectRatio:false,animation:false,devicePixelRatio:SC});
+}
 function chartImage(panel){
-  const cv=panel.querySelector('canvas');const title=(panel.querySelector('h3')||{}).innerText||'';
+  // 画面のグラフを高解像度（横1200px×3倍）で描き直してから画像にする
+  const cv=panel.querySelector('canvas'),src=Chart.getChart(cv);const title=(panel.querySelector('h3')||{}).innerText||'';
   const leg=[...panel.querySelectorAll('.legend span')].map(s=>({c:(s.querySelector('i')&&getComputedStyle(s.querySelector('i')).backgroundColor)||null,t:s.innerText.trim()}));
-  const sc=2,W=cv.width/(window.devicePixelRatio||1)*sc,Hc=cv.height/(window.devicePixelRatio||1)*sc,pad=24*sc,th=title?34*sc:0,lh=leg.length?26*sc:0;
-  const o=document.createElement('canvas');o.width=W+pad*2;o.height=Hc+pad*2+th+lh;const x=o.getContext('2d');
+  const SC=3,box=cv.parentNode.getBoundingClientRect(),Wc=1200,Hc=Math.round(Math.min(760,Math.max(440,Wc*box.height/Math.max(box.width,1))));
+  const wrap=document.createElement('div');wrap.style.cssText=`position:fixed;left:-20000px;top:0;width:${Wc}px;height:${Hc}px`;
+  const c=document.createElement('canvas');wrap.appendChild(c);document.body.appendChild(wrap);
+  const prev=Chart.defaults.font.size;Chart.defaults.font.size=16;
+  const hi=new Chart(c,{type:src.config.type,data:JSON.parse(JSON.stringify(src.config.data)),options:hiOpts(src.config.options,SC),plugins:src.config.plugins||[]});
+  Chart.defaults.font.size=prev;
+  const pad=28*SC,th=title?40*SC:0,lh=leg.length?30*SC:0;
+  const o=document.createElement('canvas');o.width=Wc*SC+pad*2;o.height=Hc*SC+pad*2+th+lh;const x=o.getContext('2d');
   x.fillStyle=css('--panel')||'#fff';x.fillRect(0,0,o.width,o.height);
-  x.fillStyle=css('--ink');x.font=`bold ${15*sc}px ${css('--f-ui')}`;x.textBaseline='top';if(title)x.fillText(title+'（'+(scope==='ALL'?'全店':scope)+'・'+DEPT+'）',pad,pad);
-  let lx=pad;x.font=`${12*sc}px ${css('--f-ui')}`;leg.forEach(l=>{if(l.c){x.fillStyle=l.c;x.fillRect(lx,pad+th+3*sc,10*sc,10*sc);lx+=14*sc;}x.fillStyle=css('--ink-2');x.fillText(l.t,lx,pad+th);lx+=x.measureText(l.t).width+16*sc;});
-  x.drawImage(cv,pad,pad+th+lh,W,Hc);return o;
+  x.textBaseline='top';x.fillStyle=css('--ink');x.font=`bold ${22*SC}px ${css('--f-ui')}`;
+  if(title)x.fillText(title+'（'+(scope==='ALL'?'全店':scope)+'・'+DEPT+'）',pad,pad);
+  let lx=pad;x.font=`${15*SC}px ${css('--f-ui')}`;
+  leg.forEach(l=>{if(l.c){x.fillStyle=l.c;x.fillRect(lx,pad+th+3*SC,13*SC,13*SC);lx+=19*SC;}x.fillStyle=css('--ink-2');x.fillText(l.t,lx,pad+th);lx+=x.measureText(l.t).width+22*SC;});
+  x.drawImage(c,0,0,c.width,c.height,pad,pad+th+lh,Wc*SC,Hc*SC);
+  hi.destroy();wrap.remove();
+  return o;
 }
 async function copyChart(panel){
-  const o=chartImage(panel);
-  try{const blob=await new Promise(r=>o.toBlob(r,'image/png'));await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('グラフを画像でコピーしました。PowerPointに貼り付けできます');}
-  catch(e){const img=new Image();img.src=o.toDataURL('image/png');overlay(img,'自動コピーできませんでした。画像を右クリック（スマホは長押し）→「画像をコピー」でコピーしてください。');}
+  let o;
+  // ClipboardItemにはPromiseを渡す（Safariでもクリック操作として扱われるように）
+  const blobP=new Promise((res,rej)=>{try{o=chartImage(panel);o.toBlob(b=>b?res(b):rej(new Error('blob')),'image/png');}catch(e){rej(e)}});
+  try{await navigator.clipboard.write([new ClipboardItem({'image/png':blobP})]);toast('グラフを高画質の画像でコピーしました。PowerPointに貼り付けできます');}
+  catch(e){if(!o)o=chartImage(panel);const img=new Image();img.src=o.toDataURL('image/png');img.style.width='100%';overlay(img,'自動コピーできませんでした。画像を右クリック（スマホは長押し）→「画像をコピー」でコピーしてください。');}
 }
 function kpiTable(){
   const S=A[scope],k25=S.kpi.p25,k26=S.kpi.p26,t=document.createElement('table');
