@@ -42,6 +42,35 @@ def fx(series):
     b,*_=np.linalg.lstsq(X.values.astype(float),np.log(np.clip(series.values,0,None)+1),rcond=None)
     return dict(sat=F(np.exp(b[1])-1),sun=F(np.exp(b[2])-1),wet=F(np.exp(b[3])-1),t=F(np.exp(b[4])-1))
 
+HOL26={12}
+def is_off26(d): return datetime.date(2026,10,d).weekday()>=5 or d in HOL26
+def weekly(x,ns,cats):
+    # 今年のデータを月曜始まりの週に分け、1店1日あたり（PSA/D）で比べる
+    y=x[x.year==2026]
+    days=sorted(int(v) for v in y.d.unique())
+    wkof=lambda d:datetime.date(2026,10,d).isocalendar()[1]
+    weeks=[]
+    for w in sorted({wkof(d) for d in days}):
+        ds=[d for d in days if wkof(d)==w]
+        mon=datetime.date.fromisocalendar(2026,w,1)
+        def block(sel):
+            sd=[d for d in ds if sel(d)]
+            z=y[y.d.isin(sd)]
+            def psa(zz,n):
+                t=zz[m].sum(); dd=max(1,n)*ns
+                o={k:F(t[k]/dd) for k in m}; o['wr']=F(t['廃棄数']/max(1,t['販売数']+t['廃棄数'])); return o
+            out={'n':len(sd),'tot':psa(z,len(sd))}
+            out['cat']={c:psa(z[z.cat==c],len(sd)) for c in cats}
+            return out
+        weeks.append(dict(label=f"{mon.month}/{mon.day}週",start=ds[0],end=ds[-1],
+            first='月火水木金土日'[datetime.date(2026,10,ds[0]).weekday()],last='月火水木金土日'[datetime.date(2026,10,ds[-1]).weekday()],
+            all=block(lambda d:True),wk=block(lambda d:not is_off26(d)),we=block(is_off26)))
+    # 曜日別 PSA/D（販売高・荒利益高・廃棄高）
+    byd={}
+    for d in days:
+        t=y[y.d==d][m].sum(); byd[d]={k:F(t[k]/ns) for k in m}
+    return dict(weeks=weeks,byday=byd)
+
 def dept(df,cats,excl,colors,ff):
     wdf=df[~df.cat.isin(excl)]
     def bycat(x):
@@ -107,6 +136,7 @@ def dept(df,cats,excl,colors,ff):
             sig='risk' if wet or idx<=0.88 else 'chance' if idx>=1.08 else 'normal'
             cal.append(dict(d=d,wd=wd,typ=typ,hol=HOL.get(d) or EV.get(d),wx=f[1] if f else None,tmax=f[2] if f else None,pop=f[3] if f else None,wet=wet,idx=F(idx),exp=F(ST[typ]['gp']*(1+ST['wet']['gp'] if wet else 1)*yoy),exps=F(ST[typ]['amt']*(1+ST['wet']['amt'] if wet else 1)*yoys),sig=sig))
         o['cal']=cal
+        o['wk']=weekly(x,1 if single else len(STORES),cats)
         return o
     out={'cats':cats,'excl':excl,'colors':colors,'ff':ff,'ALL':scope(df,False)}
     for s in STORES: out[s]=scope(df[df.store==s],True)

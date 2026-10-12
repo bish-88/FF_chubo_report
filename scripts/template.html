@@ -259,6 +259,16 @@ tbody tr:hover td{background:var(--accent-soft)}
     </div>
   </section>
 
+  <section class="sec" id="weekly">
+    <div class="sh"><span class="lbl">WEEKLY</span><h2>先週比（1店1日あたり PSA/D）</h2><p id="wkSub"></p></div>
+    <div class="tw"><table id="tWk1" style="min-width:980px"></table></div>
+    <div class="g g-73">
+      <div style="min-width:0;display:flex;flex-direction:column;gap:12px"><div class="tw"><table id="tWk2" style="min-width:640px"></table></div></div>
+      <div class="panel"><div class="ph"><h3>曜日別 販売高（1店あたり）</h3><div class="legend"><span><i style="background:var(--ly)"></i>先週</span><span><i style="background:var(--ty)"></i>今週</span></div></div>
+        <div class="cv sm"><canvas id="cWk" role="img" aria-label="曜日別の販売高 先週と今週"></canvas></div><p class="note" id="wkNote"></p></div>
+    </div>
+  </section>
+
   <section class="sec">
     <div class="sh"><span class="lbl">CATEGORY</span><h2>カテゴリー別</h2><p>グラフは上の切り替え（販売高／荒利益高）に連動</p></div>
     <div class="g g-3">
@@ -454,6 +464,7 @@ function render(){
   const over=S.lesson.filter(r=>r.wy>r.gp).map(r=>short(r.name));
   document.getElementById('lessonNote').innerHTML=over.length?`廃棄高が荒利益高を上回った単品：<b>${over.join('、')}</b>。売れるほど利益が減る状態だったため、今年は少量スタートにします。`:`前年10月、上位単品はすべて荒利益高が廃棄高を上回っていました。廃棄の大きい単品から、ピーク後の追加調理を見直します。`;
   renderWx();
+  renderWk();
   labelTables();
   draw();
 }
@@ -464,6 +475,31 @@ function catLines(typ,R){
   const k=typ==='土'?'sat':'sun',out=[];
   A.cats.forEach(c=>{const v=R[c].qty[k];if(Math.abs(v)>=0.08) out.push(`${c} ${v>0?'+':''}${Math.round(v*100)}%`)});
   return out;
+}
+
+// ===== 先週比（PSA/D） =====
+const WDN=d=>'月火水木金土日'[(new Date(2026,9,d).getDay()+6)%7];
+function wkPair(){const W=A[scope].wk&&A[scope].wk.weeks;return W&&W.length>=2?[W[W.length-2],W[W.length-1]]:null;}
+function renderWk(){
+  const sec=document.getElementById('weekly'),pr=wkPair();sec.hidden=!pr;if(!pr)return;const [P,C]=pr;
+  const lbl=w=>`${w.label}（10/${w.start}${w.first}〜10/${w.end}${w.last}・${w.all.n}日）`;
+  document.getElementById('wkSub').textContent=`先週＝${lbl(P)}　今週＝${lbl(C)}　平日：先週${P.wk.n}日・今週${C.wk.n}日／土日祝：先週${P.we.n}日・今週${C.we.n}日`;
+  const fmt=(k,v)=>k==='wr'?(v*100).toFixed(1)+'%':k==='販売数'?v.toFixed(1)+'個':yen(v);
+  const dl=(k,a,b,inv)=>k==='wr'?ptchip((b-a)*100,true):(a?chip(pct(b,a),inv):'—');
+  const MET=[['販売高（売上）','販売高',false],['荒利益高','荒利益高',false],['販売数','販売数',false],['廃棄高','廃棄高',true],['廃棄率','wr',true]];
+  const G=[['all','全体'],['wk','平日'],['we','土日祝']];
+  document.getElementById('tWk1').innerHTML='<thead><tr><th class="l">指標（1店1日あたり）</th>'+G.map(([,n])=>`<th>${n} 先週</th><th>${n} 今週</th><th>先週比</th>`).join('')+'</tr></thead><tbody>'+
+    MET.map(([lb,k,inv])=>`<tr><td class="l"><b>${lb}</b></td>`+G.map(([g])=>{const a=P[g].tot[k],b=C[g].tot[k],ok=P[g].n&&C[g].n;return `<td class="num" style="color:var(--ink-2)">${P[g].n?fmt(k,a):'—'}</td><td class="num"><b>${C[g].n?fmt(k,b):'—'}</b></td><td>${ok?dl(k,a,b,inv):'—'}</td>`}).join('')+'</tr>').join('')+'</tbody>';
+  document.getElementById('tWk2').innerHTML='<thead><tr><th class="l">カテゴリー（全体）</th><th>売上 先週</th><th>売上 今週</th><th>先週比</th><th>荒利 今週</th><th>先週比</th><th>廃棄 先週</th><th>廃棄 今週</th></tr></thead><tbody>'+
+    CATS.map(c=>{const a=P.all.cat[c],b=C.all.cat[c];const up=b.廃棄高>a.廃棄高*1.2&&b.廃棄高-a.廃棄高>100;
+      return `<tr><td class="l"><b>${c}</b></td><td class="num" style="color:var(--ink-2)">${yen(a.販売高)}</td><td class="num"><b>${yen(b.販売高)}</b></td><td>${a.販売高?chip(pct(b.販売高,a.販売高)):'—'}</td><td class="num">${yen(b.荒利益高)}</td><td>${a.荒利益高>0&&b.荒利益高>0?chip(pct(b.荒利益高,a.荒利益高)):`<span style="color:var(--ink-3);font-size:11px">先週${yen(a.荒利益高)}</span>`}</td><td class="num" style="color:var(--ink-2)">${yen(a.廃棄高)}</td><td class="num" style="color:var(${up?'--bad':'--ink'})"><b>${yen(b.廃棄高)}</b></td></tr>`}).join('')+'</tbody>';
+  const f=(g,k)=>(P[g].n&&C[g].n&&P[g].tot[k])?pct(C[g].tot[k],P[g].tot[k]):null,sp=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
+  const sa=f('all','販売高'),sw=f('wk','販売高'),se=f('we','販売高'),wa=f('all','廃棄高'),wwe=f('we','廃棄高'),msg=[];
+  if(sa!=null&&sw!=null&&se!=null&&Math.abs(sa-sw)>=5) msg.push(`全体の売上は${sp(sa)}ですが、平日は${sp(sw)}・土日祝は${sp(se)}。曜日の構成の違いが大きいので、平日・土日祝で判断します。`);
+  else if(sw!=null&&se!=null) msg.push(`売上は平日${sp(sw)}、土日祝${sp(se)}。`);
+  if(wa!=null&&Math.abs(wa)>=15) msg.push(`1店1日あたりの廃棄高は ${yen(P.all.tot.廃棄高)} → <b>${yen(C.all.tot.廃棄高)}</b>（${sp(wa)}）。${wa>0?'作りすぎが増えています。':'改善しています。'}`);
+  if(wwe!=null&&wwe>=30&&se!=null&&wwe-se>=30) msg.push(`土日祝は売上${sp(se)}に対して廃棄${sp(wwe)}。土日祝の仕込みが多すぎます。`);
+  document.getElementById('wkNote').innerHTML=msg.join('<br>')||'大きな変化はありません。';
 }
 function renderWx(){
   const S=A[scope],X=A.wx,ST=S.st,R=X.res,cal=S.cal,FFm=A.ff;
@@ -545,6 +581,9 @@ function pie(id,obj,keys,lg){
 }
 function draw(){
   charts.forEach(c=>c.destroy());charts=[];base();drawWx();
+  {const pr=wkPair();if(pr){const [P,C]=pr,S0=A[scope].wk.byday,rng=w=>{const a=[];for(let d=w.start;d<=w.end;d++)a.push(d);return a},pd=rng(P),cd=rng(C),common=pd.map(WDN).filter(w=>cd.map(WDN).includes(w)),val=(ds,w)=>S0[ds.find(d=>WDN(d)===w)].販売高;
+   charts.push(new Chart(cWk,{type:'bar',data:{labels:common,datasets:[{label:'先週',data:common.map(w=>val(pd,w)),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:common.map(w=>val(cd,w)),backgroundColor:css('--ty'),borderRadius:2}]},
+     options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`}}}}}));}}
   const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
   const lab=S.daily25.荒利益高.map((_,i)=>(i+1)+'日');
   document.getElementById('dTitle').textContent='日別 '+ML();document.getElementById('cTitle').textContent=ML().replace('（売上）','')+'（'+PER()+'）';document.getElementById('mTitle').textContent=ML().replace('（売上）','')+' 構成比';
