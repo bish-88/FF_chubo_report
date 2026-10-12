@@ -12,11 +12,15 @@ def read(files,catfn):
     for c in m: df[c]=pd.to_numeric(df[c].str.replace(',',''),errors='coerce').fillna(0)
     df['date']=pd.to_datetime(df['年月日']); df['year']=df.date.dt.year; df['d']=df.date.dt.day
     df['cat']=catfn(df); df['store']=df.店舗名.map(SN)
-    return df[(df[m]!=0).any(axis=1)&df.cat.notna()]
-catmap={'販売）からあげクン他　ホット':'からあげクン','ホットＦＦ':'ホットFF','常温ＦＦ':'常温FF','販売）サーマル　常温':'サーマル常温','販売）マチカフェ':'マチカフェ'}
+    df=df[(df[m]!=0).any(axis=1)&df.cat.notna()]
+    return df.drop_duplicates(['年月日','店舗名','SUBCLASS名','商品名']+m)
+catmap={'販売）からあげクン他　ホット':'からあげクン','ホットＦＦ':'ホットFF','常温ＦＦ':'常温FF','販売）サーマル　常温':'サーマル常温','販売）マチカフェ':'マチカフェ','中華まん　什器販売':'中華まん'}
 FF=read(sorted(glob.glob(os.path.join(ROOT,'data','FF','*.csv'))),lambda d:d.CLASS名.map(catmap))
 KI=read(sorted(glob.glob(os.path.join(ROOT,'data','厨房','*.csv'))),lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])))
 F=float
+# 今年のデータが何日まであるか（FF・厨房で共通の日数）
+N=int(min(FF[FF.year==2026].d.max(),KI[KI.year==2026].d.max()))
+def is_we(y,d): return datetime.date(y,10,d).weekday()>=5
 def tot(x): s=x[m].sum(); return {k:F(s[k]) for k in m}
 def clean(n): return ' '.join(n.replace('●','').replace('　',' ').split())
 AL={'常温　カリパン　ＫＹ':'常温　カリパン　Ｙ','常温　ジャイアントポークフランク　１本':'ＨＯＴ　ジャイアントポークフランク','常温　なんこつ入りつくね棒　１本':'ＨＯＴ　なんこつ入りつくね棒　１本'}
@@ -26,7 +30,12 @@ tmax=[28.5,28,25.8,22.4,25.1,29.7,31.2,31.8,28.2,25.9,28.5,25.7,29,29.8,27.6,26.
 W=pd.DataFrame({'d':range(1,32),'rain':rain,'tmax':tmax})
 W['wd']=[datetime.date(2025,10,d).weekday() for d in W.d]
 W['type']=np.where((W.wd==6)|(W.d==13),'日祝',np.where(W.wd==5,'土','平日')); W['wet']=W.rain>=2
-FC=[(4,'雨のち曇',21,60),(5,'曇時々雨',24,80),(6,'曇のち晴',26,30),(7,'晴',25,20),(8,'晴',26,20),(9,'晴時々曇',28,20),(10,'晴',28,10),(11,'晴',29,10),(12,'晴',29,10),(13,'晴のち曇',27,30),(14,'晴時々曇',26,40),(15,'晴時々曇',25,40),(16,'晴',26,40),(17,'晴のち曇',24,30)]
+# 今年の天気実績（気象庁 大阪 日別値）。日付を追加したら同じ形で足していく
+RAIN26={1:0,2:0,3:0,4:14.0,5:10.0,6:0,7:0,8:0,9:0,10:0,11:0}
+TMAX26={1:29.6,2:27.3,3:26.9,4:21.4,5:22.0,6:26.1,7:25.8,8:26.8,9:29.0,10:28.8,11:29.8}
+# 天気予報（吹田市、tenki.jp）。新しい予報に更新するときはここを書き換える
+FC_ISSUED='10/12 21時発表'
+FC=[(12,'晴',28,0),(13,'晴時々曇',28,30),(14,'雨のち晴',25,90),(15,'晴時々曇',25,20),(16,'曇時々晴',25,20),(17,'晴時々曇',27,20),(18,'晴',27,20),(19,'曇のち雨',26,80),(20,'雨のち晴',26,80),(21,'晴時々曇',24,40),(22,'曇時々晴',22,20),(23,'曇のち雨',22,70),(24,'曇時々雨',23,70),(25,'雨のち曇',22,60)]
 fc={r[0]:r for r in FC}; HOL={12:'スポーツの日'}; EV={31:'ハロウィン'}
 def fx(series):
     X=pd.DataFrame({'c':1,'sat':(W.type=='土')*1,'sun':(W.type=='日祝')*1,'wet':W.wet*1,'t':W.tmax-25})
@@ -38,17 +47,17 @@ def dept(df,cats,excl,colors,ff):
     def bycat(x):
         g=x.groupby('cat')[m].sum().reindex(cats).fillna(0); return {c:{k:F(g.loc[c,k]) for k in m} for c in cats}
     def scope(x,single):
-        y25=x[x.year==2025]; y26=x[x.year==2026]; sp25=y25[y25.d<=4]
+        y25=x[x.year==2025]; y26=x[x.year==2026]; sp25=y25[y25.d<=N]
         o={'kpi':{'p25':tot(sp25),'p26':tot(y26),'m25':tot(y25)}}
         o['daily25']={k:[F(v) for v in y25.groupby('d')[k].sum().reindex(range(1,32),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
-        o['daily26']={k:[F(v) for v in y26.groupby('d')[k].sum().reindex(range(1,5),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
+        o['daily26']={k:[F(v) for v in y26.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
         o['cat']={'p25':bycat(sp25),'p26':bycat(y26),'m25':bycat(y25)}
         nc=x[~x.cat.isin(excl)]
-        a=nc[nc.year==2026]; b=nc[(nc.year==2025)&(nc.d<=4)]; mm=nc[nc.year==2025]
+        a=nc[nc.year==2026]; b=nc[(nc.year==2025)&(nc.d<=N)]; mm=nc[nc.year==2025]
         p=a.groupby(['cat','商品名'])[m].sum()
         sd=a.groupby(['cat','商品名','store','d'])[['販売数','廃棄数']].sum(); sd=sd[sd.販売数+sd.廃棄数>0]
         p['sd']=sd.groupby(['cat','商品名']).size(); p['wsd']=sd.assign(z=sd.廃棄数>0).groupby(['cat','商品名']).z.sum()
-        sdr=sd.reset_index(); sdr['we']=sdr.d>=3
+        sdr=sd.reset_index(); sdr['we']=[is_we(2026,int(v)) for v in sdr.d]
         p['wwk']=sdr[~sdr.we].groupby(['cat','商品名']).廃棄数.mean(); p['wwe']=sdr[sdr.we].groupby(['cat','商品名']).廃棄数.mean()
         pb=b.groupby('商品名')[m].sum(); pm=mm.groupby('商品名')[m].sum()
         rows=[]; minsold=3 if single else 10
@@ -70,10 +79,10 @@ def dept(df,cats,excl,colors,ff):
         sp=a.groupby(['store','cat','商品名'])[['販売数','廃棄数','廃棄高','荒利益高']].sum()
         dd=a.groupby(['store','cat','商品名','d'])[['販売数','廃棄数']].sum(); dd=dd[dd.販売数+dd.廃棄数>0]
         sp['days']=dd.groupby(['store','cat','商品名']).size()
-        ddr=dd.reset_index(); ddr['we']=ddr.d>=3
+        ddr=dd.reset_index(); ddr['we']=[is_we(2026,int(v)) for v in ddr.d]
         sp['wwk']=ddr[~ddr.we].groupby(['store','cat','商品名']).廃棄数.mean(); sp['wwe']=ddr[ddr.we].groupby(['store','cat','商品名']).廃棄数.mean()
         sp['wmin']=ddr.groupby(['store','cat','商品名']).廃棄数.min(); sp['zd']=ddr.assign(z=ddr.廃棄数==0).groupby(['store','cat','商品名']).z.sum()
-        inc=sp[(sp.廃棄数==0)&(sp.days>=4)&(sp.販売数/sp.days>=(4 if ff else 2))]
+        inc=sp[(sp.廃棄数==0)&(sp.days>=max(4,round(N*0.8)))&(sp.販売数/sp.days>=(4 if ff else 2))]
         dec=sp[(sp.廃棄数/(sp.販売数+sp.廃棄数)>=0.2)&(sp.廃棄高>=(500 if single else 1000))]
         o['inc']=[dict(store=i[0],cat=i[1],name=clean(i[2]),per=F(r.販売数/r.days),gp=F(r.荒利益高)) for i,r in inc.sort_values('荒利益高',ascending=False).head(10).iterrows()]
         o['dec']=[dict(store=i[0],cat=i[1],name=clean(i[2]),per=F(r.販売数/r.days),wpd=F(r.廃棄数/r.days),wy=F(r.廃棄高),wr=F(r.廃棄数/(r.販売数+r.廃棄数)),wwk=F(r.wwk) if r.wwk==r.wwk else 0.0,wwe=F(r.wwe) if r.wwe==r.wwe else 0.0,zd=int(r.zd)) for i,r in dec.sort_values('廃棄高',ascending=False).head(10).iterrows()]
@@ -90,7 +99,7 @@ def dept(df,cats,excl,colors,ff):
         o['st']=ST
         yoy=o['kpi']['p26']['荒利益高']/o['kpi']['p25']['荒利益高']; yoys=o['kpi']['p26']['販売高']/o['kpi']['p25']['販売高']
         cal=[]
-        for d in range(5,32):
+        for d in range(N+1,32):
             dt=datetime.date(2026,10,d); wd='月火水木金土日'[dt.weekday()]
             typ='日祝' if dt.weekday()==6 or d in HOL else '土' if dt.weekday()==5 else '平日'
             f=fc.get(d); wet=bool(f and f[3]>=50)
@@ -101,8 +110,8 @@ def dept(df,cats,excl,colors,ff):
         return o
     out={'cats':cats,'excl':excl,'colors':colors,'ff':ff,'ALL':scope(df,False)}
     for s in STORES: out[s]=scope(df[df.store==s],True)
-    out['stores']={s:{'p26':tot(df[(df.store==s)&(df.year==2026)]),'p25':tot(df[(df.store==s)&(df.year==2025)&(df.d<=4)]),
-        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==2026)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==2025)&(wdf.d<=4)])} for s in STORES}
+    out['stores']={s:{'p26':tot(df[(df.store==s)&(df.year==2026)]),'p25':tot(df[(df.store==s)&(df.year==2025)&(df.d<=N)]),
+        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==2026)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==2025)&(wdf.d<=N)])} for s in STORES}
     y=df[df.year==2025]
     res={}
     for c in ['ALL']+cats:
@@ -111,19 +120,36 @@ def dept(df,cats,excl,colors,ff):
         res[c]={'qty':fx(dd.販売数),'gp':fx(dd.荒利益高)}
     tq=y.groupby('d').販売数.sum().reindex(range(1,32),fill_value=0)
     wx=dict(W=dict(d=list(W.d),tmax=tmax,rain=rain,wet=[bool(v) for v in W.wet],type=list(W.type),tq=[F(v) for v in tq]),res=res)
-    if ff:
+    if ff and 'マチカフェ' in cats:
         yy=y[y.cat=='マチカフェ'].copy(); yy['ice']=yy.商品名.str.contains('アイス')
         mc=yy.groupby(['d','ice']).販売数.sum().unstack().fillna(0).reindex(range(1,32),fill_value=0)
         wx['W']['ice']=[F(v) for v in mc[True]/(mc[True]+mc[False])]
         wx['corr']=F(np.corrcoef(tmax,wx['W']['ice'])[0,1])
-    else:
+    if ff and '中華まん' in cats:
+        ch=y[y.cat=='中華まん'].groupby('d').販売数.sum().reindex(range(1,32),fill_value=0)
+        wx['W']['chuka']=[F(v) for v in ch]
+        wx['chukaCorr']=F(np.corrcoef(tmax,ch)[0,1])
+        bands=[(0,22),(22,26),(26,40)]
+        wx['chukaBand']=[dict(lo=lo,hi=hi,n=int(((W.tmax>=lo)&(W.tmax<hi)).sum()),avg=F(ch[((W.tmax>=lo)&(W.tmax<hi)).values].mean())) for lo,hi in bands]
+    if not ff:
         wx['corr']=F(np.corrcoef(tmax,tq)[0,1])
         # by category corr with tmax
         wx['catcorr']={c:F(np.corrcoef(tmax,y[y.cat==c].groupby('d').販売数.sum().reindex(range(1,32),fill_value=0))[0,1]) for c in cats}
     out['wx']=wx
     return out
-D={'FF':dept(FF,['からあげクン','マチカフェ','ホットFF','常温FF','サーマル常温'],['マチカフェ'],['--c1','--c2','--c3','--c4','--c5'],True),
+def present(df,order):
+    have=lambda y:set(df[df.year==y].cat.unique())
+    return [c for c in order if c in have(2025) and c in have(2026)]
+FFC=present(FF,['からあげクン','マチカフェ','ホットFF','常温FF','サーマル常温','中華まん'])
+D={'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True),
    '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False)}
+WD='月火水木金土日'
+def wcount(y): 
+    ds=[datetime.date(y,10,d) for d in range(1,N+1)]
+    return dict(we=sum(d.weekday()>=5 for d in ds),first=WD[ds[0].weekday()],last=WD[ds[-1].weekday()])
+D['meta']=dict(N=N,w26=wcount(2026),w25=wcount(2025),fc=FC_ISSUED,
+  wx26=[dict(d=d,rain=RAIN26.get(d),tmax=TMAX26.get(d)) for d in range(1,N+1)],
+  dropped=[c for c in ['マチカフェ','中華まん'] if c not in FFC])
 tpl=open(os.path.join(ROOT,'scripts','template.html'),encoding='utf-8').read()
 PW=os.environ.get('REPORT_PASSWORD','')
 payload=json.dumps(D,ensure_ascii=False)

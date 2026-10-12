@@ -237,7 +237,7 @@ tbody tr:hover td{background:var(--accent-soft)}
 
 <header class="band"><div class="band-in">
     <div class="dept" id="dept" data-locked role="group" aria-label="部門切り替え"><button data-d="FF" aria-pressed="true">FF</button><button data-d="厨房" aria-pressed="false">厨房</button></div>
-  <div class="meta" data-locked>比較：<b>2026年10/1〜10/4</b> vs <b>2025年10/1〜10/4</b><br>2026＝木〜日／2025＝水〜土　データ：10/4締め</div>
+  <div class="meta" data-locked>比較：<b>2026年{{R}}</b> vs <b>2025年{{R}}</b><br>{{WD}}　データ：10/{{N}}締め</div>
 </div></header>
 <nav class="switch" aria-label="店舗切り替え" data-locked><div class="switch-in" id="sw"></div></nav>
 
@@ -254,7 +254,7 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="g g-73">
       <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025年10月</span><span><i style="background:var(--ty)"></i>2026年10月</span></div></div>
         <div class="cv"><canvas id="cDaily" role="img" aria-label="日別の販売高・荒利益高"></canvas></div></div>
-      <div class="panel"><div class="ph"><h3>10月 着地見込み</h3><span class="sub">前年10月 × 今年4日間の前年比</span></div>
+      <div class="panel"><div class="ph"><h3>10月 着地見込み</h3><span class="sub">前年10月 × 今年{{N}}日間の前年比</span></div>
         <div class="cv sm"><canvas id="cFcst" role="img" aria-label="着地見込み"></canvas></div><p class="note" id="fcstNote"></p></div>
     </div>
   </section>
@@ -262,7 +262,7 @@ tbody tr:hover td{background:var(--accent-soft)}
   <section class="sec">
     <div class="sh"><span class="lbl">CATEGORY</span><h2>カテゴリー別</h2><p>グラフは上の切り替え（販売高／荒利益高）に連動</p></div>
     <div class="g g-3">
-      <div class="panel"><div class="ph"><h3 id="cTitle">販売高（10/1〜4）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--ty)"></i>2026</span></div></div>
+      <div class="panel"><div class="ph"><h3 id="cTitle">販売高（{{R}}）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--ty)"></i>2026</span></div></div>
         <div class="cv"><canvas id="cCat" role="img" aria-label="カテゴリー別荒利益高"></canvas></div></div>
       <div class="panel"><div class="ph"><h3 id="mTitle">販売高 構成比</h3><div class="seg" id="segMix"><button aria-pressed="true" data-k="p26">2026</button><button aria-pressed="false" data-k="p25">2025</button></div></div>
         <div class="cv pie"><canvas id="cMix" role="img" aria-label="荒利益高構成比"></canvas></div><div class="legend" id="lgMix"></div></div>
@@ -276,7 +276,7 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="sh"><span class="lbl">WASTE</span><h2>廃棄レポート</h2><p class="exl"></p></div>
     <div class="tw" data-only="all"><table id="tStores" style="min-width:1000px"></table></div>
     <div class="g g-3">
-      <div class="panel"><div class="ph"><h3>日別 廃棄高（10/1〜4）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--bad)"></i>2026</span></div></div>
+      <div class="panel"><div class="ph"><h3>日別 廃棄高（{{R}}）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--bad)"></i>2026</span></div></div>
         <div class="cv sm"><canvas id="cWDaily" role="img" aria-label="日別廃棄高"></canvas></div></div>
       <div class="panel" data-only="all"><div class="ph"><h3>店舗別 廃棄率</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--bad)"></i>2026</span></div></div>
         <div class="cv sm"><canvas id="cWStore" role="img" aria-label="店舗別廃棄率"></canvas></div></div>
@@ -286,7 +286,7 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <section class="sec">
-    <div class="sh"><span class="lbl">CALENDAR</span><h2>曜日・祝日・天気のチャンスとリスク</h2><p>前年10月の実績 × 大阪の天気（気象庁）／予報は吹田市 10/4 19時発表（tenki.jp）</p></div>
+    <div class="sh"><span class="lbl">CALENDAR</span><h2>曜日・祝日・天気のチャンスとリスク</h2><p>前年10月の実績 × 大阪の天気（気象庁）／予報は吹田市 {{FC}}（tenki.jp）</p></div>
     <div class="summary"><div><h3>わかったこと</h3><ul id="wxFacts"></ul></div><div><h3>今後2週間の要注意日</h3><ul id="wxDays"></ul></div></div>
     <div class="g g-2">
       <div class="panel"><div class="ph"><h3>要因別 販売数への影響（前年10月）</h3><div class="legend"><span><i style="background:var(--f-sat)"></i>土曜</span><span><i style="background:var(--f-sun)"></i>日曜・祝日</span><span><i style="background:var(--f-rain)"></i>雨の日</span></div></div>
@@ -301,7 +301,7 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <section class="sec">
-    <div class="sh"><span class="lbl">SKU</span><h2>単品別 生産判断</h2><p>2026年10/1〜4 <span class="exl"></span></p></div>
+    <div class="sh"><span class="lbl">SKU</span><h2>単品別 生産判断</h2><p>2026年{{R}} <span class="exl"></span></p></div>
     <div class="panel"><div class="ph"><h3>販売力 × 廃棄率</h3>
       <div class="legend"><span><i style="background:var(--good)"></i>増産</span><span><i style="background:var(--accent)"></i>維持</span><span><i style="background:var(--warn)"></i>注意</span><span><i style="background:var(--bad)"></i>減産</span><span style="color:var(--ink-3)">円の大きさ＝荒利益高</span></div></div>
       <div class="cv tall"><canvas id="cScatter" role="img" aria-label="単品の販売数と廃棄率"></canvas></div></div>
@@ -311,7 +311,7 @@ tbody tr:hover td{background:var(--accent-soft)}
   <section class="sec">
     <div class="sh"><span class="lbl">ACTION</span><h2>店舗 × 単品 アクション</h2></div>
     <div class="acts">
-      <div class="panel act"><div class="ph"><h3><span class="tag t-inc">増産</span>　機会ロスの可能性</h3></div><p class="sub">4日間すべて廃棄ゼロ、かつ1日4個以上の販売。</p><ol id="lInc"></ol></div>
+      <div class="panel act"><div class="ph"><h3><span class="tag t-inc">増産</span>　機会ロスの可能性</h3></div><p class="sub">期間中（{{N}}日間）廃棄ゼロで、毎日安定して売れている単品。</p><ol id="lInc"></ol></div>
       <div class="panel act"><div class="ph"><h3><span class="tag t-red">減産</span>　作りすぎ</h3></div><p class="sub" id="decSub"></p><ol id="lDec"></ol></div>
     </div>
   </section>
@@ -331,15 +331,15 @@ tbody tr:hover td{background:var(--accent-soft)}
 let ALLD=__DATA__;
 const ENC=__ENC__;
 let DEPT='FF',A=ALLD?ALLD.FF:null;
-const METHOD={"FF": "<li>FF合計＝からあげクン・ホットFF・常温FF・サーマル常温・マチカフェの全SUBCLASS合計。中華まんは今年の販売がないため、前年分も含めて集計から外しています。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。マチカフェは都度抽出で廃棄が出ないため、廃棄と生産判断の分析から除外。</li>\n<li>前年比較の名寄せ：カリパン Ｙ→ＫＹ、ＨＯＴ ジャイアントポークフランク→常温、ＨＯＴ なんこつ入りつくね棒→常温 を同一商品として比較しています。</li>\n<li>2026年はジャイアントポークフランク・なんこつつくね棒が常温FFへ移ったため、ホットFF減・常温FF増の一部は分類変更によるものです。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>2026年の4日間は日曜を含み、2025年は水曜を含みます。前年10月の曜日平均では日曜の荒利益高が最も低く、今年はやや不利な条件での比較です。</li>\n<li>天気：前年10月は気象庁 大阪の日別実績（降水2mm以上を雨の日）。予報は吹田市の10/4 19時発表で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年4日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。前年の祝日は10/13（月）の1日だけです。</li>", "厨房": "<li>厨房合計＝まちかど厨房（販売）の弁当・調理パン・惣菜の合計。おにぎり・その他は販売実績がないため対象外。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。厨房は全カテゴリーを廃棄分析の対象にしています。</li>\n<li>商品名の末尾が違う弁当（例：…弁当 と …弁当１）は、データどおり別の単品として集計しています。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>2026年の4日間は日曜を含み、2025年は水曜を含みます。前年10月の曜日平均では日曜の荒利益高が最も低く、今年はやや不利な条件での比較です。</li>\n<li>天気：前年10月は気象庁 大阪の日別実績（降水2mm以上を雨の日）。予報は吹田市の10/4 19時発表で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年4日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。前年の祝日は10/13（月）の1日だけです。</li>"};
+const METHOD={"FF": "<li>FF合計＝からあげクン・ホットFF・常温FF・サーマル常温・中華まん（什器販売）の合計。マチカフェは新しい集計ファイルに含まれていないため、今年・前年とも対象外です。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。</li>\n<li>前年比較の名寄せ：カリパン Ｙ→ＫＹ、ＨＯＴ ジャイアントポークフランク→常温、ＨＯＴ なんこつ入りつくね棒→常温 を同一商品として比較しています。</li>\n<li>2026年はジャイアントポークフランク・なんこつつくね棒が常温FFへ移ったため、ホットFF減・常温FF増の一部は分類変更によるものです。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>前年比は同じ日付どうし（10/1〜{{N}}）の比較です。2026年は土日が多く（{{WD}}）、曜日の条件が少し違います。</li>\n<li>天気：前年10月と今年の実績は気象庁 大阪の日別値（降水2mm以上を雨の日）。予報は吹田市の{{FC}}（tenki.jp）で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年{{N}}日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。</li>", "厨房": "<li>厨房合計＝まちかど厨房（販売）の弁当・調理パン・惣菜の合計。おにぎり・その他は販売実績がないため対象外。</li>\n<li>廃棄率＝廃棄数 ÷（販売数＋廃棄数）。厨房は全カテゴリーを廃棄分析の対象にしています。</li>\n<li>商品名の末尾が違う弁当（例：…弁当 と …弁当１）は、データどおり別の単品として集計しています。</li>\n<li>完売日率＝販売のあった店日のうち、廃棄ゼロの割合。売り切れ時刻のデータがないため、機会ロスは推定値です。</li>\n<li>前年比は同じ日付どうし（10/1〜{{N}}）の比較です。2026年は土日が多く（{{WD}}）、曜日の条件が少し違います。</li>\n<li>天気：前年10月と今年の実績は気象庁 大阪の日別値（降水2mm以上を雨の日）。予報は吹田市の{{FC}}（tenki.jp）で、降水確率50%以上を雨予報として扱います。予想荒利益高＝前年の曜日別平均 ×（雨の影響）× 今年{{N}}日間の前年比。</li>\n<li>10/12（月）スポーツの日は日曜・祝日として扱います。</li>"};
 const STORES=['上新田','朝日町','元町一','豊津中','青山台'];
-const CCM={'からあげクン':'--c-kara','マチカフェ':'--c-machi','ホットFF':'--c-hot','常温FF':'--c-jo','サーマル常温':'--c-thermal','弁当':'--c-machi','調理パン':'--c-kara','惣菜':'--c-jo'};
+const CCM={'からあげクン':'--c-kara','マチカフェ':'--c-machi','中華まん':'--c-machi','ホットFF':'--c-hot','常温FF':'--c-jo','サーマル常温':'--c-thermal','弁当':'--c-machi','調理パン':'--c-kara','惣菜':'--c-jo'};
 const CC=new Proxy({},{get:(_,k)=>CCM[k]});
 let CATS=A?A.cats:[], WC=A?A.cats.filter(c=>!A.excl.includes(c)):[];
 function setDept(d){DEPT=d;A=ALLD[d];CATS=A.cats;WC=A.cats.filter(c=>!A.excl.includes(c));
   document.querySelectorAll('#dept button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===d));
   const ex=A.excl.length?A.excl.join('・')+'除く':'';document.querySelectorAll('.exl').forEach(e=>e.textContent=ex);
-  document.getElementById('methodList').innerHTML=METHOD[d];
+  document.getElementById('methodList').innerHTML=METHOD[d];fillTokens();
   render();}
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const yen=v=>(v<0?'-':'')+'¥'+Math.abs(Math.round(v)).toLocaleString('ja-JP');
@@ -366,8 +366,8 @@ function switcher(){
 function go(s){scope=s;render();window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'})}
 
 function spark(a,b,bad){
-  const all=[...a,...b],mn=Math.min(...all),mx=Math.max(...all),r=mx-mn||1,pt=v=>v.map((y,i)=>`${(i*21.3).toFixed(1)},${(22-(y-mn)/r*20).toFixed(1)}`).join(' ');
-  return `<svg class="spark" viewBox="0 0 64 24" aria-hidden="true"><polyline points="${pt(a)}" fill="none" stroke="var(--ly)" stroke-width="1.5" stroke-linejoin="round"/><polyline points="${pt(b)}" fill="none" stroke="var(${bad?'--bad':'--ty'})" stroke-width="2" stroke-linejoin="round"/><circle cx="${(3*21.3).toFixed(1)}" cy="${(22-(b[3]-mn)/r*20).toFixed(1)}" r="2.5" fill="var(${bad?'--bad':'--ty'})"/></svg>`;
+  const all=[...a,...b],mn=Math.min(...all),mx=Math.max(...all),r=mx-mn||1,st=64/Math.max(1,a.length-1),pt=v=>v.map((y,i)=>`${(i*st).toFixed(1)},${(22-(y-mn)/r*20).toFixed(1)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 64 24" aria-hidden="true"><polyline points="${pt(a)}" fill="none" stroke="var(--ly)" stroke-width="1.5" stroke-linejoin="round"/><polyline points="${pt(b)}" fill="none" stroke="var(${bad?'--bad':'--ty'})" stroke-width="2" stroke-linejoin="round"/><circle cx="${((b.length-1)*st).toFixed(1)}" cy="${(22-(b[b.length-1]-mn)/r*20).toFixed(1)}" r="2.5" fill="var(${bad?'--bad':'--ty'})"/></svg>`;
 }
 function cutN(w){if(w>=1.25)return Math.max(1,Math.floor(w*0.8))+'個減';if(w>=0.75)return '1個減';if(w>=0.3)return '2日に1回 1個減';return '様子見';}
 function cutAdv(r,unit){
@@ -392,7 +392,7 @@ function render(){
     ['廃棄高',yen(k26.廃棄高),chip(pct(k26.廃棄高,k25.廃棄高),true),'前年 '+yen(k25.廃棄高)],
     ['廃棄率',wrOf(nc.p26).toFixed(1)+'<small>%</small>',ptchip(wrOf(nc.p26)-wrOf(nc.p25),true),'前年 '+wrOf(nc.p25).toFixed(1)+'%']];
   const SPK=['販売高','荒利益高','販売数','廃棄高'];
-  document.getElementById('kpis').innerHTML=K.map(([k,v,c,l],i)=>`<div class="kpi">${i<4?spark(S.daily25[SPK[i]].slice(0,4),S.daily26[SPK[i]],i===3):''}<span class="k">${k}</span><span class="v num">${v}</span><span class="row">${c}<span class="num">${l}</span></span></div>`).join('');
+  document.getElementById('kpis').innerHTML=K.map(([k,v,c,l],i)=>`<div class="kpi">${i<4?spark(S.daily25[SPK[i]].slice(0,ALLD.meta.N),S.daily26[SPK[i]],i===3):''}<span class="k">${k}</span><span class="v num">${v}</span><span class="row">${c}<span class="num">${l}</span></span></div>`).join('');
   // summary
   const cats=CATS.map(c=>({c,d:pct(S.cat.p26[c].荒利益高,S.cat.p25[c].荒利益高),diff:S.cat.p26[c].荒利益高-S.cat.p25[c].荒利益高})).filter(x=>S.cat.p25[x.c].荒利益高>0);
   const best=[...cats].sort((a,b)=>b.diff-a.diff)[0],worst=[...cats].sort((a,b)=>a.diff-b.diff)[0];
@@ -403,8 +403,10 @@ function render(){
     `荒利益高で伸びたのは <b>${best.c}</b>（${best.diff>=0?'+':''}${yen(best.diff)}）、落ちたのは <b>${worst.c}</b>（${yen(worst.diff)}）。売上では ${CATS.filter(c=>S.cat.p25[c].販売高>0).map(c=>`${c} ${(pct(S.cat.p26[c].販売高,S.cat.p25[c].販売高)>=0?'+':'')+pct(S.cat.p26[c].販売高,S.cat.p25[c].販売高).toFixed(0)}%`).join('、')}。`,
     `1個あたり荒利益は ${yen(gpu25)} → <b>${yen(gpu26)}</b>。${gpu26<gpu25?'単価の低い商品の構成が増えています。':'構成は改善しています。'}`,
     `廃棄率 ${wrOf(nc.p25).toFixed(1)}% → <b>${wrOf(nc.p26).toFixed(1)}%</b>。廃棄高は荒利益高の ${(k26.廃棄高/k26.荒利益高*100).toFixed(1)}%（前年 ${(k25.廃棄高/k25.荒利益高*100).toFixed(1)}%）。`];
-  {const d=S.daily26.荒利益高,wk=(d[0]+d[1])/2,we=(d[2]+d[3])/2,dw=S.daily26.廃棄高,wkw=(dw[0]+dw[1])/2,wew=(dw[2]+dw[3])/2;
-   if(we<wk*0.8) facts.push(`土日（10/3・4）の荒利益高は平日（10/1・2）の <b>${(we/wk*100).toFixed(0)}%</b> に低下。一方で廃棄高は平日の ${(wew/Math.max(wkw,1)*100).toFixed(0)}%。土日は仕込みを平日より減らす必要があります。`);}
+  {const d=S.daily26.荒利益高,dw=S.daily26.廃棄高,isWe=i=>[0,6].includes(new Date(2026,9,i+1).getDay()),avg=(a,f)=>{const v=a.filter((_,i)=>f(i));return v.length?v.reduce((x,y)=>x+y,0)/v.length:0};
+   const wk=avg(d,i=>!isWe(i)),we=avg(d,isWe),wkw=avg(dw,i=>!isWe(i)),wew=avg(dw,isWe);
+   if(wk&&we<wk*0.8) facts.push(`今年の土日の荒利益高は、平日1日平均の <b>${(we/wk*100).toFixed(0)}%</b>。一方で廃棄高は平日の ${(wew/Math.max(wkw,1)*100).toFixed(0)}%。土日は仕込みを平日より減らす必要があります。`);
+   else if(wk&&we>wk*1.1) facts.push(`今年の土日の荒利益高は、平日1日平均の <b>${(we/wk*100).toFixed(0)}%</b>。土日に強い${isAll()?'構成':'店'}です。土日はピーク前の補充を厚めにします。`);}
   if(isAll()){
     const ss=STORES.map(s=>({s,d:pct(A.stores[s].p26.荒利益高,A.stores[s].p25.荒利益高),w:wrOf(A.stores[s].nc26)}));
     const lo=[...ss].sort((a,b)=>a.d-b.d).filter(x=>x.d<0).map(x=>`<b>${x.s}</b>（${x.d.toFixed(1)}%）`);
@@ -471,13 +473,14 @@ function renderWx(){
   facts.push(`<b>土曜</b>の荒利益高は平日の <b>${(ST['土'].idx*100).toFixed(0)}%</b>、<b>日曜・祝日</b>は <b>${(ST['日祝'].idx*100).toFixed(0)}%</b>（廃棄率 ${(ST['日祝'].wr*100).toFixed(1)}%、平日 ${(ST['平日'].wr*100).toFixed(1)}%）。`);
   if(isAll()){const s1=catLines('土',R),s2=catLines('日祝',R);facts.push(`カテゴリー別（販売数）：土曜は ${s1.length?s1.join('、'):'大きな差なし'}。日曜・祝日は ${s2.length?s2.join('、'):'大きな差なし'}。`);}
   else{const ss=STORES.map(s=>({s,i:A[s].st['日祝'].idx})).sort((a,b)=>a.i-b.i);facts.push(`日曜・祝日に強い店は ${ss.slice(-2).reverse().map(x=>x.s+'（'+(x.i*100).toFixed(0)+'%）').join('・')}、弱い店は ${ss.slice(0,2).map(x=>x.s+'（'+(x.i*100).toFixed(0)+'%）').join('・')}。`);}
-  facts.push(FFm?`<b>気温</b>はマチカフェのアイス比率と強く連動（相関 ${X.corr.toFixed(2)}）。最高26℃以上でアイス約70%、22℃未満で約32%に下がります。`:`<b>気温</b>と厨房の販売数の関係は弱い（相関 ${X.corr.toFixed(2)}）。厨房は天気より曜日で動くカテゴリーです。`);
-  facts.push(`今年10/4（日）は雨予報（降水確率60%、最高21℃）の日でした。日曜の落ち込みの一部は天気の影響と考えられます。`);
+  facts.push(FFm&&X.chukaBand?`<b>気温</b>が下がると中華まんが売れます（相関 ${X.chukaCorr.toFixed(2)}）。前年は最高22℃未満の日に1日平均 <b>${Math.round(X.chukaBand[0].avg)}個</b>、26℃以上の日は ${Math.round(X.chukaBand[2].avg)}個（5店合計）。`:FFm&&X.W.ice?`<b>気温</b>はマチカフェのアイス比率と強く連動（相関 ${X.corr.toFixed(2)}）。`:`<b>気温</b>と厨房の販売数の関係は弱い（相関 ${X.corr.toFixed(2)}）。厨房は天気より曜日で動くカテゴリーです。`);
+  {const rd=ALLD.meta.wx26.filter(w=>w.rain>=2);if(rd.length) facts.push(`今年の雨の日：${rd.map(w=>`10/${w.d}（${'日月火水木金土'[new Date(2026,9,w.d).getDay()]}・${w.rain}mm）`).join('、')}。この日の落ち込みの一部は天気の影響です（気象庁 大阪の実績）。`);}
   document.getElementById('wxFacts').innerHTML=facts.map(f=>`<li>${f}</li>`).join('');
-  const key=cal.filter(r=>r.d<=17&&(r.sig!=='normal'||r.hol)).slice(0,6);
+  const key=cal.filter(r=>r.d<=ALLD.meta.N+14&&(r.sig!=='normal'||r.hol)).slice(0,6);
   document.getElementById('wxDays').innerHTML=key.length?key.map(r=>`<li><b>10/${r.d}（${r.wd}）</b> <span class="sig s-${r.sig}">${r.sig==='chance'?'チャンス':r.sig==='risk'?'リスク':'通常'}</span> ${r.hol?'<b>'+r.hol+'</b>・':''}${r.wx}・最高${r.tmax}℃・降水${r.pop}%。${shortAdv(r)}</li>`).join(''):'<li>大きな変動が予想される日はありません。</li>';
-  document.getElementById('iceTitle').textContent=FFm?'最高気温とマチカフェのアイス比率':'最高気温と厨房の販売数';
-  document.getElementById('iceNote').innerHTML=FFm?`今後の予報は最高24〜29℃。10/17まではアイス比率60〜70%の水準が続く見込みです。前年は10/21以降に最高22℃を下回り、アイス比率が30%台へ急落しました。月の後半はホット飲料とホットFFの準備を早めます。`:`点のばらつきは気温ではなく曜日によるものです（日曜・祝日は低い位置に集中）。厨房の仕込みは曜日を最優先し、天気は雨の日の調整に使います。`;
+  document.getElementById('iceTitle').textContent=FFm?(X.W.chuka?'最高気温と中華まんの販売数（5店合計）':'最高気温とマチカフェのアイス比率'):'最高気温と厨房の販売数';
+  {const cold=cal.find(r=>r.tmax!=null&&r.tmax<=22);
+   document.getElementById('iceNote').innerHTML=FFm&&X.chukaBand?`前年は10/21以降に最高22℃を下回り、中華まんの販売が増えました。今年の予報では${cold?` <b>10/${cold.d}（${cold.wd}）に最高${cold.tmax}℃</b> まで下がる見込みです。この頃から中華まんの陳列と仕込みを増やします。`:'当面は最高25℃前後が続く見込みです。気温が22℃を下回る日から中華まんを増やします。'}`:FFm?'':`点のばらつきは気温ではなく曜日によるものです（日曜・祝日は低い位置に集中）。厨房の仕込みは曜日を最優先し、天気は雨の日の調整に使います。`;}
   document.getElementById('tDay').innerHTML=`<thead><tr><th class="l">店舗（前年10月）</th><th>平日 売上/日</th><th>平日 荒利/日</th><th>土曜</th><th>日曜・祝日</th><th>廃棄率 平日</th><th>廃棄率 土曜</th><th>廃棄率 日祝</th><th>雨の日 荒利</th><th>雨の日 廃棄</th></tr></thead><tbody>`+
    ['ALL',...STORES].map(s=>{const o=A[s].st,ix=v=>`<span class="chip ${v>=1.05?'up':v<=0.9?'down':'flat'}">${(v*100).toFixed(0)}</span>`,wr=v=>`<span style="color:var(${v>=0.15?'--bad':'--ink'})">${(v*100).toFixed(1)}%</span>`;
     return `<tr class="${s===scope?'cur':''}"><td class="l"><b>${s==='ALL'?'全店':s}</b></td><td class="num">${yen(o['平日'].amt)}</td><td class="num">${yen(o['平日'].gp)}</td><td class="cell">${ix(o['土'].idx)}</td><td class="cell">${ix(o['日祝'].idx)}</td><td class="num">${wr(o['平日'].wr)}</td><td class="num">${wr(o['土'].wr)}</td><td class="num">${wr(o['日祝'].wr)}</td><td>${chip(o.wet.gp*100)}</td><td>${chip(o.wet.wy*100,true)}</td></tr>`}).join('')+'</tbody>';
@@ -499,8 +502,8 @@ function advice(r){
   if(r.idx<=0.88) a.push(`仕込み全体を約${Math.round((1-r.idx)*100)}%減、夕方以降の追加調理なし`);
   else if(r.idx>=1.08) a.push(`平日より約${Math.round((r.idx-1)*100)}%多く売れる日。ピーク前に補充して売り切れを防ぐ`);
   if(r.typ!=='平日'){const cl=catLines(r.typ,R).filter(x=>r.idx>=0.95||x.includes('-'));if(cl.length) a.push(`カテゴリー別：${cl.join('・')}（前年${r.typ==='土'?'土曜':'日祝'}）`);}
-  if(A.ff){ if(r.tmax!=null&&r.tmax>=26) a.push(`アイスコーヒーのカップ・氷を多めに（アイス比率 約70%）`);
-    else if(r.tmax!=null&&r.tmax<22) a.push(`ホット飲料・ホットFFを前出し`);}
+  if(A.ff&&A.wx.chukaBand&&r.tmax!=null){const b=A.wx.chukaBand; if(r.tmax<=22) a.push(`気温が低い日。中華まんを多めに（前年 22℃未満の日は26℃以上の約${(b[0].avg/b[2].avg).toFixed(1)}倍）、ホットFFを前出し`);
+    else if(r.tmax>=27) a.push(`気温が高い日。中華まんは控えめに`);}
   if(r.hol==='ハロウィン') a.push('週末と重なる。イベント需要で売れる店は早めに増産');
   if(r.tmax==null) a.push('<span style="color:var(--ink-3)">天気は未確定。前日の予報で見直す</span>');
   if(!a.length) a.push('通常どおり');
@@ -517,12 +520,12 @@ function drawWx(){
     options:{indexAxis:'y',scales:{x:{ticks:{callback:v=>(v>0?'+':'')+v+'%'},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},y:{grid:{display:false}}},
       plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${x.raw>=0?'+':''}${x.raw.toFixed(1)}%`}}}}}));
   const ff=A.ff;
-  const pts=W.d.map((d,i)=>({x:W.tmax[i],y:ff?W.ice[i]*100:W.tq[i],d,wet:W.wet[i],sun:W.type[i]==='日祝'}));
-  const ds=ff?[{label:'晴れ・くもり',data:pts.filter(p=>!p.wet)},{label:'雨',data:pts.filter(p=>p.wet),tri:1}]
+  const CH=ff&&W.chuka,pts=W.d.map((d,i)=>({x:W.tmax[i],y:CH?W.chuka[i]:ff?W.ice[i]*100:W.tq[i],d,wet:W.wet[i],sun:W.type[i]==='日祝'}));
+  const ds=ff&&!CH?[{label:'晴れ・くもり',data:pts.filter(p=>!p.wet)},{label:'雨',data:pts.filter(p=>p.wet),tri:1}]
              :[{label:'平日・土曜',data:pts.filter(p=>!p.sun)},{label:'日曜・祝日',data:pts.filter(p=>p.sun),tri:1}];
   wxCharts.push(new Chart(cIce,{type:'scatter',data:{datasets:ds.map(d=>({label:d.label,data:d.data,backgroundColor:css(d.tri?(ff?'--f-rain':'--f-sun'):'--ty'),pointStyle:d.tri?'triangle':'circle',pointRadius:d.tri?6:5,pointBorderColor:css('--panel'),pointBorderWidth:1.5}))},
-    options:{plugins:{legend:{display:true,position:'top',align:'end',labels:{boxWidth:8,boxHeight:8,usePointStyle:true,color:css('--ink-2')}},tooltip:{callbacks:{label:x=>` 10/${x.raw.d}  最高${x.raw.x}℃  ${ff?'アイス '+x.raw.y.toFixed(0)+'%':'販売数 '+n0(x.raw.y)+'個'}`}}},
-      scales:{x:{title:{display:true,text:'最高気温（℃）',color:css('--ink-2')},grid:{color:css('--rule')},border:{display:false}},y:{min:0,max:ff?100:undefined,title:{display:true,text:ff?'アイス比率':'販売数（個/日）',color:css('--ink-2')},ticks:{callback:v=>ff?v+'%':n0(v)},grid:{color:css('--rule')},border:{display:false}}}}}));
+    options:{plugins:{legend:{display:true,position:'top',align:'end',labels:{boxWidth:8,boxHeight:8,usePointStyle:true,color:css('--ink-2')}},tooltip:{callbacks:{label:x=>` 10/${x.raw.d}  最高${x.raw.x}℃  ${ff&&!CH?'アイス '+x.raw.y.toFixed(0)+'%':'販売数 '+n0(x.raw.y)+'個'}`}}},
+      scales:{x:{title:{display:true,text:'最高気温（℃）',color:css('--ink-2')},grid:{color:css('--rule')},border:{display:false}},y:{min:0,max:ff&&!CH?100:undefined,title:{display:true,text:ff&&!CH?'アイス比率':'販売数（個/日）',color:css('--ink-2')},ticks:{callback:v=>ff&&!CH?v+'%':n0(v)},grid:{color:css('--rule')},border:{display:false}}}}}));
 }
 
 function base(){
@@ -544,7 +547,7 @@ function draw(){
   charts.forEach(c=>c.destroy());charts=[];base();drawWx();
   const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
   const lab=S.daily25.荒利益高.map((_,i)=>(i+1)+'日');
-  document.getElementById('dTitle').textContent='日別 '+ML();document.getElementById('cTitle').textContent=ML().replace('（売上）','')+'（10/1〜4）';document.getElementById('mTitle').textContent=ML().replace('（売上）','')+' 構成比';
+  document.getElementById('dTitle').textContent='日別 '+ML();document.getElementById('cTitle').textContent=ML().replace('（売上）','')+'（'+PER()+'）';document.getElementById('mTitle').textContent=ML().replace('（売上）','')+' 構成比';
   charts.push(new Chart(cDaily,{type:'line',data:{labels:lab,datasets:[
     {label:'2025',data:S.daily25[MK],borderColor:ly,borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25},
     {label:'2026',data:lab.map((_,i)=>S.daily26[MK][i]??null),borderColor:ty,backgroundColor:ty,borderWidth:2.5,pointRadius:4,pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.25}]},
@@ -559,8 +562,8 @@ function draw(){
   const gm={};CATS.forEach(c=>gm[c]=S.cat[mixK][c][MK]);
   charts.push(pie('cMix',gm,CATS,'lgMix'));
   charts.push(pie('cWaste',S.wcat[wasteK],WC,'lgWaste'));
-  charts.push(new Chart(cWDaily,{type:'bar',data:{labels:['1日','2日','3日','4日'],datasets:[
-    {label:'2025',data:S.daily25.廃棄高.slice(0,4),backgroundColor:ly,borderRadius:2},
+  charts.push(new Chart(cWDaily,{type:'bar',data:{labels:S.daily26.廃棄高.map((_,i)=>(i+1)+'日'),datasets:[
+    {label:'2025',data:S.daily25.廃棄高.slice(0,ALLD.meta.N),backgroundColor:ly,borderRadius:2},
     {label:'2026',data:S.daily26.廃棄高,backgroundColor:bad,borderRadius:2}]},
     options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}年  ${yen(x.raw)}`}}}}}));
   if(isAll()) charts.push(new Chart(cWStore,{type:'bar',data:{labels:STORES,datasets:[
@@ -636,7 +639,7 @@ async function copyChart(panel){
 }
 function kpiTable(){
   const S=A[scope],k25=S.kpi.p25,k26=S.kpi.p26,t=document.createElement('table');
-  const rows=[['指標','2026年10/1〜4','2025年10/1〜4','前年比'],['販売高（売上）',yen(k26.販売高),yen(k25.販売高),chipTxt(pct(k26.販売高,k25.販売高))],['荒利益高',yen(k26.荒利益高),yen(k25.荒利益高),chipTxt(pct(k26.荒利益高,k25.荒利益高))],['販売数',n0(k26.販売数)+'個',n0(k25.販売数)+'個',chipTxt(pct(k26.販売数,k25.販売数))],['廃棄高',yen(k26.廃棄高),yen(k25.廃棄高),chipTxt(pct(k26.廃棄高,k25.廃棄高))],['廃棄率',wrOf(S.nc.p26).toFixed(1)+'%',wrOf(S.nc.p25).toFixed(1)+'%',(wrOf(S.nc.p26)-wrOf(S.nc.p25)>=0?'+':'')+(wrOf(S.nc.p26)-wrOf(S.nc.p25)).toFixed(1)+'pt']];
+  const rows=[['指標','2026年'+PER(),'2025年'+PER(),'前年比'],['販売高（売上）',yen(k26.販売高),yen(k25.販売高),chipTxt(pct(k26.販売高,k25.販売高))],['荒利益高',yen(k26.荒利益高),yen(k25.荒利益高),chipTxt(pct(k26.荒利益高,k25.荒利益高))],['販売数',n0(k26.販売数)+'個',n0(k25.販売数)+'個',chipTxt(pct(k26.販売数,k25.販売数))],['廃棄高',yen(k26.廃棄高),yen(k25.廃棄高),chipTxt(pct(k26.廃棄高,k25.廃棄高))],['廃棄率',wrOf(S.nc.p26).toFixed(1)+'%',wrOf(S.nc.p25).toFixed(1)+'%',(wrOf(S.nc.p26)-wrOf(S.nc.p25)>=0?'+':'')+(wrOf(S.nc.p26)-wrOf(S.nc.p25)).toFixed(1)+'pt']];
   t.innerHTML=rows.map((r,i)=>'<tr>'+r.map((c,j)=>i===0?`<th style="text-align:${j?'right':'left'}">${c}</th>`:`<td style="text-align:${j?'right':'left'}">${c}</td>`).join('')+'</tr>').join('');
   t.style.position='absolute';t.style.left='-9999px';document.body.appendChild(t);return t;
 }
@@ -651,8 +654,15 @@ function addCopyButtons(){
 }
 
 document.querySelectorAll('#dept button').forEach(b=>b.onclick=()=>setDept(b.dataset.d));
+const PER=()=>`10/1〜${ALLD.meta.N}`;
+function fillTokens(){
+  const M=ALLD.meta,tk={'{{R}}':PER(),'{{N}}':String(M.N),'{{FC}}':M.fc,'{{WD}}':`2026＝${M.w26.first}〜${M.w26.last}（土日${M.w26.we}日）／2025＝${M.w25.first}〜${M.w25.last}（土日${M.w25.we}日）`};
+  const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
+  while((n=w.nextNode())) if(n.nodeValue.includes('{{')) n.nodeValue=n.nodeValue.replace(/\{\{\w+\}\}/g,x=>tk[x]??x);
+  const mm=document.querySelector('.band .meta');mm.innerHTML=mm.innerHTML.replace(/\{\{\w+\}\}/g,x=>tk[x]??x);
+}
 function boot(data){
-  ALLD=data;A=ALLD.FF;
+  ALLD=data;A=ALLD.FF;fillTokens();
   document.getElementById('lock')?.remove();
   document.querySelectorAll('[data-locked]').forEach(e=>e.hidden=false);
   setDept('FF');
