@@ -71,18 +71,19 @@ def weekly(x,ns,cats):
         t=y[y.d==d][m].sum(); byd[d]={k:F(t[k]/ns) for k in m}
     return dict(weeks=weeks,byday=byd)
 
-def dept(df,cats,excl,colors,ff):
+def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False):
+    d1=d1 or N; nd=d1-d0+1
     wdf=df[~df.cat.isin(excl)]
     def bycat(x):
         g=x.groupby('cat')[m].sum().reindex(cats).fillna(0); return {c:{k:F(g.loc[c,k]) for k in m} for c in cats}
     def scope(x,single):
-        y25=x[x.year==2025]; y26=x[x.year==2026]; sp25=y25[y25.d<=N]
+        y25=x[x.year==2025]; y26all=x[x.year==2026]; y26=y26all[y26all.d.between(d0,d1)]; sp25=y25[y25.d.between(d0,d1)]
         o={'kpi':{'p25':tot(sp25),'p26':tot(y26),'m25':tot(y25)}}
         o['daily25']={k:[F(v) for v in y25.groupby('d')[k].sum().reindex(range(1,32),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
-        o['daily26']={k:[F(v) for v in y26.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
+        o['daily26']={k:[F(v) for v in y26all.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
         o['cat']={'p25':bycat(sp25),'p26':bycat(y26),'m25':bycat(y25)}
         nc=x[~x.cat.isin(excl)]
-        a=nc[nc.year==2026]; b=nc[(nc.year==2025)&(nc.d<=N)]; mm=nc[nc.year==2025]
+        a=nc[(nc.year==2026)&nc.d.between(d0,d1)]; b=nc[(nc.year==2025)&nc.d.between(d0,d1)]; mm=nc[nc.year==2025]
         p=a.groupby(['cat','商品名'])[m].sum()
         sd=a.groupby(['cat','商品名','store','d'])[['販売数','廃棄数']].sum(); sd=sd[sd.販売数+sd.廃棄数>0]
         p['sd']=sd.groupby(['cat','商品名']).size(); p['wsd']=sd.assign(z=sd.廃棄数>0).groupby(['cat','商品名']).z.sum()
@@ -111,12 +112,13 @@ def dept(df,cats,excl,colors,ff):
         ddr=dd.reset_index(); ddr['we']=[is_we(2026,int(v)) for v in ddr.d]
         sp['wwk']=ddr[~ddr.we].groupby(['store','cat','商品名']).廃棄数.mean(); sp['wwe']=ddr[ddr.we].groupby(['store','cat','商品名']).廃棄数.mean()
         sp['wmin']=ddr.groupby(['store','cat','商品名']).廃棄数.min(); sp['zd']=ddr.assign(z=ddr.廃棄数==0).groupby(['store','cat','商品名']).z.sum()
-        inc=sp[(sp.廃棄数==0)&(sp.days>=max(4,round(N*0.8)))&(sp.販売数/sp.days>=(4 if ff else 2))]
+        inc=sp[(sp.廃棄数==0)&(sp.days>=max(min(4,nd),round(nd*0.8)))&(sp.販売数/sp.days>=(4 if ff else 2))]
         dec=sp[(sp.廃棄数/(sp.販売数+sp.廃棄数)>=0.2)&(sp.廃棄高>=(500 if single else 1000))]
         o['inc']=[dict(store=i[0],cat=i[1],name=clean(i[2]),per=F(r.販売数/r.days),gp=F(r.荒利益高)) for i,r in inc.sort_values('荒利益高',ascending=False).head(10).iterrows()]
         o['dec']=[dict(store=i[0],cat=i[1],name=clean(i[2]),per=F(r.販売数/r.days),wpd=F(r.廃棄数/r.days),wy=F(r.廃棄高),wr=F(r.廃棄数/(r.販売数+r.廃棄数)),wwk=F(r.wwk) if r.wwk==r.wwk else 0.0,wwe=F(r.wwe) if r.wwe==r.wwe else 0.0,zd=int(r.zd)) for i,r in dec.sort_values('廃棄高',ascending=False).head(10).iterrows()]
         o['wcat']={k:{c:F(v) for c,v in z.groupby('cat').廃棄高.sum().items()} for k,z in [('p26',a),('p25',b),('m25',mm)]}
         o['nc']={'p26':tot(a),'p25':tot(b),'m25':tot(mm)}
+        if light: return o
         # weather / daytype
         yy=x[x.year==2025]; dd2=yy.groupby('d')[m].sum().reindex(range(1,32),fill_value=0)
         ncd=nc[nc.year==2025].groupby('d')[['販売数','廃棄数']].sum().reindex(range(1,32),fill_value=0)
@@ -140,8 +142,10 @@ def dept(df,cats,excl,colors,ff):
         return o
     out={'cats':cats,'excl':excl,'colors':colors,'ff':ff,'ALL':scope(df,False)}
     for s in STORES: out[s]=scope(df[df.store==s],True)
-    out['stores']={s:{'p26':tot(df[(df.store==s)&(df.year==2026)]),'p25':tot(df[(df.store==s)&(df.year==2025)&(df.d<=N)]),
-        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==2026)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==2025)&(wdf.d<=N)])} for s in STORES}
+    rg=lambda z:z.d.between(d0,d1)
+    out['stores']={s:{'p26':tot(df[(df.store==s)&(df.year==2026)&rg(df)]),'p25':tot(df[(df.store==s)&(df.year==2025)&rg(df)]),
+        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==2026)&rg(wdf)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==2025)&rg(wdf)])} for s in STORES}
+    if light: return out
     y=df[df.year==2025]
     res={}
     for c in ['ALL']+cats:
@@ -180,6 +184,19 @@ def wcount(y):
 D['meta']=dict(N=N,w26=wcount(2026),w25=wcount(2025),fc=FC_ISSUED,
   wx26=[dict(d=d,rain=RAIN26.get(d),tmax=TMAX26.get(d)) for d in range(1,N+1)],
   dropped=[c for c in ['マチカフェ','中華まん'] if c not in FFC])
+# 期間（累計・週ごと）。週は月曜始まり。新しい週から順に並べる
+def wd_of(d): return '月火水木金土日'[datetime.date(2026,10,d).weekday()]
+PERIODS=[dict(k='all',label='累計',d0=1,d1=N)]
+for w in reversed(D['FF']['ALL']['wk']['weeks']):
+    PERIODS.append(dict(k=f"w{w['start']}",label=w['label'],d0=w['start'],d1=w['end']))
+for i,pp in enumerate(PERIODS[1:]): pp['tag']='今週' if i==0 else '先週' if i==1 else ''
+for pp in PERIODS:
+    pp['n']=pp['d1']-pp['d0']+1; pp['range']=f"10/{pp['d0']}〜{pp['d1']}"
+    pp['first']=wd_of(pp['d0']); pp['last']=wd_of(pp['d1'])
+    pp['we26']=sum(is_off26(d) for d in range(pp['d0'],pp['d1']+1)); pp['we25']=sum(datetime.date(2025,10,d).weekday()>=5 or d==13 for d in range(pp['d0'],pp['d1']+1))
+D['meta']['periods']=PERIODS
+D['P']={pp['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True,pp['d0'],pp['d1'],True),
+                 '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False,pp['d0'],pp['d1'],True)} for pp in PERIODS[1:]}
 tpl=open(os.path.join(ROOT,'scripts','template.html'),encoding='utf-8').read()
 PW=os.environ.get('REPORT_PASSWORD','')
 payload=json.dumps(D,ensure_ascii=False)

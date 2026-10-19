@@ -51,6 +51,17 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:13.
 .sw[aria-pressed="true"]{border-bottom-color:var(--accent);color:var(--ink);background:var(--accent-soft)}
 .sw:hover{background:var(--accent-soft)}
 .sw:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.per-in{max-width:1240px;margin:0 auto;padding:7px 24px 8px;display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--rule)}
+.per-in::-webkit-scrollbar{display:none}
+.per-in .pl{font-size:11px;color:var(--ink-3);font-weight:600;letter-spacing:.06em;margin-right:4px;white-space:nowrap}
+.pb{font:inherit;font-size:12px;border:1px solid var(--rule);background:var(--panel);color:var(--ink-2);border-radius:999px;padding:4px 12px;cursor:pointer;white-space:nowrap;display:inline-flex;gap:6px;align-items:baseline}
+.pb b{font-weight:700;color:var(--ink)}
+.pb .r{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:11px;color:var(--ink-3)}
+.pb[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.pb[aria-pressed="true"] b,.pb[aria-pressed="true"] .r{color:#fff}
+.pb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.kpi .row.wk{font-size:11px}
+@media (max-width:640px){.per-in{padding-inline:16px}}
 .wrap{max-width:1240px;margin:0 auto;padding-inline:24px;padding-block:22px 64px;display:flex;flex-direction:column;gap:30px}
 .sec{display:flex;flex-direction:column;gap:12px}
 .sh{display:flex;align-items:baseline;gap:6px 14px;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid var(--rule-2)}
@@ -237,14 +248,14 @@ tbody tr:hover td{background:var(--accent-soft)}
 
 <header class="band"><div class="band-in">
     <div class="dept" id="dept" data-locked role="group" aria-label="部門切り替え"><button data-d="FF" aria-pressed="true">FF</button><button data-d="厨房" aria-pressed="false">厨房</button></div>
-  <div class="meta" data-locked>比較：<b>2026年{{R}}</b> vs <b>2025年{{R}}</b><br>{{WD}}　データ：10/{{N}}締め</div>
+  <div class="meta" data-locked id="hdrMeta"></div>
 </div></header>
-<nav class="switch" aria-label="店舗切り替え" data-locked><div class="switch-in" id="sw"></div></nav>
+<nav class="switch" aria-label="店舗・期間切り替え" data-locked><div class="switch-in" id="sw"></div><div class="per-in" id="per" role="group" aria-label="期間切り替え"></div></nav>
 
 <section class="lock" id="lock" hidden><form class="lock-in" id="lockForm" autocomplete="off"><h1>FF・厨房 実績レビュー</h1><p>このレポートは関係者限定です。パスワードを入力してください。</p><label for="pw">パスワード</label><input id="pw" type="password" inputmode="numeric" required><button type="submit">開く</button><p class="lock-msg" id="lockMsg" role="alert"></p><p class="lock-foot">Made by Biswash</p></form></section>
 <main class="wrap" data-locked>
   <section class="sec">
-    <div class="sh"><span class="lbl">SUMMARY</span><h2 id="scopeTitle"></h2><p>荒利益高は廃棄控除後。前年比は同日比較。</p></div>
+    <div class="sh"><span class="lbl">SUMMARY</span><h2 id="scopeTitle"></h2><p>荒利益高は廃棄控除後。前年比は同日比較。先週比は1日あたりで比較（週の日数が違うため）。</p></div>
     <div class="kpis" id="kpis"></div>
     <div class="summary"><div><h3>現状</h3><ul id="sumFacts"></ul></div><div><h3>今月のアクション</h3><ol id="sumActs"></ol></div></div>
   </section>
@@ -254,7 +265,7 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="g g-73">
       <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025年10月</span><span><i style="background:var(--ty)"></i>2026年10月</span></div></div>
         <div class="cv"><canvas id="cDaily" role="img" aria-label="日別の販売高・荒利益高"></canvas></div></div>
-      <div class="panel"><div class="ph"><h3>10月 着地見込み</h3><span class="sub">前年10月 × 今年{{N}}日間の前年比</span></div>
+      <div class="panel"><div class="ph"><h3>10月 着地見込み</h3><span class="sub">前年10月 × 今年<span class="pR"></span>の前年比</span></div>
         <div class="cv sm"><canvas id="cFcst" role="img" aria-label="着地見込み"></canvas></div><p class="note" id="fcstNote"></p></div>
     </div>
   </section>
@@ -311,7 +322,7 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <section class="sec">
-    <div class="sh"><span class="lbl">SKU</span><h2>単品別 生産判断</h2><p>2026年{{R}} <span class="exl"></span></p></div>
+    <div class="sh"><span class="lbl">SKU</span><h2>単品別 生産判断</h2><p>2026年<span class="pR"></span> <span class="exl"></span></p></div>
     <div class="panel"><div class="ph"><h3>販売力 × 廃棄率</h3>
       <div class="legend"><span><i style="background:var(--good)"></i>増産</span><span><i style="background:var(--accent)"></i>維持</span><span><i style="background:var(--warn)"></i>注意</span><span><i style="background:var(--bad)"></i>減産</span><span style="color:var(--ink-3)">円の大きさ＝荒利益高</span></div></div>
       <div class="cv tall"><canvas id="cScatter" role="img" aria-label="単品の販売数と廃棄率"></canvas></div></div>
@@ -321,7 +332,7 @@ tbody tr:hover td{background:var(--accent-soft)}
   <section class="sec">
     <div class="sh"><span class="lbl">ACTION</span><h2>店舗 × 単品 アクション</h2></div>
     <div class="acts">
-      <div class="panel act"><div class="ph"><h3><span class="tag t-inc">増産</span>　機会ロスの可能性</h3></div><p class="sub">期間中（{{N}}日間）廃棄ゼロで、毎日安定して売れている単品。</p><ol id="lInc"></ol></div>
+      <div class="panel act"><div class="ph"><h3><span class="tag t-inc">増産</span>　機会ロスの可能性</h3></div><p class="sub">期間中（<span class="pN"></span>日間）廃棄ゼロで、毎日安定して売れている単品。</p><ol id="lInc"></ol></div>
       <div class="panel act"><div class="ph"><h3><span class="tag t-red">減産</span>　作りすぎ</h3></div><p class="sub" id="decSub"></p><ol id="lDec"></ol></div>
     </div>
   </section>
@@ -346,7 +357,22 @@ const STORES=['上新田','朝日町','元町一','豊津中','青山台'];
 const CCM={'からあげクン':'--c-kara','マチカフェ':'--c-machi','中華まん':'--c-machi','ホットFF':'--c-hot','常温FF':'--c-jo','サーマル常温':'--c-thermal','弁当':'--c-machi','調理パン':'--c-kara','惣菜':'--c-jo'};
 const CC=new Proxy({},{get:(_,k)=>CCM[k]});
 let CATS=A?A.cats:[], WC=A?A.cats.filter(c=>!A.excl.includes(c)):[];
-function setDept(d){DEPT=d;A=ALLD[d];CATS=A.cats;WC=A.cats.filter(c=>!A.excl.includes(c));
+let PK='all';
+const PDS=()=>ALLD.meta.periods, CUR=()=>PDS().find(p=>p.k===PK), PREV=()=>{const i=PDS().findIndex(p=>p.k===PK);return PK!=='all'&&i+1<PDS().length?PDS()[i+1]:null};
+const dataOf=(k,d)=>k==='all'?ALLD[d]:ALLD.P[k][d];
+function linkPeriods(){
+  if(!ALLD.P) return;
+  for(const k in ALLD.P) for(const d of ['FF','厨房']){const P=ALLD.P[k][d],F=ALLD[d];
+    for(const key in F) if(!(key in P)) P[key]=F[key];
+    for(const s of ['ALL',...STORES]) for(const key in F[s]) if(!(key in P[s])) P[s][key]=F[s][key];}
+}
+function periodBar(){
+  const el=document.getElementById('per');if(!PDS()){el.hidden=true;return;}
+  el.innerHTML='<span class="pl">期間</span>'+PDS().map(p=>`<button class="pb" data-k="${p.k}" aria-pressed="${p.k===PK}"><b>${p.k==='all'?'累計':(p.tag||p.label)}</b><span class="r">${p.range}${p.k!=='all'&&p.n<7?'（'+p.first+'〜'+p.last+'）':''}</span></button>`).join('');
+  el.querySelectorAll('.pb').forEach(b=>b.onclick=()=>setPeriod(b.dataset.k));
+}
+function setPeriod(k){PK=k;A=dataOf(PK,DEPT);periodBar();render();}
+function setDept(d){DEPT=d;A=dataOf(PK,d);CATS=A.cats;WC=A.cats.filter(c=>!A.excl.includes(c));
   document.querySelectorAll('#dept button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.d===d));
   const ex=A.excl.length?A.excl.join('・')+'除く':'';document.querySelectorAll('.exl').forEach(e=>e.textContent=ex);
   document.getElementById('methodList').innerHTML=METHOD[d];fillTokens();
@@ -392,6 +418,9 @@ function labelTables(){
 function render(){
   const S=A[scope],k25=S.kpi.p25,k26=S.kpi.p26,m25=S.kpi.m25,nc=S.nc;
   switcher();
+  {const c=PDS()?CUR():{range:PER(),n:ALLD.meta.N,first:ALLD.meta.w26.first,last:ALLD.meta.w26.last,we26:ALLD.meta.w26.we,we25:ALLD.meta.w25.we},M=ALLD.meta;
+   document.getElementById('hdrMeta').innerHTML=`比較：<b>2026年${c.range}</b> vs <b>2025年${c.range}</b>（同日）<br>${c.n}日間：2026＝${c.first}〜${c.last}（土日祝${c.we26}日）／2025＝土日祝${c.we25}日　データ：10/${M.N}締め`;
+   document.querySelectorAll('.pR').forEach(e=>e.textContent=c.range+'（'+c.n+'日間）');document.querySelectorAll('.pN').forEach(e=>e.textContent=c.n);}
   document.querySelectorAll('[data-only="all"]').forEach(e=>e.hidden=!isAll());
   document.querySelectorAll('[data-only="store"]').forEach(e=>e.hidden=isAll());
   document.getElementById('scopeTitle').textContent=isAll()?'全店（5店舗合計）':scope+' 店';
@@ -402,7 +431,10 @@ function render(){
     ['廃棄高',yen(k26.廃棄高),chip(pct(k26.廃棄高,k25.廃棄高),true),'前年 '+yen(k25.廃棄高)],
     ['廃棄率',wrOf(nc.p26).toFixed(1)+'<small>%</small>',ptchip(wrOf(nc.p26)-wrOf(nc.p25),true),'前年 '+wrOf(nc.p25).toFixed(1)+'%']];
   const SPK=['販売高','荒利益高','販売数','廃棄高'];
-  document.getElementById('kpis').innerHTML=K.map(([k,v,c,l],i)=>`<div class="kpi">${i<4?spark(S.daily25[SPK[i]].slice(0,ALLD.meta.N),S.daily26[SPK[i]],i===3):''}<span class="k">${k}</span><span class="v num">${v}</span><span class="row">${c}<span class="num">${l}</span></span></div>`).join('');
+  const pv=PREV(),cu=PDS()?CUR():null;let WKR=[];
+  if(pv){const PS=dataOf(pv.k,DEPT)[scope],q26=PS.kpi.p26,qn=PS.nc.p26,a=k=>k26[k]/cu.n,b=k=>q26[k]/pv.n,lab=(pv.tag||pv.label),fy=(k,isN)=>(isN?n0(b(k))+'個':yen(b(k)))+'/日';
+    WKR=[[chip(pct(a('販売高'),b('販売高'))),fy('販売高')],[chip(pct(a('荒利益高'),b('荒利益高'))),fy('荒利益高')],[chip(pct(a('販売数'),b('販売数'))),fy('販売数',1)],[chip(pct(a('廃棄高'),b('廃棄高')),true),fy('廃棄高')],[ptchip(wrOf(nc.p26)-wrOf(qn),true),wrOf(qn).toFixed(1)+'%']].map(([c,v])=>`<span class="row wk">${c}<span class="num">${lab} ${v}</span></span>`);}
+  document.getElementById('kpis').innerHTML=K.map(([k,v,c,l],i)=>`<div class="kpi">${i<4?spark(S.daily25[SPK[i]].slice(0,ALLD.meta.N),S.daily26[SPK[i]],i===3):''}<span class="k">${k}</span><span class="v num">${v}</span><span class="row">${c}<span class="num">${l}</span></span>${WKR[i]||''}</div>`).join('');
   // summary
   const cats=CATS.map(c=>({c,d:pct(S.cat.p26[c].荒利益高,S.cat.p25[c].荒利益高),diff:S.cat.p26[c].荒利益高-S.cat.p25[c].荒利益高})).filter(x=>S.cat.p25[x.c].荒利益高>0);
   const best=[...cats].sort((a,b)=>b.diff-a.diff)[0],worst=[...cats].sort((a,b)=>a.diff-b.diff)[0];
@@ -440,9 +472,9 @@ function render(){
   // stores table (ALL)
   if(isAll()){
     const rows=STORES.map(s=>({s,o:A.stores[s]})).sort((a,b)=>b.o.nc26.廃棄高-a.o.nc26.廃棄高);
-    document.getElementById('tStores').innerHTML=`<thead><tr><th class="l">店舗</th><th>販売高（売上）</th><th>前年比</th><th>荒利益高</th><th>前年比</th><th>廃棄高 2026</th><th>廃棄高 2025</th><th>前年比</th><th>廃棄率 2026</th><th>廃棄率 2025</th><th>廃棄÷荒利</th><th class="l">評価</th><th class="l"></th></tr></thead><tbody>`+
+    document.getElementById('tStores').innerHTML=`<thead><tr><th class="l">店舗</th><th>販売高（売上）</th><th>前年比</th><th>荒利益高</th><th>前年比</th>${pv?`<th>売上 ${pv.tag||pv.label}比</th><th>荒利 ${pv.tag||pv.label}比</th>`:''}<th>廃棄高 2026</th><th>廃棄高 2025</th><th>前年比</th><th>廃棄率 2026</th><th>廃棄率 2025</th><th>廃棄÷荒利</th><th class="l">評価</th><th class="l"></th></tr></thead><tbody>`+
      rows.map(({s,o})=>{const w=wrOf(o.nc26),st=w>=10?['t-red','要対策']:w>=6?['t-watch','注意']:['t-inc','良好'];
-      return `<tr><td class="l"><button class="link" data-go="${s}">${s}</button></td><td class="num">${yen(o.p26.販売高)}</td><td>${chip(pct(o.p26.販売高,o.p25.販売高))}</td><td class="num">${yen(o.p26.荒利益高)}</td><td>${chip(pct(o.p26.荒利益高,o.p25.荒利益高))}</td><td class="num">${yen(o.nc26.廃棄高)}</td><td class="num">${yen(o.nc25.廃棄高)}</td><td>${chip(pct(o.nc26.廃棄高,o.nc25.廃棄高),true)}</td><td class="num">${w.toFixed(1)}%<span class="meter"><span style="width:${Math.min(100,w*6)}%"></span></span></td><td class="num">${wrOf(o.nc25).toFixed(1)}%</td><td class="num">${(o.nc26.廃棄高/o.p26.荒利益高*100).toFixed(1)}%</td><td class="l"><span class="tag ${st[0]}">${st[1]}</span></td><td class="l"><button class="link" data-go="${s}">詳細</button></td></tr>`}).join('')+'</tbody>';
+      return `<tr><td class="l"><button class="link" data-go="${s}">${s}</button></td><td class="num">${yen(o.p26.販売高)}</td><td>${chip(pct(o.p26.販売高,o.p25.販売高))}</td><td class="num">${yen(o.p26.荒利益高)}</td><td>${chip(pct(o.p26.荒利益高,o.p25.荒利益高))}</td>${pv?(()=>{const q=dataOf(pv.k,DEPT).stores[s].p26;return `<td>${chip(pct(o.p26.販売高/cu.n,q.販売高/pv.n))}</td><td>${chip(pct(o.p26.荒利益高/cu.n,q.荒利益高/pv.n))}</td>`})():''}<td class="num">${yen(o.nc26.廃棄高)}</td><td class="num">${yen(o.nc25.廃棄高)}</td><td>${chip(pct(o.nc26.廃棄高,o.nc25.廃棄高),true)}</td><td class="num">${w.toFixed(1)}%<span class="meter"><span style="width:${Math.min(100,w*6)}%"></span></span></td><td class="num">${wrOf(o.nc25).toFixed(1)}%</td><td class="num">${(o.nc26.廃棄高/o.p26.荒利益高*100).toFixed(1)}%</td><td class="l"><span class="tag ${st[0]}">${st[1]}</span></td><td class="l"><button class="link" data-go="${s}">詳細</button></td></tr>`}).join('')+'</tbody>';
     document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
   }else{
     const ss=STORES.map(s=>({s,d:pct(A.stores[s].p26.荒利益高,A.stores[s].p25.荒利益高),w:wrOf(A.stores[s].nc26),gp:A.stores[s].p26.荒利益高,amt:A.stores[s].p26.販売高,ds:pct(A.stores[s].p26.販売高,A.stores[s].p25.販売高)}));
@@ -693,7 +725,7 @@ function addCopyButtons(){
 }
 
 document.querySelectorAll('#dept button').forEach(b=>b.onclick=()=>setDept(b.dataset.d));
-const PER=()=>`10/1〜${ALLD.meta.N}`;
+const PER=()=>PDS()?CUR().range:`10/1〜${ALLD.meta.N}`;
 function fillTokens(){
   const M=ALLD.meta,tk={'{{R}}':PER(),'{{N}}':String(M.N),'{{FC}}':M.fc,'{{WD}}':`2026＝${M.w26.first}〜${M.w26.last}（土日${M.w26.we}日）／2025＝${M.w25.first}〜${M.w25.last}（土日${M.w25.we}日）`};
   const w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let n;
@@ -701,7 +733,7 @@ function fillTokens(){
   const mm=document.querySelector('.band .meta');mm.innerHTML=mm.innerHTML.replace(/\{\{\w+\}\}/g,x=>tk[x]??x);
 }
 function boot(data){
-  ALLD=data;A=ALLD.FF;fillTokens();
+  ALLD=data;linkPeriods();A=ALLD.FF;fillTokens();periodBar();
   document.getElementById('lock')?.remove();
   document.querySelectorAll('[data-locked]').forEach(e=>e.hidden=false);
   setDept('FF');
