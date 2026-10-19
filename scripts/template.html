@@ -61,6 +61,13 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:13.
 .pb[aria-pressed="true"] b,.pb[aria-pressed="true"] .r{color:#fff}
 .pb:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .kpi .row.wk{font-size:11px}
+.vs .kpi .diff{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:17px;font-weight:700;line-height:1.3}
+.vs .kpi .diff.up{color:var(--good)}.vs .kpi .diff.down{color:var(--bad)}.vs .kpi .diff.flat{color:var(--ink-2)}
+.dif{white-space:nowrap;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:700}
+.dif.up{color:var(--good)}.dif.down{color:var(--bad)}.dif.flat{color:var(--ink-2)}
+.toplist.mv li{grid-template-columns:18px minmax(0,1fr) auto 84px;align-items:center}
+.toplist.mv li>.num{text-align:right}
+.subh{font-size:13px;margin:6px 0 0;color:var(--ink-2)}
 @media (max-width:640px){.per-in{padding-inline:16px}}
 .wrap{max-width:1240px;margin:0 auto;padding-inline:24px;padding-block:22px 64px;display:flex;flex-direction:column;gap:30px}
 .sec{display:flex;flex-direction:column;gap:12px}
@@ -260,6 +267,21 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="summary"><div><h3>現状</h3><ul id="sumFacts"></ul></div><div><h3>今月のアクション</h3><ol id="sumActs"></ol></div></div>
   </section>
 
+  <section class="sec" id="weekly">
+    <div class="sh"><span class="lbl">WEEKLY</span><h2>先週比　いくら上がった？下がった？</h2><p id="wkSub"></p></div>
+    <div class="kpis vs" id="vsKpi"></div>
+    <div class="g g-2" id="vsTop">
+      <div class="panel"><div class="ph"><h3>上がった単品 TOP5（売上の差）</h3></div><ul class="toplist mv" id="vsUp"></ul></div>
+      <div class="panel"><div class="ph"><h3>下がった単品 TOP5（売上の差）</h3></div><ul class="toplist mv" id="vsDown"></ul></div>
+    </div>
+    <div class="tw" data-only="all"><table id="tVsStore" style="min-width:900px"></table></div>
+    <div class="tw"><table id="tVsCat" style="min-width:900px"></table></div>
+    <h3 class="subh">平日・土日祝で比べる（1店1日あたり）</h3>
+    <div class="tw"><table id="tWk1" style="min-width:980px"></table></div>
+    <div class="panel"><div class="ph"><h3>曜日別 販売高（1店あたり）</h3><div class="legend"><span><i style="background:var(--ly)"></i>先週</span><span><i style="background:var(--ty)"></i>今週</span></div></div>
+      <div class="cv sm"><canvas id="cWk" role="img" aria-label="曜日別の販売高 先週と今週"></canvas></div><p class="note" id="wkNote"></p></div>
+  </section>
+
   <section class="sec">
     <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と着地見込み</h2><div class="seg" id="segMet" style="margin-left:auto"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
     <div class="g g-73">
@@ -267,16 +289,6 @@ tbody tr:hover td{background:var(--accent-soft)}
         <div class="cv"><canvas id="cDaily" role="img" aria-label="日別の販売高・荒利益高"></canvas></div></div>
       <div class="panel"><div class="ph"><h3>10月 着地見込み</h3><span class="sub">前年10月 × 今年<span class="pR"></span>の前年比</span></div>
         <div class="cv sm"><canvas id="cFcst" role="img" aria-label="着地見込み"></canvas></div><p class="note" id="fcstNote"></p></div>
-    </div>
-  </section>
-
-  <section class="sec" id="weekly">
-    <div class="sh"><span class="lbl">WEEKLY</span><h2>先週比（1店1日あたり PSA/D）</h2><p id="wkSub"></p></div>
-    <div class="tw"><table id="tWk1" style="min-width:980px"></table></div>
-    <div class="g g-73">
-      <div style="min-width:0;display:flex;flex-direction:column;gap:12px"><div class="tw"><table id="tWk2" style="min-width:640px"></table></div></div>
-      <div class="panel"><div class="ph"><h3>曜日別 販売高（1店あたり）</h3><div class="legend"><span><i style="background:var(--ly)"></i>先週</span><span><i style="background:var(--ty)"></i>今週</span></div></div>
-        <div class="cv sm"><canvas id="cWk" role="img" aria-label="曜日別の販売高 先週と今週"></canvas></div><p class="note" id="wkNote"></p></div>
     </div>
   </section>
 
@@ -423,6 +435,7 @@ function render(){
    document.querySelectorAll('.pR').forEach(e=>e.textContent=c.range+'（'+c.n+'日間）');document.querySelectorAll('.pN').forEach(e=>e.textContent=c.n);}
   document.querySelectorAll('[data-only="all"]').forEach(e=>e.hidden=!isAll());
   document.querySelectorAll('[data-only="store"]').forEach(e=>e.hidden=isAll());
+  document.querySelectorAll('[data-only]').forEach(e=>{const p=e.previousElementSibling;if(p&&p.classList.contains('tbar'))p.hidden=e.hidden;});
   document.getElementById('scopeTitle').textContent=isAll()?'全店（5店舗合計）':scope+' 店';
   // KPI
   const K=[['販売高（売上）',yen(k26.販売高),chip(pct(k26.販売高,k25.販売高)),'前年 '+yen(k25.販売高)],
@@ -515,16 +528,14 @@ function wkPair(){const W=A[scope].wk&&A[scope].wk.weeks;return W&&W.length>=2?[
 function renderWk(){
   const sec=document.getElementById('weekly'),pr=wkPair();sec.hidden=!pr;if(!pr)return;const [P,C]=pr;
   const lbl=w=>`${w.label}（10/${w.start}${w.first}〜10/${w.end}${w.last}・${w.all.n}日）`;
-  document.getElementById('wkSub').textContent=`先週＝${lbl(P)}　今週＝${lbl(C)}　平日：先週${P.wk.n}日・今週${C.wk.n}日／土日祝：先週${P.we.n}日・今週${C.we.n}日`;
+  document.getElementById('wkSub').textContent=`今週＝${lbl(C)}　先週＝${lbl(P)}`;
   const fmt=(k,v)=>k==='wr'?(v*100).toFixed(1)+'%':k==='販売数'?v.toFixed(1)+'個':yen(v);
   const dl=(k,a,b,inv)=>k==='wr'?ptchip((b-a)*100,true):(a?chip(pct(b,a),inv):'—');
   const MET=[['販売高（売上）','販売高',false],['荒利益高','荒利益高',false],['販売数','販売数',false],['廃棄高','廃棄高',true],['廃棄率','wr',true]];
   const G=[['all','全体'],['wk','平日'],['we','土日祝']];
   document.getElementById('tWk1').innerHTML='<thead><tr><th class="l">指標（1店1日あたり）</th>'+G.map(([,n])=>`<th>${n} 先週</th><th>${n} 今週</th><th>先週比</th>`).join('')+'</tr></thead><tbody>'+
     MET.map(([lb,k,inv])=>`<tr><td class="l"><b>${lb}</b></td>`+G.map(([g])=>{const a=P[g].tot[k],b=C[g].tot[k],ok=P[g].n&&C[g].n;return `<td class="num" style="color:var(--ink-2)">${P[g].n?fmt(k,a):'—'}</td><td class="num"><b>${C[g].n?fmt(k,b):'—'}</b></td><td>${ok?dl(k,a,b,inv):'—'}</td>`}).join('')+'</tr>').join('')+'</tbody>';
-  document.getElementById('tWk2').innerHTML='<thead><tr><th class="l">カテゴリー（全体）</th><th>売上 先週</th><th>売上 今週</th><th>先週比</th><th>荒利 今週</th><th>先週比</th><th>廃棄 先週</th><th>廃棄 今週</th></tr></thead><tbody>'+
-    CATS.map(c=>{const a=P.all.cat[c],b=C.all.cat[c];const up=b.廃棄高>a.廃棄高*1.2&&b.廃棄高-a.廃棄高>100;
-      return `<tr><td class="l"><b>${c}</b></td><td class="num" style="color:var(--ink-2)">${yen(a.販売高)}</td><td class="num"><b>${yen(b.販売高)}</b></td><td>${a.販売高?chip(pct(b.販売高,a.販売高)):'—'}</td><td class="num">${yen(b.荒利益高)}</td><td>${a.荒利益高>0&&b.荒利益高>0?chip(pct(b.荒利益高,a.荒利益高)):`<span style="color:var(--ink-3);font-size:11px">先週${yen(a.荒利益高)}</span>`}</td><td class="num" style="color:var(--ink-2)">${yen(a.廃棄高)}</td><td class="num" style="color:var(${up?'--bad':'--ink'})"><b>${yen(b.廃棄高)}</b></td></tr>`}).join('')+'</tbody>';
+  renderVs();
   const f=(g,k)=>(P[g].n&&C[g].n&&P[g].tot[k])?pct(C[g].tot[k],P[g].tot[k]):null,sp=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
   const sa=f('all','販売高'),sw=f('wk','販売高'),se=f('we','販売高'),wa=f('all','廃棄高'),wwe=f('we','廃棄高'),msg=[];
   if(sa!=null&&sw!=null&&se!=null&&Math.abs(sa-sw)>=5) msg.push(`全体の売上は${sp(sa)}ですが、平日は${sp(sw)}・土日祝は${sp(se)}。曜日の構成の違いが大きいので、平日・土日祝で判断します。`);
@@ -532,6 +543,39 @@ function renderWk(){
   if(wa!=null&&Math.abs(wa)>=15) msg.push(`1店1日あたりの廃棄高は ${yen(P.all.tot.廃棄高)} → <b>${yen(C.all.tot.廃棄高)}</b>（${sp(wa)}）。${wa>0?'作りすぎが増えています。':'改善しています。'}`);
   if(wwe!=null&&wwe>=30&&se!=null&&wwe-se>=30) msg.push(`土日祝は売上${sp(se)}に対して廃棄${sp(wwe)}。土日祝の仕込みが多すぎます。`);
   document.getElementById('wkNote').innerHTML=msg.join('<br>')||'大きな変化はありません。';
+}
+
+// ===== 先週比（実額） =====
+function renderVs(){
+  const [P,C]=wkPair(),pk=w=>'w'+w.start,DP=dataOf(pk(P),DEPT),DC=dataOf(pk(C),DEPT),same=P.all.n===C.all.n;
+  const nP=P.all.n,nC=C.all.n,adj=v=>same?v:v*nC/nP;  // 日数が違うときは先週を今週の日数に換算
+  const cls=(d,inv)=>Math.abs(d)<0.5?'flat':((inv?d<0:d>0)?'up':'down');
+  const sgn=v=>(v>=0?'+':'-');
+  const dY=(d,inv)=>`<span class="dif ${cls(d,inv)}">${sgn(d)}¥${Math.abs(Math.round(d)).toLocaleString('ja-JP')}</span>`;
+  const dN=(d,inv)=>`<span class="dif ${cls(d,inv)}">${sgn(d)}${Math.abs(Math.round(d)).toLocaleString('ja-JP')}個</span>`;
+  const rt=(a,b,inv)=>b?chip(pct(a,b),inv):'—';
+  const k1=DC[scope].kpi.p26,k0=DP[scope].kpi.p26,n1=DC[scope].nc.p26,n0_=DP[scope].nc.p26;
+  const T=[['販売高（売上）','販売高',0,0],['荒利益高','荒利益高',0,0],['販売数','販売数',1,0],['廃棄高','廃棄高',0,1]];
+  document.getElementById('vsKpi').innerHTML=T.map(([lb,k,isN,inv])=>{const d=k1[k]-adj(k0[k]);
+    return `<div class="kpi"><span class="k">${lb}　先週 → 今週</span><span class="v num">${isN?n0(k1[k])+'<small>個</small>':yen(k1[k])}</span><span class="diff ${cls(d,inv)}">${sgn(d)}${isN?Math.abs(Math.round(d)).toLocaleString('ja-JP')+'個':'¥'+Math.abs(Math.round(d)).toLocaleString('ja-JP')}　${sgn(pct(k1[k],adj(k0[k])))}${Math.abs(pct(k1[k],adj(k0[k]))).toFixed(1)}%</span><span class="row"><span class="num">先週 ${isN?n0(k0[k])+'個':yen(k0[k])}</span></span></div>`}).join('')+
+    (()=>{const w1=wrOf(n1),w0=wrOf(n0_),d=w1-w0;return `<div class="kpi"><span class="k">廃棄率　先週 → 今週</span><span class="v num">${w1.toFixed(1)}<small>%</small></span><span class="diff ${cls(d*10,true)}">${sgn(d)}${Math.abs(d).toFixed(1)}pt</span><span class="row"><span class="num">先週 ${w0.toFixed(1)}%</span></span></div>`})();
+  // 単品
+  const pc={},pp={};DC[scope].prod.forEach(r=>pc[r.name]=r);DP[scope].prod.forEach(r=>pp[r.name]=r);
+  const names=[...new Set([...Object.keys(pc),...Object.keys(pp)])].map(n=>{const c=pc[n]||{amt:0,sold:0,cat:pp[n].cat},q=pp[n]||{amt:0,sold:0};return {n,cat:c.cat,d:c.amt-adj(q.amt),q:c.sold-adj(q.sold),a0:q.amt,a1:c.amt}});
+  const li=(r,i)=>`<li><span class="rk">${i+1}</span><span>${short(r.n)}<span style="display:block;color:var(--ink-3);font-size:11px">${r.cat}・${yen(r.a0)} → ${yen(r.a1)}</span></span><span class="num">${dN(r.q)}</span><span class="num">${dY(r.d)}</span></li>`;
+  document.getElementById('vsUp').innerHTML=[...names].filter(r=>r.d>0).sort((a,b)=>b.d-a.d).slice(0,5).map(li).join('')||'<li>なし</li>';
+  document.getElementById('vsDown').innerHTML=[...names].filter(r=>r.d<0).sort((a,b)=>a.d-b.d).slice(0,5).map(li).join('')||'<li>なし</li>';
+  // 店舗別
+  const H=(f)=>`<thead><tr><th class="l">${f}</th><th>売上 先週</th><th>売上 今週</th><th>売上の差</th><th>増減率</th><th>荒利 先週</th><th>荒利 今週</th><th>荒利の差</th><th>増減率</th><th>販売数の差</th><th>廃棄高の差</th></tr></thead>`;
+  const R=(name,a,b)=>`<td class="num" style="color:var(--ink-2)">${yen(b.販売高)}</td><td class="num"><b>${yen(a.販売高)}</b></td><td class="num">${dY(a.販売高-adj(b.販売高))}</td><td>${rt(a.販売高,adj(b.販売高))}</td><td class="num" style="color:var(--ink-2)">${yen(b.荒利益高)}</td><td class="num"><b>${yen(a.荒利益高)}</b></td><td class="num">${dY(a.荒利益高-adj(b.荒利益高))}</td><td>${rt(a.荒利益高,adj(b.荒利益高))}</td><td class="num">${dN(a.販売数-adj(b.販売数))}</td><td class="num">${dY(a.廃棄高-adj(b.廃棄高),true)}</td>`;
+  if(isAll()){
+    const rows=STORES.map(s=>({s,a:DC.stores[s].p26,b:DP.stores[s].p26})).sort((x,y)=>(y.a.販売高-adj(y.b.販売高))-(x.a.販売高-adj(x.b.販売高)));
+    document.getElementById('tVsStore').innerHTML=H('店舗（上がった順）')+'<tbody>'+rows.map(({s,a,b})=>`<tr><td class="l"><button class="link" data-go="${s}">${s}</button></td>${R(s,a,b)}</tr>`).join('')+
+      `<tr style="font-weight:700"><td class="l">5店合計</td>${R('全店',DC.ALL.kpi.p26,DP.ALL.kpi.p26)}</tr></tbody>`;
+    document.querySelectorAll('#tVsStore [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
+  }
+  document.getElementById('tVsCat').innerHTML=H('カテゴリー')+'<tbody>'+CATS.map(c=>`<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[c]});margin-right:8px"></i><b>${c}</b></td>${R(c,DC[scope].cat.p26[c],DP[scope].cat.p26[c])}</tr>`).join('')+'</tbody>';
+  if(!same) document.getElementById('wkSub').textContent+=`　※日数が違うため、差と増減率は先週を${nC}日分に換算`;
 }
 function renderWx(){
   const S=A[scope],X=A.wx,ST=S.st,R=X.res,cal=S.cal,FFm=A.ff;
