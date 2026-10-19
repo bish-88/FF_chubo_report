@@ -214,6 +214,36 @@ from candidates import build as cand_build
 WKS=[(w['start'],w['end']) for w in D['FF']['ALL']['wk']['weeks']]
 D['cand']={pp['k']:{'FF':cand_build(FF[FF.cat.isin(FFC)],'FF',True,pp['d0'],pp['d1'],WKS,is_off26,clean,reclass=RECLASS),
                     '厨房':cand_build(KI,'厨房',False,pp['d0'],pp['d1'],WKS,is_off26,clean)} for pp in PERIODS}
+# ===== 実施管理 =====
+# 共有版：管理者が手元の data/actions.json に置いた実施記録を、ページに（暗号化して）同梱する。
+# data/ は GitHub に上げないので、このファイルも公開されない。ページ側では読み取り専用。
+ACT_FIELDS=['id','key','dept','store','cat','name','type','rec','basis','owner','plan_date','status','done_date','note','result_note','created_at','updated_at','updated_by']
+ACT_STATUS=['未着手','実施中','完了','見送り']
+def load_actions(path):
+    if not os.path.exists(path): return None
+    raw=json.load(open(path,encoding='utf-8'))
+    items=raw.get('items',[]) if isinstance(raw,dict) else raw
+    out=[]
+    for r in items if isinstance(items,list) else []:
+        if not isinstance(r,dict) or not r.get('id') or r.get('dept') not in ('FF','厨房'): continue
+        r={k:r.get(k) for k in ACT_FIELDS}
+        if r['status'] not in ACT_STATUS: r['status']='未着手'
+        out.append(r)
+    return dict(built=datetime.date.today().isoformat(),items=out)
+D['actions_shared']=load_actions(os.path.join(DATA_DIR,'actions.json'))
+# 実施前後の比較に使う日別データ（今年分）。候補と共有版に出てくる 店舗×単品／店舗×カテゴリー だけを入れる
+def dkey(store,name,cat): return store+'|'+('cat:'+cat if str(name).endswith('（カテゴリー計）') else str(name))
+def daily_table(df,dept):
+    ks={dkey(c['store'],c['name'],c['cat']) for per in D['cand'].values() for c in per[dept]}
+    ks|={dkey(r['store'],r['name'],r['cat']) for r in (D['actions_shared'] or {}).get('items',[]) if r['dept']==dept}
+    y=df[df.year==2026].copy(); y['nm']=y.商品名.map(clean); out={}
+    cols=['販売数','廃棄数','廃棄高','荒利益高','販売高']
+    for keys,mk in [(['store','nm','d'],lambda st,x:st+'|'+x),(['store','cat','d'],lambda st,x:st+'|cat:'+x)]:
+        for (st,x,d),r in y.groupby(keys)[cols].sum().iterrows():
+            k=mk(st,x)
+            if k in ks: out.setdefault(k,[]).append([int(d)]+[F(r[c]) for c in cols])
+    return out
+D['daily']={'FF':daily_table(FF[FF.cat.isin(FFC)],'FF'),'厨房':daily_table(KI,'厨房')}
 D['P']={pp['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True,pp['d0'],pp['d1'],True),
                  '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False,pp['d0'],pp['d1'],True)} for pp in PERIODS[1:]}
 tpl=open(os.path.join(ROOT,'scripts','template.html'),encoding='utf-8').read()

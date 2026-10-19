@@ -108,6 +108,16 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:13.
 .cand details ul,.cand details ol{margin:0;padding-left:18px;line-height:1.6}
 .tag.c-hi{background:var(--good-bg);color:var(--good)}.tag.c-mid{background:var(--warn-bg);color:var(--warn)}.tag.c-lo{background:var(--bg);color:var(--ink-3);border:1px solid var(--rule)}
 @media (max-width:980px){.cgrid{grid-template-columns:1fr}.csum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.savebar{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--warn);border-radius:8px;padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:12.5px;color:var(--ink-2);box-shadow:var(--shadow)}
+.savebar.mem{border-left-color:var(--bad)}.savebar .msg{flex:1 1 420px;line-height:1.6}.savebar .btns{display:flex;flex-wrap:wrap;gap:6px}
+#tTrack input,#tTrack select,#tTrack textarea{font:inherit;font-size:12px;border:1px solid var(--rule);border-radius:4px;padding:3px 6px;background:var(--panel);color:var(--ink);width:100%;box-sizing:border-box}
+#tTrack textarea{min-height:52px;resize:vertical}#tTrack td{vertical-align:top}
+.src{font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap;display:inline-block}
+.src.s-shared{background:var(--accent-soft);color:var(--accent)}.src.s-local{background:var(--warn-bg);color:var(--warn)}.src.s-changed{background:var(--warn-bg);color:var(--warn)}.src.s-stale{background:var(--bad-bg);color:var(--bad)}
+.ev{font-size:11.5px;line-height:1.55;min-width:190px}.ev b{font-family:var(--f-num);font-variant-numeric:tabular-nums}.ev .evn{color:var(--ink-3);font-size:10.5px;display:block}
+.dl{display:block;font-size:10.5px;color:var(--ink-3);margin:2px 0 1px}.ev{max-width:260px}
+.late{color:var(--bad);font-weight:700;font-size:11px;display:block}
+.cand .reg{font-size:11.5px;color:var(--ink-3)}
 button.go{font:inherit;font-size:12.5px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-align:left;text-decoration:underline;font-weight:600}
 .alert .go{font:inherit;font-size:11.5px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-align:left;text-decoration:underline}
 .flt{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:12px;color:var(--ink-2)}
@@ -305,6 +315,14 @@ tbody tr:hover td{background:var(--accent-soft)}
   .meter{width:36px}
   .ibar{width:44px}
 }
+@media (max-width:640px){
+  #tTrack tbody tr{display:block}
+  #tTrack td,#tTrack td.name{display:block!important;min-width:0!important;max-width:none;text-align:left;padding:5px 0;white-space:normal}
+  #tTrack td::before{display:block!important;content:attr(data-label);font-size:10.5px;color:var(--ink-3);margin-bottom:2px}
+  #tTrack td:first-child{border-bottom:1px solid var(--rule);padding-bottom:8px}
+  #tTrack .ev{max-width:none}
+  .savebar .msg{flex-basis:100%}
+}
 </style>
 
 <header class="band"><div class="band-in">
@@ -419,6 +437,13 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <!-- ===== TAB 7 アクション・教訓 ===== -->
+  <section class="sec" data-tab="action" id="actSec">
+    <div class="sh"><span class="lbl">TRACKING</span><h2>実施管理</h2><p id="actSub"></p></div>
+    <div class="savebar" id="actSave"></div>
+    <div class="tw"><table id="tTrack" style="min-width:1100px"></table></div>
+    <p class="note" id="actNote"></p>
+    <input type="file" id="actFile" accept=".json,application/json" hidden>
+  </section>
   <section class="sec" data-tab="action" id="candSec">
     <div class="sh"><span class="lbl">IMPROVEMENT</span><h2>改善候補（実績から自動抽出）</h2><p id="candSub"></p></div>
     <div class="cfilter" id="candFilter"></div>
@@ -534,6 +559,114 @@ function wkCmp(){
   return {c,p,label:`${c.tag||c.label}・${c.range} vs ${p.tag||p.label}・${p.range}`,cur:{d:dataOf(c.k,DEPT)},prev:{d:dataOf(p.k,DEPT)}};
 }
 // ===== アクション（優先度・根拠・期待効果・確認事項・推移） =====
+// ===== 実施管理（静的サイト版：共有版は読み取り専用、変更はこの端末のブラウザに一時保存） =====
+const ACT_LS='ffreport.actions.v1', ACT_ST=['未着手','実施中','完了','見送り'];
+let ACTS=null, ACT_STORE='memory';
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function lsLoad(){try{const v=localStorage.getItem(ACT_LS);ACT_STORE='local';const a=v?JSON.parse(v):[];return Array.isArray(a)?a:[];}catch(e){ACT_STORE='memory';return [];}}
+function lsSave(){if(ACT_STORE!=='local')return;try{localStorage.setItem(ACT_LS,JSON.stringify(ACTS.local));}catch(e){ACT_STORE='memory';}}
+function actInit(){if(ACTS)return;ACTS={shared:((ALLD.actions_shared||{}).items)||[],local:lsLoad()};}
+function actMerged(){
+  actInit();const m=new Map();ACTS.shared.forEach(r=>m.set(r.id,Object.assign({},r,{_src:'shared'})));
+  ACTS.local.forEach(r=>{const sh=m.get(r.id);
+    if(sh&&(sh.updated_at||'')>(r.updated_at||''))m.set(r.id,Object.assign({},sh,{_src:'stale'}));   // 共有版の方が新しい
+    else m.set(r.id,Object.assign({},r,{_src:sh?'changed':'local'}));});
+  return [...m.values()];
+}
+const candKey=c=>[c.dept,c.store,c.name,c.type,c.sub||'',c.metric||''].join('|');
+const dKey=r=>r.store+'|'+(String(r.name).endsWith('（カテゴリー計）')?'cat:'+r.cat:r.name);
+function actAdd(c){
+  actInit();const now=new Date().toISOString(),id='A'+now.slice(0,10).replace(/-/g,'')+'-'+Math.random().toString(36).slice(2,7);
+  ACTS.local.push({id,key:candKey(c),dept:c.dept,store:c.store,cat:c.cat,name:c.name,type:c.type==='急変'?`急変（${c.sub}・${c.metric}）`:c.type,rec:c.action,
+    basis:{period:c.period,conf:c.conf,n_days:c.n_days,est:c.est},owner:'',plan_date:'',status:'未着手',done_date:'',note:'',result_note:'',created_at:now,updated_at:now,updated_by:''});
+  lsSave();renderActs();renderCand();toast(ACT_STORE==='local'?'実施管理に追加しました（この端末に一時保存）':'実施管理に追加しました（保存されません。書き出してください）');
+}
+function actEdit(id,f,v){
+  actInit();let r=ACTS.local.find(x=>x.id===id);
+  if(!r){const sh=ACTS.shared.find(x=>x.id===id);if(!sh)return;r=JSON.parse(JSON.stringify(sh));ACTS.local.push(r);}
+  r[f]=v;r.updated_at=new Date().toISOString();lsSave();renderActs();
+}
+function actDel(id){actInit();const i=ACTS.local.findIndex(x=>x.id===id);if(i<0)return;
+  const sh=ACTS.shared.some(x=>x.id===id);if(!confirm(sh?'この端末での変更を取り消して、共有版に戻しますか？':'この記録を削除しますか？（この端末だけの記録です）'))return;
+  ACTS.local.splice(i,1);lsSave();renderActs();renderCand();}
+// 実施前後の実績：実施日の前と後で同じ日数（最大7日）を、1日あたりで比べる
+function actEval(r,daily,N){
+  if(!r.done_date)return {msg:'実施日を入れると、実施前後の実績を自動で比べます'};
+  const m=/^2026-10-(\d{2})$/.exec(r.done_date);if(!m)return {msg:`実施日がデータの範囲外です（データは2026年10/1〜10/${N}）`};
+  const d0=+m[1];if(d0>N)return {msg:`実施後のデータがまだありません（データは10/${N}まで）`};
+  const S=(daily||{})[dKey(r)];if(!S)return {msg:'この商品の日別データがありません'};
+  const len=Math.min(7,N-d0+1,d0-1);if(len<1)return {msg:'実施前のデータがありません'};
+  const rng=(a,n)=>Array.from({length:n},(_,i)=>a+i),aft=rng(d0,len),bef=rng(d0-len,len);
+  const agg=ds=>{const x=S.filter(v=>ds.includes(v[0])),n=x.length,s=k=>x.reduce((t,v)=>t+v[k],0);
+    return {n,q:n?s(1)/n:null,w:n?s(2)/n:null,wy:n?s(3)/n:null,gp:n?s(4)/n:null,amt:n?s(5)/n:null,wr:(s(1)+s(2))?s(2)/(s(1)+s(2))*100:null};};
+  const off=d=>[0,6].includes(new Date(2026,9,d).getDay())||d===12;
+  return {len,a:agg(aft),b:agg(bef),aR:`10/${aft[0]}〜10/${aft[aft.length-1]}`,bR:`10/${bef[0]}〜10/${bef[bef.length-1]}`,offA:aft.filter(off).length,offB:bef.filter(off).length};
+}
+function evCell(r){
+  const e=actEval(r,(ALLD.daily||{})[r.dept],ALLD.meta.N);if(e.msg)return `<span style="color:var(--ink-3)">${e.msg}</span>`;
+  const {a,b}=e;if(a.n<3||b.n<3)return `<span style="color:var(--ink-3)">データ不足（記録：実施前${b.n}日・実施後${a.n}日。各3日以上で比べます）</span>`;
+  const f=(lb,x,y,fmt,inv)=>{if(x==null||y==null)return '';const d=y-x,good=inv?d<0:d>0,cl=Math.abs(d)<1e-9?'st-flat':good?'st-up':'st-down';return `${lb} ${fmt(x)} → <b>${fmt(y)}</b> <span class="${cl}">${d>=0?'+':'-'}${fmt(Math.abs(d))}</span><br>`;};
+  const q=v=>v.toFixed(1)+'個';
+  return `<div class="ev">${f('販売数',b.q,a.q,q)}${f('廃棄数',b.w,a.w,q,true)}${f('荒利益高',b.gp,a.gp,yen)}${f('廃棄高',b.wy,a.wy,yen,true)}
+    <span class="evn">1日あたり／前 ${e.bR}（記録${b.n}日・土日祝${e.offB}日）／後 ${e.aR}（記録${a.n}日・土日祝${e.offA}日）</span></div>`;
+}
+function renderActs(){
+  actInit();const today=new Date().toISOString().slice(0,10);
+  const all=actMerged(),L=all.filter(r=>r.dept===DEPT&&(isAll()||r.store===scope)).sort((x,y)=>(x.created_at||'').localeCompare(y.created_at||''));   // 編集しても行が動かないよう、登録順で固定
+  const sh=ALLD.actions_shared,unsh=all.filter(r=>r._src==='local'||r._src==='changed').length;
+  const where=ACT_STORE==='local'?'<b>保存先：この端末のこのブラウザだけ</b>（変更すると自動で一時保存）。他の人には見えません。ブラウザのデータを消すと消えます。'
+    :'<b>このブラウザでは一時保存が使えません。</b>ページを閉じると入力内容は消えます。必ず「書き出し」してください。';
+  const bar=document.getElementById('actSave');bar.className='savebar'+(ACT_STORE==='local'?'':' mem');
+  bar.innerHTML=`<div class="msg">${where}<br>${sh?`共有版：${esc(sh.built)} に作ったページに含まれる ${sh.items.length}件（読み取り専用。直すと「この端末で変更」になります）。`:'共有版はまだありません。'}
+    ${unsh?`<b>まだ共有されていない記録・変更：${unsh}件。</b>`:''}共有するには「書き出し」したファイルを管理者に渡し、管理者がページを作り直します。</div>
+    <div class="btns"><button class="cp" id="actExp">書き出し（JSON）</button><button class="cp" id="actCsv">CSV</button><button class="cp" id="actImp">読み込み</button>${ACTS.local.length?'<button class="cp" id="actClr">この端末の記録を消す</button>':''}</div>`;
+  document.getElementById('actExp').onclick=actExport;document.getElementById('actCsv').onclick=()=>actCsv(L);
+  document.getElementById('actImp').onclick=()=>document.getElementById('actFile').click();
+  const clr=document.getElementById('actClr');if(clr)clr.onclick=()=>{if(confirm(`この端末に一時保存した ${ACTS.local.length}件を消しますか？（共有版は消えません。先に書き出しておくと安全です）`)){ACTS.local=[];lsSave();renderActs();renderCand();}};
+  const cnt=ACT_ST.map(st=>`${st} ${L.filter(r=>r.status===st).length}`).join('・'),late=L.filter(r=>r.plan_date&&r.plan_date<today&&!r.done_date&&(r.status==='未着手'||r.status==='実施中')).length;
+  document.getElementById('actSub').textContent=`${isAll()?'5店舗':scope}・${DEPT}　${L.length}件（${cnt}）${late?`　期限超過 ${late}件`:''}`;
+  const SRC={shared:['s-shared','共有版'],local:['s-local','この端末だけ'],changed:['s-changed','この端末で変更'],stale:['s-stale','共有版が新しい']};
+  document.getElementById('tTrack').innerHTML=`<thead><tr><th class="l">状況</th>${isAll()?'<th class="l">店舗</th>':''}<th class="l">商品・区分</th><th class="l">推奨内容</th><th class="l">実施担当</th><th class="l">予定日／実施日</th><th class="l">実施後の実績（自動）</th><th class="l">メモ・所感</th><th class="l">保存先</th><th class="l"></th></tr></thead><tbody>`+
+    (L.length?L.map(r=>{const id=esc(r.id),lt=r.plan_date&&r.plan_date<today&&!r.done_date&&(r.status==='未着手'||r.status==='実施中');
+      return `<tr><td class="l" style="min-width:96px"><select data-id="${id}" data-f="status">${ACT_ST.map(s=>`<option${s===r.status?' selected':''}>${s}</option>`).join('')}</select>${lt?'<span class="late">期限超過</span>':''}</td>
+      ${isAll()?`<td class="l"><button class="link" data-go="${esc(r.store)}">${esc(r.store)}</button></td>`:''}
+      <td class="l name">${esc(short(r.name))}<span class="c">${esc(r.cat)}・${esc(r.type)}${r.basis?`<br>根拠：${esc(r.basis.period)}・確度${esc(r.basis.conf)}`:''}</span></td>
+      <td class="l" style="min-width:200px"><textarea data-id="${id}" data-f="rec">${esc(r.rec)}</textarea></td>
+      <td class="l" style="min-width:110px"><input data-id="${id}" data-f="owner" value="${esc(r.owner)}" placeholder="例：店長・夕勤リーダー"></td>
+      <td class="l" style="min-width:136px"><span class="dl">実施予定日</span><input type="date" data-id="${id}" data-f="plan_date" value="${esc(r.plan_date)}"><span class="dl">実施日</span><input type="date" data-id="${id}" data-f="done_date" value="${esc(r.done_date)}"></td>
+      <td class="l" style="white-space:normal;min-width:230px">${evCell(r)}</td>
+      <td class="l" style="min-width:170px"><textarea data-id="${id}" data-f="note" placeholder="実施後の気づき・売り切れ時刻など">${esc(r.note)}</textarea></td>
+      <td class="l"><span class="src ${SRC[r._src][0]}">${SRC[r._src][1]}</span></td>
+      <td class="l">${r._src!=='shared'?`<button class="link" data-del="${id}">${r._src==='local'?'削除':'取り消し'}</button>`:''}</td></tr>`;}).join('')
+    :`<tr><td class="l" colspan="10" style="color:var(--ink-3)">まだ記録はありません。下の改善候補の「実施管理に追加」から登録します。</td></tr>`)+'</tbody>';
+  document.querySelectorAll('#tTrack [data-f]').forEach(el=>el.onchange=()=>actEdit(el.dataset.id,el.dataset.f,el.value));
+  document.querySelectorAll('#tTrack [data-del]').forEach(b=>b.onclick=()=>actDel(b.dataset.del));
+  wireGo(document.getElementById('tTrack'));
+  labelTables();
+  document.getElementById('actNote').innerHTML=`<b>実施後の実績</b>は、実施日の前と後で同じ日数（最大7日）を1日あたりで比べた実績です（CSVから自動計算。データは10/${ALLD.meta.N}まで）。単品は記録のある日だけで平均し、前後どちらかの記録が3日未満なら比べません。天気・曜日の並び・他の施策の影響も含むため、差をそのまま施策の効果とは断定できません。<br>
+    担当欄には個人名ではなく役割（店長・夕勤リーダーなど）を入れることをおすすめします。ページを開ける人は全員、共有版の内容を見られます。<br>
+    この画面にはログインや権限の仕組みはありません。誰が変更したかは記録されません（「書き出し」のファイルに更新日時だけが入ります）。`;
+}
+async function actExport(){
+  actInit();const items=actMerged().map(r=>{const o=Object.assign({},r);delete o._src;return o;});
+  const blob=new Blob([JSON.stringify({format:'ff-report-actions',version:1,exported_at:new Date().toISOString(),items},null,1)],{type:'application/json'});
+  await saveBlob(blob,`実施管理_${new Date().toISOString().slice(0,10)}.json`,'書き出しました');
+}
+function actCsv(L){
+  const H=['ID','部門','店舗','カテゴリー','商品','区分','推奨内容','実施担当','実施予定日','状況','実施日','メモ・所感','根拠の期間','確度','作成日時','更新日時','保存先'];
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  saveCsv([H.map(q).join(',')].concat(L.map(r=>[r.id,r.dept,r.store,r.cat,r.name,r.type,r.rec,r.owner,r.plan_date,r.status,r.done_date,r.note,r.basis&&r.basis.period,r.basis&&r.basis.conf,r.created_at,r.updated_at,r._src].map(q).join(','))),'実施管理');
+}
+function actImport(file){
+  const rd=new FileReader();rd.onload=()=>{try{const j=JSON.parse(rd.result),items=Array.isArray(j)?j:j.items;if(!Array.isArray(items))throw 0;
+    actInit();let add=0,upd=0,old=0,bad=0;
+    items.forEach(r=>{if(!r||typeof r!=='object'||!r.id||!['FF','厨房'].includes(r.dept)){bad++;return;}
+      if(!ACT_ST.includes(r.status))r.status='未着手';const cur=actMerged().find(x=>x.id===r.id);
+      if(cur&&(cur.updated_at||'')>=(r.updated_at||'')){old++;return;}
+      const i=ACTS.local.findIndex(x=>x.id===r.id);if(i>=0)ACTS.local[i]=r;else ACTS.local.push(r);cur?upd++:add++;});
+    lsSave();renderActs();renderCand();toast(`読み込み：追加${add}件・更新${upd}件・同じか古いため無視${old}件${bad?`・形式が違う${bad}件`:''}`);
+  }catch(e){toast('読み込めませんでした（実施管理の書き出しファイルを選んでください）');}};rd.readAsText(file);
+}
 // ===== 改善候補（build.py の candidates.py で計算済み） =====
 let CF={type:'all',low:false};
 const CTYPE={'廃棄削減':['t-red','廃棄削減'],'増産':['t-inc','増産'],'急変':['t-watch','急変']};
@@ -558,7 +691,7 @@ function candCard(c,i){
       <h5>仮定値（こちらで置いた前提）</h5><ul>${c.assume.map(a=>`<li>${a}</li>`).join('')}</ul>
       <h5>計算式</h5><ol>${c.formula.map(a=>`<li>${a}</li>`).join('')}</ol>
       <h5>確認すること</h5><p style="margin:0">${c.check}</p>
-    </details></article>`;
+    </details>${(()=>{const ex=actMerged().filter(r=>r.key===candKey(c));return ex.length?`<span class="reg">実施管理に登録済み（${ex.map(r=>esc(r.status)).join('・')}）</span>`:`<div><button class="cp" data-add="${i}">実施管理に追加</button></div>`;})()}</article>`;
 }
 function renderCand(){
   const all=candAll(),L=candView();HICNT=all.filter(c=>c.conf==='高'&&!c.neg).length;
@@ -583,6 +716,7 @@ function renderCand(){
     <b>原価/個</b>＝(販売高−荒利益高)÷(販売数＋廃棄数)。荒利益高は「販売高−作った分すべての原価」になっているため、この式でCSVから単品ごとの原価が出ます（同じ単品なら日による差は0.1%程度）。<br>
     <b>廃棄高は定価ベース</b>のため、廃棄を1個減らしても荒利益高が増えるのは<b>原価分（廃棄高のおよそ半分）</b>です。「廃棄高の減少」と「荒利益高の改善」は別の数字として出しています。<br>
     試算の合計は、候補どうしが影響しないと仮定した単純合計です。試算は実績ではありません。実施した後は、翌週以降の実績で確かめます。`;
+  document.querySelectorAll('#candList [data-add]').forEach(b=>b.onclick=()=>actAdd(L[+b.dataset.add]));
   wireGo(document.getElementById('candList'));
 }
 function candCsv(L){
@@ -764,6 +898,7 @@ function render(){
   renderStoreRank();
   renderWasteSku();
   renderSkuFlt();
+  renderActs();
   renderCand();
   tabBar();
   showTab();
@@ -1033,20 +1168,23 @@ async function downloadCsv(tbl){
   return saveCsv(rows,tbl.id||'table');
 }
 async function saveCsv(rows,tag){
-  const blob=new Blob(['﻿'+rows.join('\r\n')],{type:'text/csv'});
-  const name=`${DEPT}_${scope==='ALL'?'全店':scope}_${PER().replace(/[\/〜]/g,'-')}_${tag}.csv`;
+  const blob=new Blob(['\ufeff'+rows.join('\r\n')],{type:'text/csv'});
+  return saveBlob(blob,`${DEPT}_${scope==='ALL'?'全店':scope}_${PER().replace(/[\/〜]/g,'-')}_${tag}.csv`,'CSVを');
+}
+async function saveBlob(blob,name,what){
+  const lb=what.endsWith('を')?what:'';
   // claude.ai の中で開いたときは、閲覧者の確認つき保存（downloads）を使う。GitHub Pages ではそのままダウンロード
   if(window.claude&&window.claude.use){
     try{const dl=await window.claude.use('downloads');
-      if(dl){try{await dl.save({filename:name,data:blob});toast('CSVを保存しました');}catch(e){if(e&&e.code!=='declined')toast('CSVを保存できませんでした');}return;}}catch(e){}
+      if(dl){try{await dl.save({filename:name,data:blob});toast(lb?lb+'保存しました':what);}catch(e){if(e&&e.code!=='declined')toast('保存できませんでした');}return;}}catch(e){}
   }
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
-  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast('CSVをダウンロードしました');
+  document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast(lb?lb+'ダウンロードしました':what);
 }
 function addCopyButtons(){
   document.querySelectorAll('.panel').forEach(p=>{if(!p.querySelector('canvas')||p.querySelector('.cp'))return;const ph=p.querySelector('.ph');if(!ph)return;
     const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'グラフをコピー';b.title='画像としてコピー（PowerPoint用）';b.onclick=()=>copyChart(p);ph.appendChild(b);});
-  document.querySelectorAll('.tw').forEach(w=>{if(w.previousElementSibling&&w.previousElementSibling.classList.contains('tbar'))return;
+  document.querySelectorAll('.tw').forEach(w=>{if(w.querySelector('#tTrack'))return;if(w.previousElementSibling&&w.previousElementSibling.classList.contains('tbar'))return;
     const bar=document.createElement('div');bar.className='tbar';const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'表をコピー';b.title='表としてコピー（PowerPoint・Excel用）';b.onclick=()=>copyTable(w.querySelector('table'));bar.appendChild(b);const c=document.createElement('button');c.className='cp';c.textContent='CSV';c.title='CSVファイルでダウンロード（Excel用）';c.onclick=()=>downloadCsv(w.querySelector('table'));bar.appendChild(c);w.parentNode.insertBefore(bar,w);});
   const kh=document.querySelector('#scopeTitle').parentNode;if(!kh.querySelector('.cp')){const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'KPIを表でコピー';b.onclick=async()=>{const t=kpiTable();await copyTable(t);t.remove();};kh.querySelector('p').before(b);b.style.marginLeft='auto';kh.querySelector('p').style.marginLeft='0';}
   [['sumFacts','現状'],['wxFacts','わかったこと']].forEach(([id,lbl])=>{const ul=document.getElementById(id),h=ul.previousElementSibling;if(h.querySelector('.cp'))return;const b=document.createElement('button');b.className='cp';b.style.marginLeft='10px';b.innerHTML=ICON+'文章をコピー';b.onclick=async()=>{const txt=[...ul.parentNode.parentNode.querySelectorAll('li')].map(l=>'・'+l.innerText.replace(/\s+/g,' ').trim()).join('\n');try{await navigator.clipboard.writeText(txt);toast('文章をコピーしました');}catch(e){const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='width:100%;height:240px';overlay(ta,'下の内容を選択してコピーしてください。');ta.select();}};h.appendChild(b);});
@@ -1066,6 +1204,7 @@ function boot(data){
   document.querySelectorAll('[data-locked]').forEach(e=>e.hidden=false);
   setDept('FF');
   addCopyButtons();
+  document.getElementById('actFile').onchange=e=>{const f=e.target.files[0];if(f)actImport(f);e.target.value='';};
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change',draw);
   new MutationObserver(draw).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 }
