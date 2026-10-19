@@ -129,6 +129,10 @@ button.go{font:inherit;font-size:12.5px;color:var(--accent);background:none;bord
 .kpi .row.lbl2{font-size:10.5px}
 .kpi .fc{font-size:11px;color:var(--ink-3)}
 .kpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
+.kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:980px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi .big2{font-size:12px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--accent)}
 .st-up{color:var(--good);font-weight:700}.st-down{color:var(--bad);font-weight:700}.st-flat{color:var(--ink-2)}
 @media (max-width:1100px){.kpis.k6{grid-template-columns:repeat(3,minmax(0,1fr))}.alerts{grid-template-columns:1fr}}
 @media (max-width:640px){.kpis.k6{grid-template-columns:repeat(2,minmax(0,1fr))}.tabs-in{padding:0 8px}.tab{padding:9px 10px 7px;font-size:12.5px}}
@@ -322,6 +326,8 @@ tbody tr:hover td{background:var(--accent-soft)}
   #tTrack td:first-child{border-bottom:1px solid var(--rule);padding-bottom:8px}
   #tTrack .ev{max-width:none}
   .savebar .msg{flex-basis:100%}
+  .kpis.k4 .kpi .v,.kpis.vs .kpi .v{font-size:21px}
+  .kpis .kpi{min-width:0}.kpis .kpi .v{overflow-wrap:anywhere}
 }
 </style>
 
@@ -342,12 +348,16 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <!-- ===== TAB 2 売上・荒利益 ===== -->
+  <section class="sec" data-tab="sales" id="salesTop">
+    <div class="sh"><span class="lbl">SALES</span><h2>売上・荒利益の要約</h2><p id="salesSub"></p></div>
+    <div class="kpis k4" id="salesKpi"></div>
+  </section>
   <section class="sec" data-tab="sales">
     <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と月末着地予測</h2><div class="seg" id="segMet" style="margin-left:auto"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
     <div class="g g-73">
-      <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025年10月（前年）</span><span><i style="background:var(--ty)"></i>2026年10月（実績）</span><span><i class="dash"></i>予測（前年×前年比）</span></div></div>
+      <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025年10月（前年）</span><span><i style="background:var(--ty)"></i>2026年10月（実績）</span><span><i class="dash"></i>予測（前年の同じ日×前年比）</span></div></div>
         <div class="cv"><canvas id="cDaily" role="img" aria-label="日別の販売高・荒利益高"></canvas></div></div>
-      <div class="panel"><div class="ph"><h3>10月 月末着地予測</h3><span class="sub">前年10月の実績 × 今年<span class="pR"></span>の前年比</span></div>
+      <div class="panel"><div class="ph"><h3 id="fTitle">10月 月末着地予測</h3><span class="sub">簡易予測：実績＋残りの日（前年の同じ日×前年比）</span></div>
         <div class="cv sm"><canvas id="cFcst" role="img" aria-label="月末着地予測"></canvas></div><p class="note" id="fcstNote"></p></div>
     </div>
   </section>
@@ -366,13 +376,15 @@ tbody tr:hover td{background:var(--accent-soft)}
       <div class="cv sm"><canvas id="cWk" role="img" aria-label="曜日別の販売高 先週と今週"></canvas></div><p class="note" id="wkNote"></p></div>
   </section>
   <section class="sec" data-tab="sales">
-    <div class="sh"><span class="lbl">CATEGORY</span><h2>カテゴリー別 実績と構成比</h2><p>グラフは上の切り替え（販売高／荒利益高）に連動</p></div>
+    <div class="sh"><span class="lbl">CATEGORY</span><h2>カテゴリー別 実績と構成比</h2><p>グラフと「増減と寄与」の表は、上の切り替え（販売高／荒利益高）に連動</p></div>
     <div class="g g-2">
       <div class="panel"><div class="ph"><h3 id="cTitle">販売高</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025</span><span><i style="background:var(--ty)"></i>2026</span></div></div>
         <div class="cv"><canvas id="cCat" role="img" aria-label="カテゴリー別の実績"></canvas></div></div>
       <div class="panel"><div class="ph"><h3 id="mTitle">販売高 構成比</h3><div class="seg" id="segMix"><button aria-pressed="true" data-k="p26">2026</button><button aria-pressed="false" data-k="p25">2025</button></div></div>
         <div class="cv pie"><canvas id="cMix" role="img" aria-label="構成比"></canvas></div><div class="legend" id="lgMix"></div></div>
     </div>
+    <p class="note" id="catNote"></p>
+    <div class="tw"><table id="tContrib" style="min-width:860px"></table></div>
     <div class="tw"><table id="tCat" style="min-width:1080px"></table></div>
   </section>
 
@@ -559,6 +571,87 @@ function wkCmp(){
   return {c,p,label:`${c.tag||c.label}・${c.range} vs ${p.tag||p.label}・${p.range}`,cur:{d:dataOf(c.k,DEPT)},prev:{d:dataOf(p.k,DEPT)}};
 }
 // ===== アクション（優先度・根拠・期待効果・確認事項・推移） =====
+function renderSalesTop(){
+  const S=A[scope],N=ALLD.meta.N,p=PDS()?CUR():{d0:1,d1:N,n:N,range:`10/1〜${N}`},m25=S.kpi.m25,k26=S.kpi.p26,k25=S.kpi.p25;
+  const cS=salesCalc(S,'販売高',p.d0,p.d1,N),cG=salesCalc(S,'荒利益高',p.d0,p.d1,N),cM=MK==='販売高'?cS:cG;
+  const win=p.k&&p.k!=='all'?p.n:null,bt=fcBacktest(S,MK,N,win),alt=fcDaytype(S,MK,N);
+  const sk=cS.skip.length?`（データの欠けた日・一部店舗だけの日 ${cS.skip.length}日を除く）`:'';
+  const dy=(c)=>`${c.diff>=0?'+':'-'}${yen(Math.abs(c.diff)).replace('-','')}`;
+  document.getElementById('salesSub').textContent=`2026年${p.range}（${p.n}日間）・${isAll()?'5店舗合計':scope}・${DEPT}　データ：10/${N}まで（ページ作成 ${ALLD.meta.built||'—'}）`;
+  document.getElementById('salesKpi').innerHTML=[
+    ['販売高（売上）',yen(k26.販売高),`<span class="row">${cS.yoy==null?'—':chip(cS.yoy)}<span class="num">前年同期 ${yen(cS.s25)}・差 ${dy(cS)}</span></span>`,`<span class="fc">${p.range}・前年の同じ日付と比較${sk}</span>`],
+    ['荒利益高（廃棄控除後）',yen(k26.荒利益高),`<span class="row">${cG.yoy==null?'—':chip(cG.yoy)}<span class="num">前年同期 ${yen(cG.s25)}・差 ${dy(cG)}</span></span>`,`<span class="fc">荒利益率 ${k25.販売高?(k25.荒利益高/k25.販売高*100).toFixed(1)+'%':'—'} → ${k26.販売高?(k26.荒利益高/k26.販売高*100).toFixed(1)+'%':'—'}</span>`],
+    ['前年同期比（販売高）',cS.yoy==null?'—':pf(cS.yoy),`<span class="row"><span class="num big2">荒利益高の前年同期比 <b>${cG.yoy==null?'—':pf(cG.yoy)}</b></span></span>`,`<span class="fc">比べた日：${cS.used.length}日（2026年と2025年の同じ日付）${sk}</span>`],
+    [`10月 月末着地予測（${ML().replace('（売上）','')}）`,cM.fc==null?'—':yen(cM.fc),cM.fc==null?'<span class="row">前年比が出せないため予測なし</span>':`<span class="row">${chip(pct(cM.fc,m25[MK]))}<span class="num">前年10月 ${yen(m25[MK])}</span></span>`,
+      cM.fc==null?'':`<span class="fc">実績 ${yen(cM.act)}（10/1〜${N}）＋予測 ${yen(cM.restFc)}（残り${cM.restOk.length}日）${bt?`・誤差の目安 ±${bt.mae.toFixed(1)}%`:''}</span>`]
+  ].map(([k,v,r1,r2])=>`<div class="kpi"><span class="k">${k}</span><span class="v num">${v}</span>${r1}${r2}</div>`).join('');
+  document.getElementById('fTitle').textContent=`10月 月末着地予測（${ML().replace('（売上）','')}）`;
+  const fcN=cM.fc==null?'前年比が出せないため、予測は出していません。':
+   `<b>着地予測 ${yen(cM.fc)}</b> ＝ 実績 ${yen(cM.act)}（10/1〜${N}${cM.missAct?`・データのない日${cM.missAct}日は含まず`:''}）＋ 残り${cM.restOk.length}日の予測 ${yen(cM.restFc)}。<br>
+    残りの予測 ＝ 前年の同じ日（10/${N+1}〜31）の合計 ${yen(cM.base25)} × 前年比 ${cM.r.toFixed(3)}（${p.range}の同じ日付 ${cM.used.length}日：今年 ${yen(cM.s26)} ÷ 前年 ${yen(cM.s25)}）。${cM.restNg?`前年データのない${cM.restNg}日は予測に含めていません。`:''}<br>
+    前年10月の実績 ${yen(m25[MK])} との差 <b>${cM.fc>=m25[MK]?'+':'-'}${yen(Math.abs(cM.fc-m25[MK])).replace('-','')}</b>（${pf(pct(cM.fc,m25[MK]))}）。<br>
+    誤差の目安：${bt?`±${bt.mae.toFixed(1)}%（今年10/1〜${N}のデータで、途中の日までの${win?'直近'+win+'日の':'累計の'}前年比から残りを予測し、実績と比べた誤差の平均。${bt.n}回）。残りの予測部分にかかる幅で、範囲はおよそ ${yen(cM.act+cM.restFc*(1-bt.mae/100))}〜${yen(cM.act+cM.restFc*(1+bt.mae/100))}`:'データが少なく、まだ出せません'}。<br>
+    参考：今年の曜日区分（平日・土・日祝）の1日平均で残りを埋めると ${alt==null?'—':yen(alt)}。方法によって差が出るため、簡易予測として見てください。予測の更新：データ 10/${N} まで・ページ作成 ${ALLD.meta.built||'—'}。`;
+  document.getElementById('fcstNote').innerHTML=fcN;
+  S._sales={cS,cG,cM,bt};
+}
+function renderContrib(){
+  const S=A[scope],X=catContrib(S,MK,CATS),lb=ML().replace('（売上）','');
+  const rows=[...X.rows].sort((p,q)=>Math.abs(q.diff)-Math.abs(p.diff));
+  const up=rows.filter(r=>r.diff>0).sort((p,q)=>q.diff-p.diff)[0],dn=rows.filter(r=>r.diff<0).sort((p,q)=>p.diff-q.diff)[0];
+  const sg=v=>(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
+  document.getElementById('catNote').innerHTML=`${lb}の前年差 <b>${sg(X.diff)}</b>（${X.yoy==null?'—':pf(X.yoy)}・${PER()}）のうち、`+
+    (up?`最も押し上げたのは <b>${up.c}</b>（${sg(up.diff)}・寄与 ${pf(up.contrib).replace('%','pt')}）`:'押し上げたカテゴリーはなし')+'、'+
+    (dn?`最も押し下げたのは <b>${dn.c}</b>（${sg(dn.diff)}・寄与 ${pf(dn.contrib).replace('%','pt')}）`:'押し下げたカテゴリーはなし')+'。'+
+    (A.ff?'<br>ホットFF・常温FFは、2026年に一部商品が分類変更されたため、この2つの差には分類変更の分が含まれます（集計方法を参照）。':'');
+  document.getElementById('tContrib').innerHTML=`<thead><tr><th class="l">カテゴリー（${lb}）</th><th>2025</th><th>2026</th><th>前年差</th><th>前年比</th><th>構成比 2025</th><th>構成比 2026</th><th>寄与度</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[r.c]});margin-right:8px"></i><b>${r.c}</b></td><td class="num">${yen(r.a)}</td><td class="num">${yen(r.b)}</td><td class="num"><span class="dif ${Math.abs(r.diff)<0.5?'flat':r.diff>0?'up':'down'}">${sg(r.diff)}</span></td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td class="num">${r.sh25==null?'—':r.sh25.toFixed(1)+'%'}</td><td class="num">${r.sh26==null?'—':r.sh26.toFixed(1)+'%'}</td><td class="num">${r.contrib==null?'—':pf(r.contrib).replace('%','pt')}</td></tr>`).join('')+
+    `<tr style="font-weight:700"><td class="l">合計</td><td class="num">${yen(X.t25)}</td><td class="num">${yen(X.t26)}</td><td class="num">${sg(X.diff)}</td><td>${X.yoy==null?'—':chip(X.yoy)}</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">${X.yoy==null?'—':pf(X.yoy).replace('%','pt')}</td></tr></tbody>`;
+  labelTables();
+}
+// ===== 売上分析の計算（SALESタブ・総合タブ・テストで共通） =====
+// 前年比は「今年も前年も、その範囲の全店舗のデータがある日」だけで計算する（欠損日・一部店舗だけの日・未来日は除く）
+function salesCalc(S,met,d0,d1,N){
+  const a=S.daily26[met]||[],b=S.daily25[met]||[],c26=S.cov26||[],c25=S.cov25||[],full=S.nst||1;
+  const ok=d=>d<=N&&a[d-1]!=null&&b[d-1]!=null&&(c26[d-1]??full)===full&&(c25[d-1]??full)===full;
+  const days=[];for(let d=d0;d<=Math.min(d1,N);d++)days.push(d);
+  const used=days.filter(ok),skip=days.filter(d=>!ok(d));
+  const s26=used.reduce((t,d)=>t+a[d-1],0),s25=used.reduce((t,d)=>t+b[d-1],0);
+  const r=s25>0?s26/s25:null;                         // 前年が0以下のときは比率を出さない
+  let act=0,actDays=0;for(let d=1;d<=N;d++)if(a[d-1]!=null){act+=a[d-1];actDays++;}
+  const rest=[];for(let d=N+1;d<=31;d++)rest.push(d);
+  const restOk=rest.filter(d=>b[d-1]!=null&&(c25[d-1]??full)===full);
+  const base25=restOk.reduce((t,d)=>t+b[d-1],0);
+  const restFc=r==null?null:base25*r, fc=restFc==null?null:act+restFc;
+  return {d0,d1,N,used,skip,s26,s25,r,yoy:r==null?null:(r-1)*100,diff:s26-s25,act,actDays,missAct:N-actDays,rest,restOk,restNg:rest.length-restOk.length,base25,restFc,fc};
+}
+// 予測の誤差の目安：今年のデータで「途中の日までで予測 → その後の実績」と比べた誤差（残り部分の合計に対する%）の平均
+// win=null は10/1からの累計の前年比、数字は直近 win 日の前年比で試す（選んだ期間の決め方に合わせる）
+function fcBacktest(S,met,N,win){
+  const a=S.daily26[met]||[],b=S.daily25[met]||[],errs=[];
+  for(let k=7;k<=N-3;k++){
+    const c=salesCalc(S,met,win?Math.max(1,k-win+1):1,k,N);if(c.r==null)continue;
+    let p=0,q=0,good=true;for(let d=k+1;d<=N;d++){if(a[d-1]==null||b[d-1]==null){good=false;break;}p+=b[d-1]*c.r;q+=a[d-1];}
+    if(good&&q>0)errs.push(Math.abs(p-q)/q*100);}
+  return errs.length?{mae:errs.reduce((t,v)=>t+v,0)/errs.length,n:errs.length}:null;
+}
+// 参考：今年の曜日区分（平日・土・日祝）ごとの1日平均で、残りの日を埋めた場合
+function fcDaytype(S,met,N){
+  const a=S.daily26[met]||[],typ=d=>{const w=new Date(2026,9,d).getDay();return w===0||d===12?'日祝':w===6?'土':'平日';},g={};
+  for(let d=1;d<=N;d++)if(a[d-1]!=null)(g[typ(d)]=g[typ(d)]||[]).push(a[d-1]);
+  let act=0;for(let d=1;d<=N;d++)act+=a[d-1]??0;let rest=0;
+  for(let d=N+1;d<=31;d++){const v=g[typ(d)];if(!v||!v.length)return null;rest+=v.reduce((t,x)=>t+x,0)/v.length;}
+  return act+rest;
+}
+// カテゴリー別の増減と寄与度（寄与度＝カテゴリーの前年差 ÷ 前年の合計 ×100。全カテゴリーの合計が全体の前年比になる）
+function catContrib(S,met,cats){
+  const t25=cats.reduce((t,c)=>t+S.cat.p25[c][met],0),t26=cats.reduce((t,c)=>t+S.cat.p26[c][met],0);
+  const rows=cats.map(c=>{const a=S.cat.p25[c][met],b=S.cat.p26[c][met];
+    return {c,a,b,diff:b-a,yoy:a>0?(b/a-1)*100:null,sh25:t25?a/t25*100:null,sh26:t26?b/t26*100:null,contrib:t25>0?(b-a)/t25*100:null};});
+  return {rows,t25,t26,diff:t26-t25,yoy:t25>0?(t26/t25-1)*100:null};
+}
+const WDJ=d=>'日月火水木金土'[new Date(2026,9,d).getDay()];
+const WDJ25=d=>'日月火水木金土'[new Date(2025,9,d).getDay()];
 // ===== 実施管理（静的サイト版：共有版は読み取り専用、変更はこの端末のブラウザに一時保存） =====
 const ACT_LS='ffreport.actions.v1', ACT_ST=['未着手','実施中','完了','見送り'];
 let ACTS=null, ACT_STORE='memory';
@@ -796,7 +889,7 @@ function renderSkuFlt(){
 }
 const COMMON_METHOD=`<li>荒利益高は、元データの荒利益高（廃棄を差し引いた後の値）をそのまま合計しています。</li>
 <li>先週比は1日あたり（営業日数で割った値）で比べます。前年比は前年の同じ日付どうしの比較です。目標（予算）データはないため、目標比は出していません。</li>
-<li>月末着地予測＝前年10月の実績 × 選んだ期間の前年比。予測は実績と分けて、点線・別カードで表示します。</li>
+<li>月末着地予測（簡易予測）＝ 10/1〜最終日の実績 ＋ 残りの日の予測（前年の同じ日 × 選んだ期間の前年比）。前年比は、今年・前年とも全店舗のデータがある同じ日付だけで計算します。誤差の目安は、今年のデータで途中の日から同じ方法で予測して実績と比べた誤差の平均です。</li>
 <li>データがない日（欠損）はグラフで空白、売上ゼロの日は0として区別しています。比較の基準が0またはない場合は「—」と表示します。</li>
 <li>単品判定：販売日が3日未満の単品は「判定保留」。販売数と廃棄数の合計が少ない単品（全店10個未満・店舗3個未満）は表に出していません。</li>
 <li>アクションの期待効果は上限の目安です（減産は廃棄の8割を減らせた場合）。増産は売り切れ時刻のデータがないため金額を推定しません。</li>`;
@@ -812,7 +905,7 @@ function render(){
   document.getElementById('scopeTitle').textContent=isAll()?'全店（5店舗合計）':scope+' 店';
   // KPI（前年同日比・先週比・月末着地予測）
   const pv=PREV(),cu=PDS()?CUR():null;
-  const wc=wkCmp(),fcS=m25.販売高*((k25.販売高&&k26.販売高!=null)?k26.販売高/k25.販売高:1),fcG=m25.荒利益高*(k25.荒利益高?k26.荒利益高/k25.荒利益高:1);
+  const wc=wkCmp(),pp=PDS()?CUR():{d0:1,d1:ALLD.meta.N},cS=salesCalc(S,'販売高',pp.d0,pp.d1,ALLD.meta.N),cG=salesCalc(S,'荒利益高',pp.d0,pp.d1,ALLD.meta.N),fcS=cS.fc,fcG=cG.fc;
   const wkRow=(k,inv,isN,isRate)=>{
     if(!wc) return '<span class="row lbl2" style="color:var(--ink-3)">先週比：比較できる週がありません</span>';
     const a=wc.cur.d[scope],b=wc.prev.d[scope],na=a.days.p26||0,nb=b.days.p26||0,lab=`${wc.c.tag||wc.c.label}vs${wc.p.tag||wc.p.label}（1日）`;
@@ -827,7 +920,7 @@ function render(){
     ['販売数',n0(k26.販売数)+'<small>個</small>',lyRow(chip(pct(k26.販売数,k25.販売数)),n0(k25.販売数)+'個'),wkRow('販売数',false,true),2],
     ['廃棄高',yen(k26.廃棄高),lyRow(chip(pct(k26.廃棄高,k25.廃棄高),true),yen(k25.廃棄高)),wkRow('廃棄高',true),3],
     ['廃棄率',wrOf(nc.p26).toFixed(1)+'<small>%</small>',lyRow(ptchip(wrOf(nc.p26)-wrOf(nc.p25),true),wrOf(nc.p25).toFixed(1)+'%'),wkRow(null,true,false,true),-1],
-    ['10月 月末着地予測（販売高）',yen(fcS),`<span class="row">${chip(pct(fcS,m25.販売高))}<span class="num">前年10月比　前年 ${yen(m25.販売高)}</span></span>`,`<span class="row lbl2"><span class="num">荒利益高 ${yen(fcG)}（${pf(pct(fcG,m25.荒利益高))}）</span></span><span class="fc">予測＝前年10月 × ${PER()}の前年比</span>`,-1]];
+    ['10月 月末着地予測（販売高）',fcS==null?'—':yen(fcS),fcS==null?'<span class="row">前年比が出せないため予測なし</span>':`<span class="row">${chip(pct(fcS,m25.販売高))}<span class="num">前年10月比　前年 ${yen(m25.販売高)}</span></span>`,`<span class="row lbl2"><span class="num">荒利益高 ${fcG==null?'—':yen(fcG)+'（'+pf(pct(fcG,m25.荒利益高))+'）'}</span></span><span class="fc">簡易予測＝実績＋残り${cS.rest.length}日（前年の同じ日×${PER()}の前年比）</span>`,-1]];
   document.getElementById('kpis').className='kpis k6';
   document.getElementById('sumNote').textContent=`荒利益高は廃棄控除後。前年比＝前年の同じ日付（${PER()}）との比較。先週比＝${wc?`${wc.c.tag||wc.c.label}（${wc.c.range}）と${wc.p.tag||wc.p.label}（${wc.p.range}）の1日あたり比較`:'比較できる週なし'}。目標（予算）データはないため目標比は表示しません。`;
   document.getElementById('kpis').innerHTML=K.map(([k,v,r1,r2,si])=>`<div class="kpi">${si>=0?spark(S.daily25[SPK[si]].slice(0,ALLD.meta.N),S.daily26[SPK[si]],si===3):''}<span class="k">${k}</span><span class="v num">${v}</span>${r1}${r2}</div>`).join('');
@@ -857,10 +950,7 @@ function render(){
   if(isAll()){const srt=STORES.map(s=>({s,w:wrOf(A.stores[s].nc26)})).sort((a,b)=>b.w-a.w),hw=srt[0],lw=srt[srt.length-1];acts.push(`<b>店舗：</b>${hw.s}（廃棄率${hw.w.toFixed(1)}%）の廃棄対策を優先。廃棄率${lw.w.toFixed(1)}%の${lw.s}の仕込み量・タイミングを共有します。`);}
   acts.push(`<button class="go" data-tab-go="action">改善候補をすべて見る（確度 高・中 ${AL.length}件）</button>`);
   document.getElementById('sumActs').innerHTML=acts.map(a=>`<li>${a}</li>`).join('');
-  // forecast
-  const fc=m25.荒利益高*(k26.荒利益高/k25.荒利益高), fs=m25.販売高*(k26.販売高/k25.販売高);
-  S._fc={荒利益高:fc,販売高:fs};
-  document.getElementById('fcstNote').innerHTML=`このペースなら10月着地は 販売高（売上） <b class="num">${yen(fs)}</b>（前年 ${yen(m25.販売高)}、差 <b class="num">${fs>=m25.販売高?'+':''}${yen(fs-m25.販売高)}</b>）、荒利益高 <b class="num">${yen(fc)}</b>（前年 ${yen(m25.荒利益高)}、差 <b class="num">${fc>=m25.荒利益高?'+':''}${yen(fc-m25.荒利益高)}</b>）。前年10月は廃棄高が荒利益高の ${(m25.廃棄高/m25.荒利益高*100).toFixed(0)}%でした。`;
+  renderSalesTop();
   // category table
   document.getElementById('tCat').innerHTML=`<thead><tr><th class="l">カテゴリー</th><th>販売高 2025</th><th>販売高 2026</th><th>前年比</th><th>荒利益高 2025</th><th>荒利益高 2026</th><th>前年比</th><th>販売数 2025</th><th>販売数 2026</th><th>前年比</th><th>廃棄高 2025</th><th>廃棄高 2026</th><th>廃棄率 2026</th></tr></thead><tbody>`+
    CATS.map(c=>{const a=S.cat.p25[c],b=S.cat.p26[c],m=A.excl.includes(c);return `<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[c]});margin-right:8px"></i><b>${c}</b></td><td class="num">${yen(a.販売高)}</td><td class="num">${yen(b.販売高)}</td><td>${a.販売高?chip(pct(b.販売高,a.販売高)):'—'}</td><td class="num">${yen(a.荒利益高)}</td><td class="num">${yen(b.荒利益高)}</td><td>${a.荒利益高?chip(pct(b.荒利益高,a.荒利益高)):'—'}</td><td class="num">${n0(a.販売数)}</td><td class="num">${n0(b.販売数)}</td><td>${a.販売数?chip(pct(b.販売数,a.販売数)):'—'}</td><td class="num">${m?'—':yen(a.廃棄高)}</td><td class="num">${m?'—':yen(b.廃棄高)}</td><td class="num">${m?'—':wrOf(b).toFixed(1)+'%'}</td></tr>`}).join('')+'</tbody>';
@@ -1057,16 +1147,35 @@ function draw(){
   const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
   const lab=S.daily25.荒利益高.map((_,i)=>(i+1)+'日');
   document.getElementById('dTitle').textContent='日別 '+ML();document.getElementById('cTitle').textContent=ML().replace('（売上）','')+'（'+PER()+'）';document.getElementById('mTitle').textContent=ML().replace('（売上）','')+' 構成比';
+  const N=ALLD.meta.N,pp=PDS()?CUR():{d0:1,d1:N},sc=salesCalc(S,MK,pp.d0,pp.d1,N),full=S.nst||1;
+  const fcArr=lab.map((_,i)=>{const d=i+1;if(sc.r==null)return null;if(d===N)return S.daily26[MK][N-1];return d>N&&S.daily25[MK][i]!=null?S.daily25[MK][i]*sc.r:null;});
+  const bound={id:'bound',beforeDatasetsDraw(ch){const {ctx,chartArea:a,scales:{x}}=ch;ctx.save();
+      // 選んだ期間を薄く塗る
+      if(pp.d0>1||pp.d1<N){ctx.fillStyle=css('--accent-soft');const x0=x.getPixelForValue(pp.d0-1)-4,x1=x.getPixelForValue(pp.d1-1)+4;ctx.fillRect(x0,a.top,x1-x0,a.bottom-a.top);}
+      // 実績と予測の境目
+      const xb=(x.getPixelForValue(N-1)+x.getPixelForValue(N))/2;ctx.strokeStyle=css('--ink-3');ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(xb,a.top);ctx.lineTo(xb,a.bottom);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=css('--ink-3');ctx.font='11px '+css('--f-ui');ctx.textAlign='right';ctx.fillText('実績',xb-6,a.top+12);ctx.textAlign='left';ctx.fillText('予測',xb+6,a.top+12);ctx.restore();}};
   charts.push(new Chart(cDaily,{type:'line',data:{labels:lab,datasets:[
-    {label:'2025',data:S.daily25[MK],borderColor:ly,borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25},
-    {label:'2026',data:lab.map((_,i)=>S.daily26[MK][i]??null),borderColor:ty,backgroundColor:ty,borderWidth:2.5,pointRadius:4,pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.25},
-    // 予測：前年の同じ日 × 選んだ期間の前年比（実績とは別の点線）
-    (()=>{const r=S.kpi.p25[MK]?S.kpi.p26[MK]/S.kpi.p25[MK]:null,N=ALLD.meta.N,last=S.daily26[MK][N-1];
-      return {label:'予測',data:lab.map((_,i)=>r==null?null:i+1===N?last:i+1>N&&S.daily25[MK][i]!=null?S.daily25[MK][i]*r:null),borderColor:ty,borderDash:[5,4],borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false};})()]},
-    options:{interaction:{mode:'index',intersect:false},scales:{y:{grace:'10%',ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{maxTicksLimit:11}}},
-      plugins:{tooltip:{filter:x=>x.raw!=null&&!(x.dataset.label==='予測'&&x.dataIndex+1===ALLD.meta.N),callbacks:{label:x=>` ${{'2025':'前年（2025年）','2026':'実績（2026年）','予測':'予測'}[x.dataset.label]}  ${yen(x.raw)}`}}}}}));
-  charts.push(new Chart(cFcst,{type:'bar',data:{labels:['2025年10月 実績','2026年10月 予測'],datasets:[{data:[S.kpi.m25[MK],S._fc[MK]],backgroundColor:[ly,ty],borderRadius:3,maxBarThickness:80}]},
-    options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>' '+yen(x.raw)}}}}}));
+    {label:'2025',data:S.daily25[MK],borderColor:ly,borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false},
+    {label:'2026',data:lab.map((_,i)=>S.daily26[MK][i]??null),borderColor:ty,backgroundColor:ty,borderWidth:2.5,pointRadius:lab.map((_,i)=>S.cov26&&S.cov26[i]!=null&&S.cov26[i]<full?6:4),pointStyle:lab.map((_,i)=>S.cov26&&S.cov26[i]!=null&&S.cov26[i]<full?'triangle':'circle'),pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.25,spanGaps:false},
+    {label:'予測',data:fcArr,borderColor:ty,borderDash:[5,4],borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false}]},
+    plugins:[bound],
+    options:{interaction:{mode:'index',intersect:false},scales:{y:{grace:'10%',title:{display:true,text:ML()+'（円）',color:css('--ink-3'),font:{size:10.5}},ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{maxTicksLimit:11}}},
+      plugins:{tooltip:{filter:x=>x.raw!=null&&!(x.dataset.label==='予測'&&x.dataIndex+1===N),
+        callbacks:{title:it=>{const d=it[0].dataIndex+1;return `10/${d}（2026年は${WDJ(d)}・2025年は${WDJ25(d)}）`;},
+          label:x=>{const d=x.dataIndex+1;if(x.dataset.label==='2025')return ` 前年（2025年）  ${yen(x.raw)}`;
+            if(x.dataset.label==='予測')return ` 予測  ${yen(x.raw)}（前年 ${yen(S.daily25[MK][d-1])} × ${sc.r.toFixed(3)}）`;
+            const part=S.cov26&&S.cov26[d-1]<full?`（${S.cov26[d-1]}店分のみ）`:'';return ` 実績（2026年）  ${yen(x.raw)}${part}`;},
+          afterBody:it=>{const d=it[0].dataIndex+1,a=S.daily26[MK][d-1],b=S.daily25[MK][d-1];if(d>N||a==null||b==null)return [];
+            const okd=(S.cov26?S.cov26[d-1]===full:true)&&(S.cov25?S.cov25[d-1]===full:true);if(!okd)return ['前年比：一部の店舗だけの日のため出しません'];
+            return [`前年比 ${b>0?pf(pct(a,b)):'—'}　前年との差 ${a-b>=0?'+':'-'}${yen(Math.abs(a-b)).replace('-','')}`];}}}}}}));
+  charts.push(new Chart(cFcst,{type:'bar',data:{labels:['2025年10月（実績）','2026年10月（着地予測）'],datasets:[
+      {label:'実績',data:[S.kpi.m25[MK],sc.act],backgroundColor:[ly,ty],borderRadius:0,maxBarThickness:80,stack:'s'},
+      {label:'予測',data:[null,sc.restFc],backgroundColor:css('--accent-soft'),borderColor:ty,borderWidth:1.5,borderDash:[4,3],borderRadius:0,maxBarThickness:80,stack:'s'}]},
+    options:{scales:{y:{stacked:true,beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{stacked:true,grid:{display:false}}},
+      plugins:{legend:{display:true,position:'top',align:'end',labels:{boxWidth:10,boxHeight:10,color:css('--ink-2')}},tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>x.dataIndex===0?` 前年10月 実績  ${yen(x.raw)}`:x.dataset.label==='実績'?` 実績（10/1〜${N}）  ${yen(x.raw)}`:` 予測（10/${N+1}〜31）  ${yen(x.raw)}`,
+        footer:it=>it[0].dataIndex===1&&sc.fc!=null?`着地予測 合計 ${yen(sc.fc)}`:''}}}}}));
+  renderContrib();
   charts.push(new Chart(cCat,{type:'bar',data:{labels:CATS,datasets:[
     {label:'2025',data:CATS.map(c=>S.cat.p25[c][MK]),backgroundColor:ly,borderRadius:2},
     {label:'2026',data:CATS.map(c=>S.cat.p26[c][MK]),backgroundColor:ty,borderRadius:2}]},
@@ -1103,7 +1212,7 @@ function draw(){
       plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`,afterBody:x=>`廃棄率 ${(L[x[0].dataIndex].wr*100).toFixed(1)}%`}}}}}));
 }
 function seg(id,set){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));set(b.dataset.k);draw()})}
-seg('segMix',k=>mixK=k);seg('segMet',k=>MK=k);seg('segWaste',k=>wasteK=k);
+seg('segMix',k=>mixK=k);seg('segMet',k=>{MK=k;renderSalesTop();});seg('segWaste',k=>wasteK=k);
 
 // ===== コピー機能（PowerPoint・Excel貼り付け用） =====
 const ICON='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';

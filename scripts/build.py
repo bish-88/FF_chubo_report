@@ -90,6 +90,10 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
         o['daily25']={k:[F(v) if has(2025,stores,d) else None for d,v in y25.groupby('d')[k].sum().reindex(range(1,32),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
         o['daily26']={k:[F(v) if has(2026,stores,d) else None for d,v in y26all.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
         o['days']={'p26':sum(has(2026,stores,d) for d in range(d0,d1+1)),'p25':sum(has(2025,stores,d) for d in range(d0,d1+1))}
+        # 日ごとの「データのある店舗数」。全店の日別は、一部の店舗しかない日を前年比・予測の計算から外すために使う
+        o['cov26']=[sum((2026,s,d) in COV[key] for s in stores) for d in range(1,N+1)]
+        o['cov25']=[sum((2025,s,d) in COV[key] for s in stores) for d in range(1,32)]
+        o['nst']=len(stores)
         o['cat']={'p25':bycat(sp25),'p26':bycat(y26),'m25':bycat(y25)}
         nc=x[~x.cat.isin(excl)]
         a=nc[(nc.year==2026)&nc.d.between(d0,d1)]; b=nc[(nc.year==2025)&nc.d.between(d0,d1)]; mm=nc[nc.year==2025]
@@ -207,6 +211,7 @@ for pp in PERIODS:
     pp['first']=wd_of(pp['d0']); pp['last']=wd_of(pp['d1'])
     pp['we26']=sum(is_off26(d) for d in range(pp['d0'],pp['d1']+1)); pp['we25']=sum(datetime.date(2025,10,d).weekday()>=5 or d==13 for d in range(pp['d0'],pp['d1']+1))
 D['meta']['periods']=PERIODS
+D['meta']['built']=datetime.date.today().isoformat()   # ページを作った日（予測の更新日として表示）
 # 改善候補（実績からの自動抽出。式は scripts/candidates.py）
 # 2026年はジャイアントポークフランク・なんこつつくね棒がホットFF→常温FFへ移ったため、この2カテゴリーの前年比は確度を下げる
 RECLASS={'ホットFF':'2026年に一部商品が常温FFへ分類変更された','常温FF':'2026年に一部商品がホットFFから分類変更された'}

@@ -29,6 +29,10 @@ async def main():
                         await pg.click(f'.sw[data-s="{s}"]')
                         for t in TABS:
                             await pg.click(f'.tab[data-t="{t}"]'); checked += 1
+                            if t == 'sales':
+                                await pg.click('#segMet button[data-k="荒利益高"]'); await pg.click('#segMet button[data-k="販売高"]')
+                                ok = await pg.evaluate("Chart.getChart('cDaily').data.datasets.length===3&&document.getElementById('salesKpi').children.length===4")
+                                if not ok: problems.append((w, dept, per, s, t, 'sales charts/KPI'))
                             if t == 'action':
                                 for cf in ['廃棄削減', '増産', '急変先週', '急変前年', 'all']:
                                     await pg.click(f'[data-cf="{cf}"]')
