@@ -1,9 +1,13 @@
 import pandas as pd, numpy as np, glob, json, datetime, os, sys
 ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# テスト用：DATA_DIR（CSVの場所）と OUT_FILE（出力先）を環境変数で差し替えられる
+DATA_DIR=os.environ.get('DATA_DIR',os.path.join(ROOT,'data'))
+OUT_FILE=os.environ.get('OUT_FILE',os.path.join(ROOT,'index.html'))
 m=['販売数','販売高','廃棄数','廃棄高','荒利益高']
 SN={'新御堂筋上新田':'上新田','吹田朝日町':'朝日町','豊中服部元町一丁目':'元町一','吹田豊津中学校前':'豊津中','吹田青山台三丁目':'青山台'}
 STORES=list(SN.values())
-def read(files,catfn):
+COV={}  # 部門ごとの「データがある日」（年・店舗・日）。欠損日と実績ゼロを区別するために使う
+def read(files,catfn,key):
     dfs=[]
     for f in files:
         d=pd.read_csv(f,encoding='cp932',dtype=str)[['年月日','店舗名','CLASS名','SUBCLASS名','商品名']+m]
@@ -12,11 +16,12 @@ def read(files,catfn):
     for c in m: df[c]=pd.to_numeric(df[c].str.replace(',',''),errors='coerce').fillna(0)
     df['date']=pd.to_datetime(df['年月日']); df['year']=df.date.dt.year; df['d']=df.date.dt.day
     df['cat']=catfn(df); df['store']=df.店舗名.map(SN)
+    COV[key]=set(zip(df.year,df.store,df.d))
     df=df[(df[m]!=0).any(axis=1)&df.cat.notna()]
     return df.drop_duplicates(['年月日','店舗名','SUBCLASS名','商品名']+m)
 catmap={'販売）からあげクン他　ホット':'からあげクン','ホットＦＦ':'ホットFF','常温ＦＦ':'常温FF','販売）サーマル　常温':'サーマル常温','販売）マチカフェ':'マチカフェ','中華まん　什器販売':'中華まん'}
-FF=read(sorted(glob.glob(os.path.join(ROOT,'data','FF','*.csv'))),lambda d:d.CLASS名.map(catmap))
-KI=read(sorted(glob.glob(os.path.join(ROOT,'data','厨房','*.csv'))),lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])))
+FF=read(sorted(glob.glob(os.path.join(DATA_DIR,'FF','*.csv'))),lambda d:d.CLASS名.map(catmap),'FF')
+KI=read(sorted(glob.glob(os.path.join(DATA_DIR,'厨房','*.csv'))),lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])),'厨房')
 F=float
 # 今年のデータが何日まであるか（FF・厨房で共通の日数）
 N=int(min(FF[FF.year==2026].d.max(),KI[KI.year==2026].d.max()))
@@ -71,16 +76,20 @@ def weekly(x,ns,cats):
         t=y[y.d==d][m].sum(); byd[d]={k:F(t[k]/ns) for k in m}
     return dict(weeks=weeks,byday=byd)
 
-def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False):
+def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
+    key=key or ('FF' if ff else '厨房')
+    def has(y,stores,d): return any((y,s,d) in COV[key] for s in stores)
     d1=d1 or N; nd=d1-d0+1
     wdf=df[~df.cat.isin(excl)]
     def bycat(x):
         g=x.groupby('cat')[m].sum().reindex(cats).fillna(0); return {c:{k:F(g.loc[c,k]) for k in m} for c in cats}
-    def scope(x,single):
+    def scope(x,single,stores):
         y25=x[x.year==2025]; y26all=x[x.year==2026]; y26=y26all[y26all.d.between(d0,d1)]; sp25=y25[y25.d.between(d0,d1)]
         o={'kpi':{'p25':tot(sp25),'p26':tot(y26),'m25':tot(y25)}}
-        o['daily25']={k:[F(v) for v in y25.groupby('d')[k].sum().reindex(range(1,32),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
-        o['daily26']={k:[F(v) for v in y26all.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0)] for k in ['荒利益高','廃棄高','販売数','販売高']}
+        # データがない日は None（グラフでは空白）。データがあって売れなかった日は 0
+        o['daily25']={k:[F(v) if has(2025,stores,d) else None for d,v in y25.groupby('d')[k].sum().reindex(range(1,32),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
+        o['daily26']={k:[F(v) if has(2026,stores,d) else None for d,v in y26all.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
+        o['days']={'p26':sum(has(2026,stores,d) for d in range(d0,d1+1)),'p25':sum(has(2025,stores,d) for d in range(d0,d1+1))}
         o['cat']={'p25':bycat(sp25),'p26':bycat(y26),'m25':bycat(y25)}
         nc=x[~x.cat.isin(excl)]
         a=nc[(nc.year==2026)&nc.d.between(d0,d1)]; b=nc[(nc.year==2025)&nc.d.between(d0,d1)]; mm=nc[nc.year==2025]
@@ -95,7 +104,8 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False):
             if r.販売数+r.廃棄数<minsold: continue
             nl=AL.get(n,n) if ff else n
             wr=r.廃棄数/(r.販売数+r.廃棄数); so=1-r.wsd/r.sd; per=r.販売数/r.sd; wpd=r.廃棄数/r.sd
-            if (wr>=0.15 and r.廃棄高>=(500 if single else 1000)) or (r.廃棄高>r.荒利益高*0.6 and r.廃棄高>=500): v='reduce'
+            if r.sd<3: v='hold'  # 販売日が少なく判断できない
+            elif (wr>=0.15 and r.廃棄高>=(500 if single else 1000)) or (r.廃棄高>r.荒利益高*0.6 and r.廃棄高>=500): v='reduce'
             elif wr<=0.05 and so>=0.8 and per>=(4 if single else 2.5) and r.販売数>=(12 if single else 20): v='increase'
             elif wr>=0.10: v='watch'
             else: v='keep'
@@ -140,11 +150,12 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False):
         o['cal']=cal
         o['wk']=weekly(x,1 if single else len(STORES),cats)
         return o
-    out={'cats':cats,'excl':excl,'colors':colors,'ff':ff,'ALL':scope(df,False)}
-    for s in STORES: out[s]=scope(df[df.store==s],True)
+    out={'cats':cats,'excl':excl,'colors':colors,'ff':ff,'ALL':scope(df,False,STORES)}
+    for s in STORES: out[s]=scope(df[df.store==s],True,[s])
     rg=lambda z:z.d.between(d0,d1)
     out['stores']={s:{'p26':tot(df[(df.store==s)&(df.year==2026)&rg(df)]),'p25':tot(df[(df.store==s)&(df.year==2025)&rg(df)]),
-        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==2026)&rg(wdf)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==2025)&rg(wdf)])} for s in STORES}
+        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==2026)&rg(wdf)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==2025)&rg(wdf)]),
+        'days26':sum(has(2026,[s],d) for d in range(d0,d1+1)),'days25':sum(has(2025,[s],d) for d in range(d0,d1+1))} for s in STORES}
     if light: return out
     y=df[df.year==2025]
     res={}
@@ -180,7 +191,8 @@ D={'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True),
 WD='月火水木金土日'
 def wcount(y): 
     ds=[datetime.date(y,10,d) for d in range(1,N+1)]
-    return dict(we=sum(d.weekday()>=5 for d in ds),first=WD[ds[0].weekday()],last=WD[ds[-1].weekday()])
+    hol={2026:{12},2025:{13}}[y]  # 祝日（スポーツの日）も土日祝に含める
+    return dict(we=sum(d.weekday()>=5 or d.day in hol for d in ds),first=WD[ds[0].weekday()],last=WD[ds[-1].weekday()])
 D['meta']=dict(N=N,w26=wcount(2026),w25=wcount(2025),fc=FC_ISSUED,
   wx26=[dict(d=d,rain=RAIN26.get(d),tmax=TMAX26.get(d)) for d in range(1,N+1)],
   dropped=[c for c in ['マチカフェ','中華まん'] if c not in FFC])
@@ -199,7 +211,16 @@ D['P']={pp['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[
                  '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False,pp['d0'],pp['d1'],True)} for pp in PERIODS[1:]}
 tpl=open(os.path.join(ROOT,'scripts','template.html'),encoding='utf-8').read()
 PW=os.environ.get('REPORT_PASSWORD','')
-payload=json.dumps(D,ensure_ascii=False)
+# 天気分析のサンプル数（注意書き用）
+D['meta']['wxN']=dict(days=int(len(W)),wet=int(W.wet.sum()),sat=int((W.type=='土').sum()),sun=int((W.type=='日祝').sum()))
+def clean_nan(o):
+    # NaN・無限大は JSON にできないので None（欠損）にする
+    if isinstance(o,float): return o if np.isfinite(o) else None
+    if isinstance(o,dict): return {k:clean_nan(v) for k,v in o.items()}
+    if isinstance(o,list): return [clean_nan(v) for v in o]
+    return o
+D=clean_nan(D)
+payload=json.dumps(D,ensure_ascii=False,allow_nan=False)
 if PW:
     import base64, secrets, hashlib
     from cryptography.hazmat.primitives.ciphers.aead import AESGCM
@@ -213,6 +234,6 @@ else:
     tpl=tpl.replace('__ENC__','null')
     print('注意：REPORT_PASSWORD が未設定のため、暗号化していません（GitHubに上げないでください）')
 head='<!doctype html>\n<html lang="ja">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-open(os.path.join(ROOT,'index.html'),'w',encoding='utf-8').write(head+tpl.replace('__DATA__',payload).replace('<header class="band">','</head>\n<body>\n<header class="band">',1)+'\n</body>\n</html>\n')
+open(OUT_FILE,'w',encoding='utf-8').write(head+tpl.replace('__DATA__',payload).replace('<header class="band">','</head>\n<body>\n<header class="band">',1)+'\n</body>\n</html>\n')
 print('index.html を更新しました')
 
