@@ -82,6 +82,32 @@ body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:13.
 .alert.bad{border-left-color:var(--bad)}.alert.warn{border-left-color:var(--warn)}.alert.good{border-left-color:var(--good)}
 .alert h4{margin:0;font-size:12px;color:var(--ink-2);font-weight:700;letter-spacing:.04em}
 .alert ul{margin:0;padding-left:16px;font-size:12.5px;line-height:1.65}
+.cfilter{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.cfilter .grp{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cfilter .gl{font-size:11px;color:var(--ink-3);font-weight:600;margin-right:2px}
+.cfilter label{font-size:12px;color:var(--ink-2);display:inline-flex;gap:5px;align-items:center;cursor:pointer}
+.csum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.csum>div{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:10px 14px;box-shadow:var(--shadow)}
+.csum .k{font-size:11px;color:var(--ink-3);font-weight:600;display:block}.csum .v{font-size:20px;font-weight:700;font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.csum .s{font-size:11px;color:var(--ink-3);display:block;line-height:1.5}
+.cgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.cand{background:var(--panel);border:1px solid var(--rule);border-radius:8px;box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.cand.neg{border-left:4px solid var(--warn)}
+.cand .hd{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.cand .rk{font-family:var(--f-num);font-size:11px;color:var(--ink-3);font-weight:700;margin-right:2px}
+.cand h4{margin:0;font-size:14.5px;line-height:1.4}.cand h4 .c{font-size:11px;color:var(--ink-3);font-weight:500;margin-left:6px}
+.cand .meta{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:11.5px;color:var(--ink-2)}.cand .meta dt{color:var(--ink-3)}.cand .meta dd{margin:0}
+.cand .act{font-size:13px;font-weight:600;line-height:1.55}
+.cand .est{background:var(--bg);border-radius:6px;padding:8px 10px;font-size:12px}
+.cand .est .t{font-size:10.5px;font-weight:700;color:var(--warn);letter-spacing:.04em;display:block;margin-bottom:3px}
+.cand .est div{display:flex;justify-content:space-between;gap:10px}.cand .est b{font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.cand details{font-size:12px}.cand summary{cursor:pointer;color:var(--accent);font-weight:600}
+.cand details h5{margin:10px 0 4px;font-size:11px;color:var(--ink-3);letter-spacing:.06em}
+.cand details td:first-child{text-align:left;color:var(--ink-2)}
+.cand details table{width:100%;border-collapse:collapse;font-size:11.5px}.cand details td{padding:3px 0;border-bottom:1px solid var(--rule)}.cand details td+td{text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:8px}
+.cand details ul,.cand details ol{margin:0;padding-left:18px;line-height:1.6}
+.tag.c-hi{background:var(--good-bg);color:var(--good)}.tag.c-mid{background:var(--warn-bg);color:var(--warn)}.tag.c-lo{background:var(--bg);color:var(--ink-3);border:1px solid var(--rule)}
+@media (max-width:980px){.cgrid{grid-template-columns:1fr}.csum{grid-template-columns:repeat(2,minmax(0,1fr))}}
 button.go{font:inherit;font-size:12.5px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-align:left;text-decoration:underline;font-weight:600}
 .alert .go{font:inherit;font-size:11.5px;color:var(--accent);background:none;border:0;padding:0;cursor:pointer;text-align:left;text-decoration:underline}
 .flt{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:12px;color:var(--ink-2)}
@@ -171,7 +197,6 @@ tbody tr:hover td{background:color-mix(in srgb,var(--accent-soft) 60%,transparen
 .s-chance{background:var(--good-bg);color:var(--good)}.s-risk{background:var(--bad-bg);color:var(--bad)}.s-normal{background:var(--bg);color:var(--ink-3)}
 tr.we td{background:color-mix(in srgb,var(--accent-soft) 45%,transparent)}
 td.adv{white-space:normal;min-width:300px;text-align:left;line-height:1.55;font-size:12px}
-@media (min-width:641px){#tAct td.adv{min-width:140px}#tAct td.name{min-width:170px}}
 .ibar{display:inline-block;width:70px;height:6px;background:var(--rule);border-radius:3px;position:relative;vertical-align:middle;margin-left:8px}
 .ibar>span{position:absolute;top:0;bottom:0;border-radius:3px}
 .ibar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--ink-3)}
@@ -394,10 +419,12 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <!-- ===== TAB 7 アクション・教訓 ===== -->
-  <section class="sec" data-tab="action">
-    <div class="sh"><span class="lbl">ACTION LIST</span><h2>アクション一覧（優先順）</h2><p>期待効果は上限の目安です。実際の効果は翌週以降の実績で確認します。</p></div>
-    <div class="tw"><table id="tAct" style="min-width:1120px"></table></div>
-    <p class="note" id="actNote"></p>
+  <section class="sec" data-tab="action" id="candSec">
+    <div class="sh"><span class="lbl">IMPROVEMENT</span><h2>改善候補（実績から自動抽出）</h2><p id="candSub"></p></div>
+    <div class="cfilter" id="candFilter"></div>
+    <div class="csum" id="candSum"></div>
+    <div class="cgrid" id="candList"></div>
+    <p class="note" id="candNote"></p>
   </section>
   <section class="sec" data-tab="action">
     <div class="sh"><span class="lbl">LESSON</span><h2>前年10月の教訓</h2><p>2025年10月 1か月の単品別 廃棄高と荒利益高</p></div>
@@ -507,42 +534,63 @@ function wkCmp(){
   return {c,p,label:`${c.tag||c.label}・${c.range} vs ${p.tag||p.label}・${p.range}`,cur:{d:dataOf(c.k,DEPT)},prev:{d:dataOf(p.k,DEPT)}};
 }
 // ===== アクション（優先度・根拠・期待効果・確認事項・推移） =====
-function computeActions(){
-  const S=A[scope],n=PDS()?CUR().n:ALLD.meta.N,wc=wkCmp(),out=[];
-  const trk=(store,name,key)=>{
-    if(!wc) return null;
-    const f=d=>{const o=d[store];if(!o)return {v:null,n:0};const r=o.prod.find(x=>x.name===name),dn=o.days.p26||0;return {v:r&&dn?r[key]/dn:null,n:dn,miss:!r};};
-    return {c:f(wc.cur.d),p:f(wc.prev.d)};
-  };
-  S.dec.forEach(r=>out.push({kind:'減産',cls:'t-red',store:r.store,cat:r.cat,name:r.name,score:r.wy,
-    reason:`廃棄率 ${(r.wr*100).toFixed(0)}%・廃棄 平均${r.wpd.toFixed(1)}個/日（平日${r.wwk.toFixed(1)}・土日${r.wwe.toFixed(1)}）・廃棄高 ${yen(r.wy)}（${n}日間）`,
-    plan:cutAdv(r),effect:`廃棄高 最大 約${yen(r.wy/n*7*0.8)}/週 減`,effNote:'廃棄の8割を減らせた場合の上限',
-    check:`減らした後に売り切れ・欠品が出ていないか（廃棄ゼロの日 ${r.zd}日）`,trk:trk(r.store,r.name,'wy'),tk:'wy'}));
-  S.inc.forEach(r=>out.push({kind:'増産',cls:'t-inc',store:r.store,cat:r.cat,name:r.name,score:r.gp*0.3,
-    reason:`期間中 廃棄ゼロ・平均${r.per.toFixed(1)}個/日・荒利益高 ${yen(r.gp)}`,
-    plan:'売り切れが早い日は +1〜2個',effect:'売上増の余地あり',effNote:'売り切れ時刻のデータがないため金額は推定しません',
-    check:'何時ごろ売り切れているか（夕方前の売り切れが多いか）',trk:trk(r.store,r.name,'sold'),tk:'sold'}));
-  out.sort((a,b)=>b.score-a.score);
-  out.forEach((a,i)=>a.pri=a.kind==='減産'&&(a.score>=3000||i<3)?'高':i<8?'中':'低');
-  return out;
+// ===== 改善候補（build.py の candidates.py で計算済み） =====
+let CF={type:'all',low:false};
+const CTYPE={'廃棄削減':['t-red','廃棄削減'],'増産':['t-inc','増産'],'急変':['t-watch','急変']};
+const CCONF={'高':'c-hi','中':'c-mid','低':'c-lo'};
+function candAll(){const C=ALLD.cand&&ALLD.cand[PK]&&ALLD.cand[PK][DEPT];return (C||[]).filter(c=>isAll()||c.store===scope);}
+function candView(){
+  return candAll().filter(c=>(CF.low||c.conf!=='低')&&(CF.type==='all'||(CF.type==='急変先週'?c.type==='急変'&&c.sub==='先週比':CF.type==='急変前年'?c.type==='急変'&&c.sub==='前年比':c.type===CF.type)));
 }
-function trkCell(a){
-  const t=a.trk;if(!t)return '<span style="color:var(--ink-3)">比較できる週なし</span>';
-  const f=v=>v==null?'—':a.tk==='wy'?yen(v):v.toFixed(1)+'個';
-  if(t.c.v==null&&t.p.v==null)return '<span style="color:var(--ink-3)">両週とも少量・データなし</span>';
-  const c=t.c.v??0,p=t.p.v??0,d=pct(c,p);
-  const good=a.tk==='wy'?(c<p*0.9):(c>p*1.1),bad=a.tk==='wy'?(c>p*1.1):(c<p*0.9);
-  const st=p===0&&c===0?['st-flat','変化なし']:good?['st-up',a.tk==='wy'?'▼ 改善':'▲ 増加']:bad?['st-down',a.tk==='wy'?'▲ 悪化':'▼ 減少']:['st-flat','→ 横ばい'];
-  return `<span style="display:inline-block;text-align:right;white-space:nowrap">${f(t.p.v)} → ${f(t.c.v)}<br><span class="${st[0]}">${st[1]}${d!=null?'（'+pf(d,0)+'）':''}</span></span>`;
+const fmtV=(v,u)=>v==null?'—':u==='円'||u==='円/週'?yen(v)+(u==='円/週'?'/週':''):u==='%'?v.toFixed(1)+'%':u==='個/週'?v.toFixed(1)+'個/週':u==='個'?(Math.abs(v-Math.round(v))<1e-9?n0(v):v.toFixed(2))+'個':u==='日'?n0(v)+'日':v;
+const sgnY=(v,u)=>v==null?'—':(Math.abs(v)<0.05?'±':v>0?'+':'-')+fmtV(Math.abs(v),u);
+function candTitle(c){return `${c.type==='急変'?`${c.sub}・${c.metric} ${c.dir==='増'?'▲増加':'▼減少'}`:c.type}`;}
+function candCard(c,i){
+  const [cl,lb]=CTYPE[c.type];
+  const est=c.est.map(([l,v,u])=>`<div><span>${l}</span><b>${u==='%'?fmtV(v,u):sgnY(v,u)}</b></div>`).join('');
+  return `<article class="cand${c.neg?' neg':''}"><div class="hd"><span class="rk">#${i+1}</span><span class="tag ${cl}">${c.type==='急変'?c.sub:lb}</span><span class="tag ${CCONF[c.conf]}">確度 ${c.conf}</span>${isAll()?`<button class="link" data-go="${c.store}">${c.store}</button>`:''}</div>
+    <h4>${short(c.name)}<span class="c">${c.cat}${c.type==='急変'?'・'+c.metric+(c.dir==='増'?' ▲増加':' ▼減少'):''}</span></h4>
+    <dl class="meta"><dt>対象期間</dt><dd>${c.period}</dd><dt>データ件数</dt><dd>${c.n_days}日分・CSV ${n0(c.n_rows)}行</dd><dt>確度の根拠</dt><dd>${c.conf_why}</dd></dl>
+    <div class="act">推奨：${c.action}</div>
+    <div class="est"><span class="t">試算（下の仮定にもとづく。実績ではありません）</span>${est}</div>
+    <details><summary>計算根拠を見る</summary>
+      <h5>実績値（CSVから計算）</h5><table>${c.actual.filter(a=>a[1]!=null).map(([l,v,u])=>`<tr><td>${l}</td><td>${fmtV(v,u)}</td></tr>`).join('')}</table>
+      <h5>仮定値（こちらで置いた前提）</h5><ul>${c.assume.map(a=>`<li>${a}</li>`).join('')}</ul>
+      <h5>計算式</h5><ol>${c.formula.map(a=>`<li>${a}</li>`).join('')}</ol>
+      <h5>確認すること</h5><p style="margin:0">${c.check}</p>
+    </details></article>`;
 }
-function renderActTable(){
-  const AL=computeActions();HICNT=AL.filter(a=>a.pri==='高').length;
-  const wc=wkCmp();
-  document.getElementById('tAct').innerHTML=`<thead><tr><th class="l">優先度</th><th class="l">区分</th>${isAll()?'<th class="l">対象店舗</th>':''}<th class="l">対象商品</th><th class="l">判断根拠</th><th class="l">やること</th><th class="l">期待効果（目安）</th><th class="l">確認事項</th><th class="l">直近の推移</th></tr></thead><tbody>`+
-    (AL.length?AL.map(a=>`<tr><td class="l"><span class="tag ${a.pri==='高'?'t-red':a.pri==='中'?'t-watch':'t-keep'}">${a.pri}</span></td><td class="l"><span class="tag ${a.cls}">${a.kind}</span></td>${isAll()?`<td class="l"><button class="link" data-go="${a.store}">${a.store}</button></td>`:''}<td class="l name">${short(a.name)}<span class="c">${a.cat}</span></td><td class="l adv" style="white-space:normal;min-width:200px">${a.reason}</td><td class="l adv">${a.plan}</td><td class="l adv" style="white-space:normal">${a.effect}<span style="display:block;color:var(--ink-3);font-size:11px;max-width:180px">${a.effNote}</span></td><td class="l adv" style="white-space:normal;min-width:160px">${a.check}</td><td class="l num">${trkCell(a)}</td></tr>`).join('')
-    :`<tr><td class="l" colspan="9" style="color:var(--ink-3)">この条件で増産・減産の候補はありません。</td></tr>`)+'</tbody>';
-  document.getElementById('actNote').innerHTML=`直近の推移：${wc?`${wc.p.tag||wc.p.label}（${wc.p.range}）→ ${wc.c.tag||wc.c.label}（${wc.c.range}）の1日あたり。`:''}減産は廃棄高、増産は販売数で見ます（▼改善＝廃棄が10%以上減った、▲悪化＝10%以上増えた）。<br>優先度：減産は廃棄高の大きい順（廃棄高3,000円以上または上位3件が「高」）、増産は荒利益高の大きい順。<br>「直近の推移」は週ごとの実績です。施策の実施日はデータにないため、変化が施策の効果とは限りません。実施した週を記録して、翌週以降にこの列で確認します。`;
-  wireGo(document.getElementById('tAct'));
+function renderCand(){
+  const all=candAll(),L=candView();HICNT=all.filter(c=>c.conf==='高'&&!c.neg).length;
+  const cnt=t=>all.filter(c=>(CF.low||c.conf!=='低')&&(t==='all'||c.type===t||(t==='急変先週'&&c.type==='急変'&&c.sub==='先週比')||(t==='急変前年'&&c.type==='急変'&&c.sub==='前年比'))).length;
+  const T=[['all','すべて'],['廃棄削減','廃棄削減'],['増産','増産'],['急変先週','急変（先週比）'],['急変前年','急変（前年比）']];
+  document.getElementById('candFilter').innerHTML=`<div class="grp"><span class="gl">区分</span>${T.map(([k,l])=>`<button class="pb" data-cf="${k}" aria-pressed="${CF.type===k}"><b>${l}</b><span class="r">${cnt(k)}</span></button>`).join('')}</div>
+    <label><input type="checkbox" id="cfLow" ${CF.low?'checked':''}>確度「低」も表示（${all.filter(c=>c.conf==='低').length}件）</label>
+    <button class="cp" id="candCsv" style="margin-left:auto">CSV</button>`;
+  document.querySelectorAll('[data-cf]').forEach(b=>b.onclick=()=>{CF.type=b.dataset.cf;renderCand();});
+  document.getElementById('cfLow').onchange=e=>{CF.low=e.target.checked;renderCand();};
+  document.getElementById('candCsv').onclick=()=>candCsv(L);
+  const red=all.filter(c=>c.type==='廃棄削減'&&!c.neg&&c.conf!=='低'),gp=red.reduce((a,c)=>a+c.est[0][1],0),wy=red.reduce((a,c)=>a+c.est[1][1],0);
+  const neg=all.filter(c=>c.type==='廃棄削減'&&c.neg).length,inc=all.filter(c=>c.type==='増産'),chg=all.filter(c=>c.type==='急変'&&c.worse&&c.conf!=='低');
+  document.getElementById('candSum').innerHTML=`<div><span class="k">廃棄削減（確度 高・中）</span><span class="v">${red.length}件</span><span class="s">荒利益高 ${sgnY(gp,'円/週')}・廃棄高 ${sgnY(wy,'円/週')}（試算の単純合計）</span></div>
+    <div><span class="k">減らすと荒利益高が下がる単品</span><span class="v">${neg}件</span><span class="s">廃棄はあるが、減産しない方がよい試算</span></div>
+    <div><span class="k">増産候補</span><span class="v">${inc.length}件</span><span class="s">需要の上限が不明のため、売れた／売れ残った両方を表示</span></div>
+    <div><span class="k">悪い方向の急変（確度 高・中）</span><span class="v">${chg.length}件</span><span class="s">売上・荒利の減少、廃棄の増加</span></div>`;
+  const p=PDS()?CUR():null;
+  document.getElementById('candSub').textContent=`${p?p.range+'（'+p.n+'日間）':''}・${isAll()?'5店舗':scope}・${DEPT}　表示 ${L.length}件／全 ${all.length}件`;
+  document.getElementById('candList').innerHTML=L.length?L.map(candCard).join(''):`<p class="note">この条件の候補はありません。${!CF.low&&all.some(c=>c.conf==='低')?'「確度「低」も表示」にチェックすると、データが少ない候補も見られます。':''}</p>`;
+  document.getElementById('candNote').innerHTML=`並び順：すぐ手を打てるものから（廃棄削減 → 悪い方向の急変 → 増産 → 良い方向の急変 → 減らさない方がよい単品）。同じ区分の中は確度（高→中→低）、試算額・変化の大きい順。<br>
+    <b>原価/個</b>＝(販売高−荒利益高)÷(販売数＋廃棄数)。荒利益高は「販売高−作った分すべての原価」になっているため、この式でCSVから単品ごとの原価が出ます（同じ単品なら日による差は0.1%程度）。<br>
+    <b>廃棄高は定価ベース</b>のため、廃棄を1個減らしても荒利益高が増えるのは<b>原価分（廃棄高のおよそ半分）</b>です。「廃棄高の減少」と「荒利益高の改善」は別の数字として出しています。<br>
+    試算の合計は、候補どうしが影響しないと仮定した単純合計です。試算は実績ではありません。実施した後は、翌週以降の実績で確かめます。`;
+  wireGo(document.getElementById('candList'));
+}
+function candCsv(L){
+  const H=['順位','区分','確度','確度の根拠','店舗','カテゴリー','商品','指標','対象期間','記録日数','CSV行数','推奨アクション','試算','実績値','仮定','計算式','確認すること'];
+  const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const rows=[H.map(q).join(',')].concat(L.map((c,i)=>[i+1,c.type==='急変'?'急変（'+c.sub+'）':c.type,c.conf,c.conf_why,c.store,c.cat,c.name,c.metric||'',c.period,c.n_days,c.n_rows,c.action,
+    c.est.map(([l,v,u])=>`${l} ${u==='%'?fmtV(v,u):sgnY(v,u)}`).join(' / '),c.actual.filter(a=>a[1]!=null).map(([l,v,u])=>`${l} ${fmtV(v,u)}`).join(' / '),c.assume.join(' / '),c.formula.join(' / '),c.check].map(q).join(',')));
+  saveCsv(rows,'改善候補');
 }
 // ===== 要確認（重要な変化・確認すべき店舗・異常値） =====
 function renderAlerts(){
@@ -670,10 +718,10 @@ function render(){
     facts.push(`前年割れの店舗：${lo.length?lo.join('、'):'なし'}。廃棄率が最も高いのは <b>${hw.s}</b>（${hw.w.toFixed(1)}%）。`);
   }
   document.getElementById('sumFacts').innerHTML=facts.map(f=>`<li>${f}</li>`).join('');
-  const AL=computeActions(),acts=AL.slice(0,3).map(a=>`<span class="tag ${a.cls}">${a.kind}</span> <b>${isAll()?a.store+'・':''}${short(a.name)}</b>：${a.plan}。<span style="color:var(--ink-2)">${a.reason}</span>`);
-  if(!AL.length) acts.push('増産・減産の候補はありません。廃棄率と売り切れの状況を引き続き確認します。');
+  const AL=candAll().filter(c=>c.conf!=='低'&&!c.neg),acts=AL.slice(0,3).map(c=>`<span class="tag ${CTYPE[c.type][0]}">${c.type==='急変'?c.sub:c.type}</span> <span class="tag ${CCONF[c.conf]}">確度 ${c.conf}</span> <b>${isAll()?c.store+'・':''}${short(c.name)}</b>：${c.action}。<span style="color:var(--ink-2)">試算 ${c.est[0][0]} ${c.est[0][2]==='%'?fmtV(c.est[0][1],'%'):sgnY(c.est[0][1],c.est[0][2])}（${c.n_days}日分のデータ）</span>`);
+  if(!AL.length) acts.push('確度「高」「中」の改善候補はありません。');
   if(isAll()){const srt=STORES.map(s=>({s,w:wrOf(A.stores[s].nc26)})).sort((a,b)=>b.w-a.w),hw=srt[0],lw=srt[srt.length-1];acts.push(`<b>店舗：</b>${hw.s}（廃棄率${hw.w.toFixed(1)}%）の廃棄対策を優先。廃棄率${lw.w.toFixed(1)}%の${lw.s}の仕込み量・タイミングを共有します。`);}
-  acts.push(`<button class="go" data-tab-go="action">アクション一覧を見る（${AL.length}件）</button>`);
+  acts.push(`<button class="go" data-tab-go="action">改善候補をすべて見る（確度 高・中 ${AL.length}件）</button>`);
   document.getElementById('sumActs').innerHTML=acts.map(a=>`<li>${a}</li>`).join('');
   // forecast
   const fc=m25.荒利益高*(k26.荒利益高/k25.荒利益高), fs=m25.販売高*(k26.販売高/k25.販売高);
@@ -705,7 +753,8 @@ function render(){
   const loc=r=>isAll()?`${r.store}・${r.cat}`:r.cat;
   document.getElementById('lInc').innerHTML=S.inc.length?S.inc.map(r=>`<li><span>${short(r.name)}<span class="s">${loc(r)}</span></span><span class="r num">${r.per.toFixed(1)}個/日<small>廃棄0 → +1〜2個</small></span></li>`).join(''):'<li class="empty" style="display:block">該当なし。売り切れ続きの単品はありません。</li>';
   document.getElementById('decSub').textContent=`廃棄率20%以上、かつ廃棄高${isAll()?'1,000':'500'}円以上。減らす数は廃棄の約8割までにしています（廃棄ゼロの日もあり、廃棄と同じ数を減らすと売り切れが出るため）。`;
-  document.getElementById('lDec').innerHTML=S.dec.length?S.dec.map(r=>`<li><span>${short(r.name)}<span class="s">${loc(r)}・廃棄率 ${(r.wr*100).toFixed(0)}%</span></span><span class="r num">${yen(r.wy)}<small>廃棄 平均${r.wpd.toFixed(1)}個/日（平日${r.wwk.toFixed(1)}・土日${r.wwe.toFixed(1)}） → ${cutAdv(r)}</small></span></li>`).join(''):'<li class="empty" style="display:block">該当なし。廃棄率20%を超える単品はありません。</li>';
+  const NEG=new Set(candAll().filter(c=>c.type==='廃棄削減'&&c.neg).map(c=>c.store+'|'+c.name));
+  document.getElementById('lDec').innerHTML=S.dec.length?S.dec.map(r=>`<li><span>${short(r.name)}<span class="s">${loc(r)}・廃棄率 ${(r.wr*100).toFixed(0)}%</span></span><span class="r num">${yen(r.wy)}<small>廃棄 平均${r.wpd.toFixed(1)}個/日（平日${r.wwk.toFixed(1)}・土日${r.wwe.toFixed(1)}） → ${NEG.has(r.store+'|'+r.name)?'<b style="color:var(--warn)">減らさない（試算では荒利益高が下がる。改善候補を参照）</b>':cutAdv(r)}</small></span></li>`).join(''):'<li class="empty" style="display:block">該当なし。廃棄率20%を超える単品はありません。</li>';
   const over=S.lesson.filter(r=>r.wy>r.gp).map(r=>short(r.name));
   document.getElementById('lessonNote').innerHTML=over.length?`廃棄高が荒利益高を上回った単品：<b>${over.join('、')}</b>。売れるほど利益が減る状態だったため、今年は少量スタートにします。`:`前年10月、上位単品はすべて荒利益高が廃棄高を上回っていました。廃棄の大きい単品から、ピーク後の追加調理を見直します。`;
   document.querySelectorAll('.pFC').forEach(e=>e.textContent=ALLD.meta.fc);
@@ -715,7 +764,7 @@ function render(){
   renderStoreRank();
   renderWasteSku();
   renderSkuFlt();
-  renderActTable();
+  renderCand();
   tabBar();
   showTab();
   labelTables();
@@ -981,8 +1030,11 @@ const chipTxt=d=>pf(d);
 async function downloadCsv(tbl){
   // 画面の表をそのままCSVにする（Excelで文字化けしないようBOM付きUTF-8）
   const rows=[...tbl.querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>'"'+td.innerText.replace(/\s*\n\s*/g,' ').trim().replace(/"/g,'""')+'"').join(','));
+  return saveCsv(rows,tbl.id||'table');
+}
+async function saveCsv(rows,tag){
   const blob=new Blob(['﻿'+rows.join('\r\n')],{type:'text/csv'});
-  const name=`${DEPT}_${scope==='ALL'?'全店':scope}_${PER().replace(/[\/〜]/g,'-')}_${tbl.id||'table'}.csv`;
+  const name=`${DEPT}_${scope==='ALL'?'全店':scope}_${PER().replace(/[\/〜]/g,'-')}_${tag}.csv`;
   // claude.ai の中で開いたときは、閲覧者の確認つき保存（downloads）を使う。GitHub Pages ではそのままダウンロード
   if(window.claude&&window.claude.use){
     try{const dl=await window.claude.use('downloads');

@@ -207,6 +207,13 @@ for pp in PERIODS:
     pp['first']=wd_of(pp['d0']); pp['last']=wd_of(pp['d1'])
     pp['we26']=sum(is_off26(d) for d in range(pp['d0'],pp['d1']+1)); pp['we25']=sum(datetime.date(2025,10,d).weekday()>=5 or d==13 for d in range(pp['d0'],pp['d1']+1))
 D['meta']['periods']=PERIODS
+# 改善候補（実績からの自動抽出。式は scripts/candidates.py）
+# 2026年はジャイアントポークフランク・なんこつつくね棒がホットFF→常温FFへ移ったため、この2カテゴリーの前年比は確度を下げる
+RECLASS={'ホットFF':'2026年に一部商品が常温FFへ分類変更された','常温FF':'2026年に一部商品がホットFFから分類変更された'}
+from candidates import build as cand_build
+WKS=[(w['start'],w['end']) for w in D['FF']['ALL']['wk']['weeks']]
+D['cand']={pp['k']:{'FF':cand_build(FF[FF.cat.isin(FFC)],'FF',True,pp['d0'],pp['d1'],WKS,is_off26,clean,reclass=RECLASS),
+                    '厨房':cand_build(KI,'厨房',False,pp['d0'],pp['d1'],WKS,is_off26,clean)} for pp in PERIODS}
 D['P']={pp['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True,pp['d0'],pp['d1'],True),
                  '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False,pp['d0'],pp['d1'],True)} for pp in PERIODS[1:]}
 tpl=open(os.path.join(ROOT,'scripts','template.html'),encoding='utf-8').read()
