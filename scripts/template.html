@@ -976,11 +976,17 @@ function kpiTable(){
   t.style.position='absolute';t.style.left='-9999px';document.body.appendChild(t);return t;
 }
 const chipTxt=d=>pf(d);
-function downloadCsv(tbl){
+async function downloadCsv(tbl){
   // 画面の表をそのままCSVにする（Excelで文字化けしないようBOM付きUTF-8）
   const rows=[...tbl.querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>'"'+td.innerText.replace(/\s*\n\s*/g,' ').trim().replace(/"/g,'""')+'"').join(','));
   const blob=new Blob(['﻿'+rows.join('\r\n')],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${DEPT}_${scope==='ALL'?'全店':scope}_${PER().replace(/[\/〜]/g,'-')}_${tbl.id||'table'}.csv`;
+  const name=`${DEPT}_${scope==='ALL'?'全店':scope}_${PER().replace(/[\/〜]/g,'-')}_${tbl.id||'table'}.csv`;
+  // claude.ai の中で開いたときは、閲覧者の確認つき保存（downloads）を使う。GitHub Pages ではそのままダウンロード
+  if(window.claude&&window.claude.use){
+    try{const dl=await window.claude.use('downloads');
+      if(dl){try{await dl.save({filename:name,data:blob});toast('CSVを保存しました');}catch(e){if(e&&e.code!=='declined')toast('CSVを保存できませんでした');}return;}}catch(e){}
+  }
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
   document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);toast('CSVをダウンロードしました');
 }
 function addCopyButtons(){
