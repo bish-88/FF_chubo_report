@@ -354,13 +354,14 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="kpis k4" id="salesKpi"></div>
   </section>
   <section class="sec" data-tab="sales">
-    <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と月末着地予測</h2><div class="seg seg-lg" id="segGrain" style="margin-left:auto" role="tablist" aria-label="日別・週別の切り替え"><button aria-pressed="true" data-k="day">日別</button><button aria-pressed="false" data-k="week">週別</button></div><div class="seg" id="segMet"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
+    <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と月末着地予測</h2><div class="seg seg-lg" id="segGrain" style="margin-left:auto" role="tablist" aria-label="日別・週別の切り替え"><button aria-pressed="true" data-k="day">日別</button><button aria-pressed="false" data-k="week">週別</button><button aria-pressed="false" data-k="dow">曜日別</button></div><div class="seg" id="segMet"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
     <div class="g g-73">
       <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend" id="dLegend"></div></div>
         <div class="cv"><canvas id="cDaily" role="img" aria-label="日別・週別の販売高・荒利益高"></canvas></div></div>
       <div class="panel"><div class="ph"><h3 id="fTitle">10月 月末着地予測</h3><span class="sub">簡易予測：実績＋残りの日（前年の同じ日×前年比）</span></div>
         <div class="cv sm"><canvas id="cFcst" role="img" aria-label="月末着地予測"></canvas></div><p class="note" id="fcstNote"></p></div>
     </div>
+    <div class="tw" id="dowTrendWrap" hidden><table id="tDowTrend" style="min-width:860px"></table></div><p class="note" id="dowTrendNote" hidden></p>
     <div class="tw" id="wkTrendWrap" hidden><table id="tWkTrend" style="min-width:860px"></table></div><p class="note" id="wkTrendNote" hidden></p>
   </section>
   <section class="sec" data-tab="sales" id="weekly">
@@ -632,6 +633,17 @@ function weekRows(S,met,weeks,N){
   if(N<31){const f=salesCalc(S,met,1,N,N),b=S.daily25[met]||[];let s25=0;for(let d=N+1;d<=31;d++)s25+=b[d-1]??0;
     rows.push({kind:'fc',d0:N+1,d1:31,label:'残り（予測）',n:31-N,nd:0,act:f.restFc,s26:f.restFc,s25,yoy:f.yoy,diff:f.restFc==null?null:f.restFc-s25,pd:f.restFc==null?null:f.restFc/(31-N),r:f.r});}
   return rows;
+}
+// 曜日別：月〜日ごとに、今月の各週の値・今月の曜日平均・前年10月の曜日平均を並べる
+function dowMatrix(S,met,weeks,N){
+  const W='月火水木金土日',wd=(y,d)=>(new Date(y,9,d).getDay()+6)%7,a=S.daily26[met]||[],b=S.daily25[met]||[];
+  return [...Array(7)].map((_,i)=>{
+    const wk=weeks.map(w=>{let d=null;for(let x=w.d0;x<=w.d1;x++)if(wd(2026,x)===i)d=x;return {d,v:d&&d<=N?a[d-1]??null:null};});
+    const v26=[];for(let d=1;d<=N;d++)if(wd(2026,d)===i&&a[d-1]!=null)v26.push(a[d-1]);
+    const v25=[];for(let d=1;d<=31;d++)if(wd(2025,d)===i&&b[d-1]!=null)v25.push(b[d-1]);
+    const avg=v=>v.length?v.reduce((t,x)=>t+x,0)/v.length:null,a26=avg(v26),a25=avg(v25);
+    return {w:W[i],wk,a26,n26:v26.length,a25,n25:v25.length,yoy:a26!=null&&a25>0?(a26/a25-1)*100:null};
+  });
 }
 // 曜日別の増減：今週と先週を同じ曜日どうしで並べる（店の合計）。片方の週にない曜日は差を出さない
 function dowRows(S,met,P,C,cats){
@@ -1233,7 +1245,28 @@ function draw(){
     :'<span><i style="background:var(--ly)"></i>2025年10月（前年）</span><span><i style="background:var(--ty)"></i>2026年10月（実績）</span><span><i class="dash"></i>予測（前年の同じ日×前年比）</span>';
   document.getElementById('wkTrendWrap').hidden=GRAIN!=='week';document.getElementById('wkTrendNote').hidden=GRAIN!=='week';
   const wl=r=>`10/${r.d0}〜${r.d1}`;
-  if(GRAIN==='week'){
+  document.getElementById('dowTrendWrap').hidden=GRAIN!=='dow';document.getElementById('dowTrendNote').hidden=GRAIN!=='dow';
+  ['dowTrendWrap','wkTrendWrap'].forEach(id=>{const e=document.getElementById(id),p=e.previousElementSibling;if(p&&p.classList.contains('tbar'))p.hidden=e.hidden;});
+  if(GRAIN==='dow'){
+    const DM=dowMatrix(S,MK,WK,N),pal=['#c3ccd6','#93a7bf','#5f7fa3','#163f6e','#0b1d33'],cols=WK.map((_,i)=>pal[Math.max(0,pal.length-WK.length+i)]);
+    document.getElementById('dTitle').textContent='曜日別 '+ML();
+    document.getElementById('dLegend').innerHTML=WK.map((w,i)=>`<span><i style="background:${cols[i]}"></i>10/${w.d0}〜${w.d1}</span>`).join('')+'<span><i style="background:var(--c-kara);height:3px"></i>今月の曜日平均</span><span><i style="background:var(--ink-3);height:2px"></i>前年10月の曜日平均</span>';
+    charts.push(new Chart(cDaily,{type:'bar',data:{labels:DM.map(r=>r.w+'曜'),datasets:[
+      ...WK.map((w,i)=>({label:`10/${w.d0}〜${w.d1}`,data:DM.map(r=>r.wk[i].v),backgroundColor:cols[i],borderRadius:2,order:2})),
+      {type:'line',label:'今月の曜日平均',data:DM.map(r=>r.a26),borderColor:css('--c-kara'),backgroundColor:css('--c-kara'),borderWidth:2.5,pointRadius:4,tension:.2,order:0},
+      {type:'line',label:'前年10月の曜日平均',data:DM.map(r=>r.a25),borderColor:css('--ink-3'),backgroundColor:css('--ink-3'),borderWidth:1.75,borderDash:[3,3],pointRadius:3,tension:.2,order:1}]},
+      options:{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,title:{display:true,text:ML()+'（円・1日）',color:css('--ink-3'),font:{size:10.5}},ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},
+        plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{title:it=>DM[it[0].dataIndex].w+'曜日',
+          label:x=>{const r=DM[x.dataIndex],i=x.datasetIndex;if(i<WK.length){const d=r.wk[i].d;return ` 10/${d}${d===12?'（祝）':''}  ${yen(x.raw)}`;}return ` ${x.dataset.label}  ${yen(x.raw)}`;},
+          afterBody:it=>{const r=DM[it[0].dataIndex];return r.yoy==null?[]:[`今月平均の前年比 ${pf(r.yoy)}（今月${r.n26}日・前年${r.n25}日の平均）`];}}}}}}));
+    const latest=WK.length-1;
+    document.getElementById('tDowTrend').innerHTML=`<thead><tr><th class="l">曜日（${ML().replace('（売上）','')}）</th>${WK.map(w=>`<th>10/${w.d0}〜${w.d1}</th>`).join('')}<th>今月の平均</th><th>前年10月の平均</th><th>前年比（平均）</th><th>最新週 vs 今月平均</th></tr></thead><tbody>`+
+      DM.map(r=>{const lv=r.wk[latest].v;return `<tr><td class="l"><b>${r.w}</b></td>${r.wk.map((c,i)=>`<td class="num"${i===latest?' style="font-weight:700"':''}>${c.v==null?'—':yen(c.v)}${c.d===12?'<span style="color:var(--ink-3);font-size:10.5px">（祝）</span>':''}</td>`).join('')}<td class="num">${r.a26==null?'—':yen(r.a26)}</td><td class="num" style="color:var(--ink-2)">${r.a25==null?'—':yen(r.a25)}</td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td>${lv==null||!r.a26?'—':chip(pct(lv,r.a26))}</td></tr>`;}).join('')+'</tbody>';
+    const best=[...DM].filter(r=>r.a26!=null).sort((p,q)=>q.a26-p.a26),wl=[...DM].filter(r=>r.yoy!=null).sort((p,q)=>p.yoy-q.yoy);
+    document.getElementById('dowTrendNote').innerHTML=`今月（10/1〜${N}）で一番売れている曜日は <b>${best[0].w}曜</b>（1日平均 ${yen(best[0].a26)}）、一番少ないのは <b>${best[best.length-1].w}曜</b>（${yen(best[best.length-1].a26)}）。前年比が一番低い曜日は <b>${wl[0].w}曜</b>（${pf(wl[0].yoy)}）。<br>
+      棒は今月の各週のその曜日の値、オレンジの線は今月の曜日平均、灰色の点線は前年10月（2025年）の同じ曜日の平均です。10/12（月）はスポーツの日のため、月曜の平均に祝日が1日入っています（前年は10/13（月）が祝日）。曜日ごとの日数は3〜5日と少ないので、1日の天気やイベントで平均が動きます。`;
+    labelTables();
+  } else if(GRAIN==='week'){
     const sel=r=>r.kind==='act'&&r.d0===pp.d0&&r.d1===pp.d1;
     charts.push(new Chart(cDaily,{type:'bar',data:{labels:wr.map(r=>[wl(r),r.kind==='fc'?`予測・${r.n}日`:`${r.n}日間`]),datasets:[
       {label:'前年',data:wr.map(r=>r.s25),backgroundColor:ly,borderRadius:2},
@@ -1397,7 +1430,7 @@ function addCopyButtons(){
   document.querySelectorAll('.panel').forEach(p=>{if(!p.querySelector('canvas')||p.querySelector('.cp'))return;const ph=p.querySelector('.ph');if(!ph)return;
     const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'グラフをコピー';b.title='画像としてコピー（PowerPoint用）';b.onclick=()=>copyChart(p);ph.appendChild(b);});
   document.querySelectorAll('.tw').forEach(w=>{if(w.querySelector('#tTrack'))return;if(w.previousElementSibling&&w.previousElementSibling.classList.contains('tbar'))return;
-    const bar=document.createElement('div');bar.className='tbar';const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'表をコピー';b.title='表としてコピー（PowerPoint・Excel用）';b.onclick=()=>copyTable(w.querySelector('table'));bar.appendChild(b);const c=document.createElement('button');c.className='cp';c.textContent='CSV';c.title='CSVファイルでダウンロード（Excel用）';c.onclick=()=>downloadCsv(w.querySelector('table'));bar.appendChild(c);w.parentNode.insertBefore(bar,w);});
+    const bar=document.createElement('div');bar.className='tbar';const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'表をコピー';b.title='表としてコピー（PowerPoint・Excel用）';b.onclick=()=>copyTable(w.querySelector('table'));bar.appendChild(b);const c=document.createElement('button');c.className='cp';c.textContent='CSV';c.title='CSVファイルでダウンロード（Excel用）';c.onclick=()=>downloadCsv(w.querySelector('table'));bar.appendChild(c);w.parentNode.insertBefore(bar,w);bar.hidden=w.hidden;});
   const kh=document.querySelector('#scopeTitle').parentNode;if(!kh.querySelector('.cp')){const b=document.createElement('button');b.className='cp';b.innerHTML=ICON+'KPIを表でコピー';b.onclick=async()=>{const t=kpiTable();await copyTable(t);t.remove();};kh.querySelector('p').before(b);b.style.marginLeft='auto';kh.querySelector('p').style.marginLeft='0';}
   [['sumFacts','現状'],['wxFacts','わかったこと']].forEach(([id,lbl])=>{const ul=document.getElementById(id),h=ul.previousElementSibling;if(h.querySelector('.cp'))return;const b=document.createElement('button');b.className='cp';b.style.marginLeft='10px';b.innerHTML=ICON+'文章をコピー';b.onclick=async()=>{const txt=[...ul.parentNode.parentNode.querySelectorAll('li')].map(l=>'・'+l.innerText.replace(/\s+/g,' ').trim()).join('\n');try{await navigator.clipboard.writeText(txt);toast('文章をコピーしました');}catch(e){const ta=document.createElement('textarea');ta.value=txt;ta.style.cssText='width:100%;height:240px';overlay(ta,'下の内容を選択してコピーしてください。');ta.select();}};h.appendChild(b);});
 }
