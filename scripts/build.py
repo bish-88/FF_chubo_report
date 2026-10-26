@@ -93,6 +93,9 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
         o['days']={'p26':sum(has(2026,stores,d) for d in range(d0,d1+1)),'p25':sum(has(2025,stores,d) for d in range(d0,d1+1))}
         # 日ごとの「データのある店舗数」。全店の日別は、一部の店舗しかない日を前年比・予測の計算から外すために使う
         o['cov26']=[sum((2026,s,d) in COV[key] for s in stores) for d in range(1,N+1)]
+        # 曜日別の増減を見るための、今年のカテゴリー別の日別値（データがない日は None）
+        g=y26all.groupby(['cat','d'])[['販売高','荒利益高','廃棄高']].sum()
+        o['dcat26']={c:{k:[(F(g.loc[(c,d),k]) if (c,d) in g.index else (0.0 if has(2026,stores,d) else None)) for d in range(1,N+1)] for k in ['販売高','荒利益高','廃棄高']} for c in cats}
         o['cov25']=[sum((2025,s,d) in COV[key] for s in stores) for d in range(1,32)]
         o['nst']=len(stores)
         o['cat']={'p25':bycat(sp25),'p26':bycat(y26),'m25':bycat(y25)}

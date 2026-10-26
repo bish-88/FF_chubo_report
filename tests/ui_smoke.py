@@ -34,6 +34,7 @@ async def main():
                                 await pg.click('#segGrain button[data-k="week"]')
                                 if not await pg.evaluate("Chart.getChart('cDaily').config.type==='bar'&&document.querySelectorAll('#tWkTrend tbody tr').length>=3"): problems.append((w, dept, per, s, t, 'weekly view'))
                                 await pg.click('#segGrain button[data-k="day"]')
+                                for k in ['荒利益高', '廃棄高', '販売高']: await pg.click(f'#segDow button[data-k="{k}"]')
                                 ok = await pg.evaluate("Chart.getChart('cDaily').data.datasets.length===3&&document.getElementById('salesKpi').children.length===4")
                                 if not ok: problems.append((w, dept, per, s, t, 'sales charts/KPI'))
                             if t == 'action':

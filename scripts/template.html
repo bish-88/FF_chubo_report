@@ -377,6 +377,19 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="panel"><div class="ph"><h3>曜日別 販売高（1店あたり）</h3><div class="legend"><span><i style="background:var(--ly)"></i>先週</span><span><i style="background:var(--ty)"></i>今週</span></div></div>
       <div class="cv sm"><canvas id="cWk" role="img" aria-label="曜日別の販売高 先週と今週"></canvas></div><p class="note" id="wkNote"></p></div>
   </section>
+  <section class="sec" data-tab="sales" id="dowSec">
+    <div class="sh"><span class="lbl">DAY OF WEEK</span><h2>曜日別の増減　どの曜日で増えた？減った？</h2><div class="seg seg-lg" id="segDow" style="margin-left:auto"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button><button aria-pressed="false" data-k="廃棄高">廃棄高</button></div></div>
+    <p class="note" id="dowNote"></p>
+    <div class="g g-2">
+      <div class="panel"><div class="ph"><h3 id="dowTitle">曜日別の差（今週−先週）</h3><div class="legend"><span><i style="background:var(--good)"></i>増えた</span><span><i style="background:var(--bad)"></i>減った</span></div></div>
+        <div class="cv sm"><canvas id="cDow" role="img" aria-label="曜日別の差"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3 id="dowTitle2">曜日別 先週と今週</h3><div class="legend"><span><i style="background:var(--ly)"></i>先週</span><span><i style="background:var(--ty)"></i>今週</span></div></div>
+        <div class="cv sm"><canvas id="cDow2" role="img" aria-label="曜日別の先週と今週"></canvas></div></div>
+    </div>
+    <div class="tw"><table id="tDow" style="min-width:980px"></table></div>
+    <h3 class="subh" id="dowCatH">曜日 × カテゴリーの差（今週−先週）</h3>
+    <div class="tw"><table id="tDowCat" style="min-width:760px"></table></div>
+  </section>
   <section class="sec" data-tab="sales">
     <div class="sh"><span class="lbl">CATEGORY</span><h2>カテゴリー別 実績と構成比</h2><p>グラフと「増減と寄与」の表は、上の切り替え（販売高／荒利益高）に連動</p></div>
     <div class="g g-2">
@@ -619,6 +632,17 @@ function weekRows(S,met,weeks,N){
   if(N<31){const f=salesCalc(S,met,1,N,N),b=S.daily25[met]||[];let s25=0;for(let d=N+1;d<=31;d++)s25+=b[d-1]??0;
     rows.push({kind:'fc',d0:N+1,d1:31,label:'残り（予測）',n:31-N,nd:0,act:f.restFc,s26:f.restFc,s25,yoy:f.yoy,diff:f.restFc==null?null:f.restFc-s25,pd:f.restFc==null?null:f.restFc/(31-N),r:f.r});}
   return rows;
+}
+// 曜日別の増減：今週と先週を同じ曜日どうしで並べる（店の合計）。片方の週にない曜日は差を出さない
+function dowRows(S,met,P,C,cats){
+  const W='月火水木金土日',wd=d=>(new Date(2026,9,d).getDay()+6)%7,a=S.daily26[met]||[],dc=S.dcat26||{};
+  const rows=[...Array(7)].map((_,i)=>({w:W[i],dp:null,dc:null,p:null,c:null,diff:null,cat:{}}));
+  for(let d=P.start;d<=P.end;d++){const r=rows[wd(d)];r.dp=d;r.p=a[d-1];}
+  for(let d=C.start;d<=C.end;d++){const r=rows[wd(d)];r.dc=d;r.c=a[d-1];}
+  rows.forEach(r=>{if(r.p!=null&&r.c!=null)r.diff=r.c-r.p;
+    cats.forEach(c=>{const x=dc[c]&&dc[c][met]||[],p=r.dp?x[r.dp-1]:null,q=r.dc?x[r.dc-1]:null;r.cat[c]=p!=null&&q!=null?q-p:null;});});
+  const both=rows.filter(r=>r.diff!=null),tot=both.reduce((t,r)=>t+r.diff,0);
+  return {rows,tot,pTot:both.reduce((t,r)=>t+r.p,0),cTot:both.reduce((t,r)=>t+r.c,0),n:both.length};
 }
 // ===== 売上分析の計算（SALESタブ・総合タブ・テストで共通） =====
 // 前年比は「今年も前年も、その範囲の全店舗のデータがある日」だけで計算する（欠損日・一部店舗だけの日・未来日は除く）
@@ -1019,6 +1043,36 @@ function catLines(typ,R){
 // ===== 先週比（PSA/D） =====
 const WDN=d=>'月火水木金土日'[(new Date(2026,9,d).getDay()+6)%7];
 function wkPair(){const W=A[scope].wk&&A[scope].wk.weeks;return W&&W.length>=2?[W[W.length-2],W[W.length-1]]:null;}
+let DOWK='販売高';
+function renderDow(){
+  const sec=document.getElementById('dowSec'),pr=wkPair();sec.hidden=!pr;if(!pr)return [];const [P,C]=pr,S=A[scope];
+  const X=dowRows(S,DOWK,P,C,CATS),lb={販売高:'販売高（売上）',荒利益高:'荒利益高',廃棄高:'廃棄高'}[DOWK],inv=DOWK==='廃棄高';
+  const HOLS={12:'祝'},wx=d=>{const w=(ALLD.meta.wx26||[]).find(x=>x.d===d);if(!w)return '';return `${w.tmax!=null?w.tmax+'℃':''}${w.rain==null?'':w.rain>=2?'・雨'+w.rain+'mm':''}`;};
+  const dt=d=>d?`10/${d}${HOLS[d]?'（祝）':''}`:'—';
+  const sg=v=>v==null?'—':(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
+  const bad=r=>r.diff!=null&&(inv?r.diff>0:r.diff<0);
+  const worst=[...X.rows].filter(bad).sort((p,q)=>inv?q.diff-p.diff:p.diff-q.diff),best=[...X.rows].filter(r=>r.diff!=null&&!bad(r)&&Math.abs(r.diff)>0.5).sort((p,q)=>inv?p.diff-q.diff:q.diff-p.diff);
+  const topCat=r=>{const e=Object.entries(r.cat).filter(([,v])=>v!=null).sort((p,q)=>inv?q[1]-p[1]:p[1]-q[1])[0];return e&&(inv?e[1]>0:e[1]<0)?e:null;};
+  const badSum=worst.reduce((t,r)=>t+r.diff,0),share=r=>badSum?`（${inv?'増えた':'減った'}分の${Math.round(r.diff/badSum*100)}%）`:'';
+  let msg=`${lb}は、今週（${C.label.replace('週','')}週）と先週（${P.label.replace('週','')}週）の同じ曜日${X.n}日分で ${yen(X.pTot)} → <b>${yen(X.cTot)}</b>（<b>${sg(X.tot)}</b>）。`;
+  if(worst.length) msg+=`<br>${inv?'増えた（悪化）':'減った'}曜日：`+worst.slice(0,3).map(r=>{const tc=topCat(r);return `<b>${r.w}曜</b>（${dt(r.dp)}→${dt(r.dc)}）${sg(r.diff)}${share(r)}${tc?`、主に ${tc[0]}（${sg(tc[1])}）`:''}`;}).join('／')+'。';
+  if(best.length) msg+=`<br>${inv?'減った（改善）':'増えた'}曜日：`+best.slice(0,2).map(r=>`<b>${r.w}曜</b> ${sg(r.diff)}`).join('、')+'。';
+  const hol=X.rows.find(r=>HOLS[r.dp]||HOLS[r.dc]);if(hol) msg+=`<br>※${hol.w}曜は、${HOLS[hol.dp]?'先週':'今週'}が祝日（10/12 スポーツの日）のため、曜日の条件が違います。`;
+  msg+=`<br>天気（気象庁 大阪の実績）も表に並べています。原因の特定はできないので、確認の手がかりとして使ってください。`;
+  document.getElementById('dowNote').innerHTML=msg;
+  document.getElementById('dowTitle').textContent=`曜日別の差（今週−先週・${lb}）`;document.getElementById('dowTitle2').textContent=`曜日別 先週と今週（${lb}）`;
+  document.getElementById('tDow').innerHTML=`<thead><tr><th class="l">曜日</th><th class="l">先週の日</th><th class="l">今週の日</th><th>先週</th><th>今週</th><th>差</th><th>増減率</th><th class="l">天気 先週→今週</th><th class="l">一番${inv?'増えた':'減った'}カテゴリー</th></tr></thead><tbody>`+
+    X.rows.map(r=>{const tc=topCat(r);return `<tr${bad(r)&&worst.indexOf(r)<2?' style="background:var(--bad-bg)"':''}><td class="l"><b>${r.w}</b></td><td class="l">${dt(r.dp)}</td><td class="l">${dt(r.dc)}</td><td class="num" style="color:var(--ink-2)">${r.p==null?'—':yen(r.p)}</td><td class="num"><b>${r.c==null?'—':yen(r.c)}</b></td><td class="num"><span class="dif ${r.diff==null||Math.abs(r.diff)<0.5?'flat':bad(r)?'down':'up'}">${sg(r.diff)}</span></td><td>${r.p?chip(pct(r.c,r.p),inv):'—'}</td><td class="l" style="font-size:11.5px">${wx(r.dp)||'—'} → ${wx(r.dc)||'—'}</td><td class="l">${tc?`${tc[0]} ${sg(tc[1])}`:'—'}</td></tr>`;}).join('')+
+    `<tr style="font-weight:700"><td class="l" colspan="3">合計（${X.n}日分）</td><td class="num">${yen(X.pTot)}</td><td class="num">${yen(X.cTot)}</td><td class="num">${sg(X.tot)}</td><td>${X.pTot?chip(pct(X.cTot,X.pTot),inv):'—'}</td><td></td><td></td></tr></tbody>`;
+  const mx=Math.max(1,...X.rows.flatMap(r=>CATS.map(c=>Math.abs(r.cat[c]??0))));
+  const cell=v=>{if(v==null)return '<td class="num">—</td>';const k=Math.min(1,Math.abs(v)/mx),b=inv?v>0:v<0;return `<td class="num" style="background:color-mix(in srgb,var(${b?'--bad':'--good'}) ${Math.round(k*38)}%,transparent)">${sg(v)}</td>`;};
+  document.getElementById('dowCatH').textContent=`曜日 × カテゴリーの差（今週−先週・${lb}）　色が濃いほど差が大きい`;
+  document.getElementById('tDowCat').innerHTML=`<thead><tr><th class="l">曜日</th>${CATS.map(c=>`<th>${c}</th>`).join('')}<th>合計</th></tr></thead><tbody>`+
+    X.rows.map(r=>`<tr><td class="l"><b>${r.w}</b>　<span style="color:var(--ink-3);font-size:11px">${dt(r.dp)}→${dt(r.dc)}</span></td>${CATS.map(c=>cell(r.cat[c])).join('')}<td class="num"><b>${sg(r.diff)}</b></td></tr>`).join('')+
+    `<tr style="font-weight:700"><td class="l">合計</td>${CATS.map(c=>{const v=X.rows.reduce((t,r)=>t+(r.cat[c]??0),0);return `<td class="num">${sg(v)}</td>`;}).join('')}<td class="num">${sg(X.tot)}</td></tr></tbody>`;
+  labelTables();
+  return X;
+}
 function renderWk(){
   const sec=document.getElementById('weekly'),pr=wkPair();sec.hidden=!pr;if(!pr)return;const [P,C]=pr;
   const lbl=w=>`${w.label}（10/${w.start}${w.first}〜10/${w.end}${w.last}・${w.all.n}日）`;
@@ -1030,6 +1084,7 @@ function renderWk(){
   document.getElementById('tWk1').innerHTML='<thead><tr><th class="l">指標（1店1日あたり）</th>'+G.map(([,n])=>`<th>${n} 先週</th><th>${n} 今週</th><th>先週比</th>`).join('')+'</tr></thead><tbody>'+
     MET.map(([lb,k,inv])=>`<tr><td class="l"><b>${lb}</b></td>`+G.map(([g])=>{const a=P[g].tot[k],b=C[g].tot[k],ok=P[g].n&&C[g].n;return `<td class="num" style="color:var(--ink-2)">${P[g].n?fmt(k,a):'—'}</td><td class="num"><b>${C[g].n?fmt(k,b):'—'}</b></td><td>${ok?dl(k,a,b,inv):'—'}</td>`}).join('')+'</tr>').join('')+'</tbody>';
   renderVs();
+  renderDow();
   const f=(g,k)=>(P[g].n&&C[g].n&&P[g].tot[k])?pct(C[g].tot[k],P[g].tot[k]):null,sp=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
   const sa=f('all','販売高'),sw=f('wk','販売高'),se=f('we','販売高'),wa=f('all','廃棄高'),wwe=f('we','廃棄高'),msg=[];
   if(sa!=null&&sw!=null&&se!=null&&Math.abs(sa-sw)>=5) msg.push(`全体の売上は${sp(sa)}ですが、平日は${sp(sw)}・土日祝は${sp(se)}。曜日の構成の違いが大きいので、平日・土日祝で判断します。`);
@@ -1156,6 +1211,11 @@ function draw(){
   {const pr=wkPair();if(pr){const [P,C]=pr,S0=A[scope].wk.byday,rng=w=>{const a=[];for(let d=w.start;d<=w.end;d++)a.push(d);return a},pd=rng(P),cd=rng(C),common=pd.map(WDN).filter(w=>cd.map(WDN).includes(w)),val=(ds,w)=>S0[ds.find(d=>WDN(d)===w)].販売高;
    charts.push(new Chart(cWk,{type:'bar',data:{labels:common,datasets:[{label:'先週',data:common.map(w=>val(pd,w)),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:common.map(w=>val(cd,w)),backgroundColor:css('--ty'),borderRadius:2}]},
      options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`}}}}}));}}
+  {const pr=wkPair();if(pr){const X=dowRows(A[scope],DOWK,pr[0],pr[1],CATS),inv=DOWK==='廃棄高',sg=v=>(v>=0?'+':'-')+yen(Math.abs(v)).replace('-',''),labs=X.rows.map(r=>[r.w+'曜',`${r.dp?'10/'+r.dp:'—'}→${r.dc?'10/'+r.dc:'—'}`]);
+    charts.push(new Chart(cDow,{type:'bar',data:{labels:labs,datasets:[{label:'差',data:X.rows.map(r=>r.diff),backgroundColor:X.rows.map(r=>r.diff==null?css('--ly'):((inv?r.diff>0:r.diff<0)?css('--bad'):css('--good'))),borderRadius:2}]},
+      options:{scales:{y:{ticks:{callback:yTick},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>{const r=X.rows[x.dataIndex];return [` 差 ${sg(r.diff)}`,` 先週 ${yen(r.p)} → 今週 ${yen(r.c)}`];}}}}}}));
+    charts.push(new Chart(cDow2,{type:'bar',data:{labels:labs,datasets:[{label:'先週',data:X.rows.map(r=>r.p),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:X.rows.map(r=>r.c),backgroundColor:css('--ty'),borderRadius:2}]},
+      options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`}}}}}));}}
   const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
   const lab=S.daily25.荒利益高.map((_,i)=>(i+1)+'日');
   document.getElementById('dTitle').textContent='日別 '+ML();document.getElementById('cTitle').textContent=ML().replace('（売上）','')+'（'+PER()+'）';document.getElementById('mTitle').textContent=ML().replace('（売上）','')+' 構成比';
@@ -1255,7 +1315,7 @@ function draw(){
       plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`,afterBody:x=>`廃棄率 ${(L[x[0].dataIndex].wr*100).toFixed(1)}%`}}}}}));
 }
 function seg(id,set){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));set(b.dataset.k);draw()})}
-let GRAIN='day';seg('segGrain',k=>GRAIN=k);seg('segMix',k=>mixK=k);seg('segMet',k=>{MK=k;renderSalesTop();});seg('segWaste',k=>wasteK=k);
+let GRAIN='day';seg('segGrain',k=>GRAIN=k);seg('segDow',k=>{DOWK=k;renderDow();});seg('segMix',k=>mixK=k);seg('segMet',k=>{MK=k;renderSalesTop();});seg('segWaste',k=>wasteK=k);
 
 // ===== コピー機能（PowerPoint・Excel貼り付け用） =====
 const ICON='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';

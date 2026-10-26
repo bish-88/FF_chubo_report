@@ -20,9 +20,9 @@ def grab(name):
 
 def js(calls):
     """calls: [(関数名, 引数リスト)] → 結果リスト"""
-    code = ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib', 'weekRows'])
+    code = ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib', 'weekRows', 'dowRows'])
     f = os.path.join(tempfile.mkdtemp(), 'in.json'); json.dump(calls, open(f, 'w', encoding='utf-8'), ensure_ascii=False)
-    prog = code + "const C=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const F={salesCalc,fcBacktest,fcDaytype,catContrib,weekRows};" \
+    prog = code + "const C=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const F={salesCalc,fcBacktest,fcDaytype,catContrib,weekRows,dowRows};" \
            "console.log(JSON.stringify(C.map(([n,a])=>F[n](...a))));"
     return json.loads(subprocess.run(['node', '-e', prog, f], capture_output=True, text=True, check=True).stdout)
 
@@ -101,6 +101,20 @@ def test_week_rows_by_hand():
     f = js([('salesCalc', [scope(d26, d25), '販売高', 1, 18, 18])])[0]
     assert R[3]['n'] == 13 and abs(R[3]['s26'] - f['restFc']) < 1e-9 and R[3]['s25'] == 1300   # 予測の行＝着地予測の残り部分
 
+def test_dow_rows_by_hand():
+    # 先週 10/12(月)〜18(日)、今週 10/19〜25。10/23(金) は欠損 → 金曜は差を出さない
+    d26 = [None] * 11 + [100.0, 110, 120, 130, 140, 150, 160] + [105.0, 100, 125, 130, None, 140, 170]
+    dc = {'A': {'販売高': [None] * 11 + [60.0] * 7 + [70.0, 50, 75, 80, None, 80, 100]}, 'B': {'販売高': [None] * 11 + [40, 50, 60, 70, 80, 90, 100.0] + [35.0, 50, 50, 50, None, 60, 70]}}
+    S = scope(d26, [0.0] * 31); S['dcat26'] = dc
+    X = js([('dowRows', [S, '販売高', dict(start=12, end=18), dict(start=19, end=25), ['A', 'B']])])[0]
+    R = {r['w']: r for r in X['rows']}
+    assert R['月']['dp'] == 12 and R['月']['dc'] == 19 and R['月']['diff'] == 5
+    assert R['金']['diff'] is None and R['金']['cat']['A'] is None                 # 欠損日は差を出さない（0扱いにしない）
+    assert R['土']['diff'] == -10 and R['土']['cat'] == {'A': 20, 'B': -30}
+    assert X['n'] == 6 and X['tot'] == sum(r['diff'] for r in X['rows'] if r['diff'] is not None)
+    for r in X['rows']:
+        if r['diff'] is not None: assert abs(sum(r['cat'].values()) - r['diff']) < 1e-9   # カテゴリーの差の合計＝その曜日の差
+
 def test_real_data():
     data = os.path.join(ROOT, 'data')
     if not glob.glob(os.path.join(data, 'FF', '*.csv')):
@@ -130,6 +144,11 @@ def test_real_data():
         assert abs(sum(r['act'] for r in wres if r['kind'] == 'act') - sum(day[('ALL', '販売高', 2026, d)] for d in range(1, N + 1))) < 0.5   # 週の合計＝月の合計
         for r in wres:
             if r['kind'] == 'act': assert abs(r['s25'] - sum(day[('ALL', '販売高', 2025, d)] for d in range(r['d0'], r['d1'] + 1))) < 0.5
+        P, C = WK[-2], WK[-1]
+        X = js([('dowRows', [D[dept]['ALL'], '荒利益高', dict(start=P['d0'], end=P['d1']), dict(start=C['d0'], end=C['d1']), D[dept]['cats']])])[0]
+        assert abs(X['cTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(C['d0'], C['d1'] + 1))) < 0.5      # 曜日の合計＝今週の合計
+        assert abs(X['pTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(P['d0'], P['d1'] + 1))) < 0.5
+        for r in X['rows']: assert abs(sum(v for v in r['cat'].values()) - r['diff']) < 0.5
         calls = []; keys = []
         for sc in ['ALL'] + list(SN.values()):
             for met in ['販売高', '荒利益高']:
