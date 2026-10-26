@@ -355,11 +355,12 @@ tbody tr:hover td{background:var(--accent-soft)}
   <section class="sec" data-tab="sales">
     <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と月末着地予測</h2><div class="seg" id="segMet" style="margin-left:auto"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
     <div class="g g-73">
-      <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend"><span><i style="background:var(--ly)"></i>2025年10月（前年）</span><span><i style="background:var(--ty)"></i>2026年10月（実績）</span><span><i class="dash"></i>予測（前年の同じ日×前年比）</span></div></div>
-        <div class="cv"><canvas id="cDaily" role="img" aria-label="日別の販売高・荒利益高"></canvas></div></div>
+      <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="seg" id="segGrain"><button aria-pressed="true" data-k="day">日別</button><button aria-pressed="false" data-k="week">週別</button></div><div class="legend" id="dLegend"></div></div>
+        <div class="cv"><canvas id="cDaily" role="img" aria-label="日別・週別の販売高・荒利益高"></canvas></div></div>
       <div class="panel"><div class="ph"><h3 id="fTitle">10月 月末着地予測</h3><span class="sub">簡易予測：実績＋残りの日（前年の同じ日×前年比）</span></div>
         <div class="cv sm"><canvas id="cFcst" role="img" aria-label="月末着地予測"></canvas></div><p class="note" id="fcstNote"></p></div>
     </div>
+    <div class="tw" id="wkTrendWrap" hidden><table id="tWkTrend" style="min-width:860px"></table></div><p class="note" id="wkTrendNote" hidden></p>
   </section>
   <section class="sec" data-tab="sales" id="weekly">
     <div class="sh"><span class="lbl">WEEKLY</span><h2>先週比　いくら上がった？下がった？</h2><p id="wkSub"></p></div>
@@ -608,6 +609,15 @@ function renderContrib(){
     rows.map(r=>`<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[r.c]});margin-right:8px"></i><b>${r.c}</b></td><td class="num">${yen(r.a)}</td><td class="num">${yen(r.b)}</td><td class="num"><span class="dif ${Math.abs(r.diff)<0.5?'flat':r.diff>0?'up':'down'}">${sg(r.diff)}</span></td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td class="num">${r.sh25==null?'—':r.sh25.toFixed(1)+'%'}</td><td class="num">${r.sh26==null?'—':r.sh26.toFixed(1)+'%'}</td><td class="num">${r.contrib==null?'—':pf(r.contrib).replace('%','pt')}</td></tr>`).join('')+
     `<tr style="font-weight:700"><td class="l">合計</td><td class="num">${yen(X.t25)}</td><td class="num">${yen(X.t26)}</td><td class="num">${sg(X.diff)}</td><td>${X.yoy==null?'—':chip(X.yoy)}</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">${X.yoy==null?'—':pf(X.yoy).replace('%','pt')}</td></tr></tbody>`;
   labelTables();
+}
+// 週別：今年の週（月曜始まり）ごとに、今年と前年の同じ日付を合計して比べる。最後に、残りの日の予測を1本足す
+function weekRows(S,met,weeks,N){
+  const rows=weeks.map(w=>{const c=salesCalc(S,met,w.d0,w.d1,N),a=S.daily26[met]||[];let act=0,nd=0;for(let d=w.d0;d<=w.d1;d++)if(a[d-1]!=null){act+=a[d-1];nd++;}
+    return {kind:'act',d0:w.d0,d1:w.d1,label:w.label,n:w.d1-w.d0+1,nd,act,s26:c.s26,s25:c.s25,used:c.used.length,skip:c.skip.length,yoy:c.yoy,diff:c.s26-c.s25,pd:nd?act/nd:null};});
+  rows.forEach((r,i)=>{const p=rows[i-1];r.wow=p&&p.pd&&r.pd!=null?(r.pd/p.pd-1)*100:null;});
+  if(N<31){const f=salesCalc(S,met,1,N,N),b=S.daily25[met]||[];let s25=0;for(let d=N+1;d<=31;d++)s25+=b[d-1]??0;
+    rows.push({kind:'fc',d0:N+1,d1:31,label:'残り（予測）',n:31-N,nd:0,act:f.restFc,s26:f.restFc,s25,yoy:f.yoy,diff:f.restFc==null?null:f.restFc-s25,pd:f.restFc==null?null:f.restFc/(31-N),r:f.r});}
+  return rows;
 }
 // ===== 売上分析の計算（SALESタブ・総合タブ・テストで共通） =====
 // 前年比は「今年も前年も、その範囲の全店舗のデータがある日」だけで計算する（欠損日・一部店舗だけの日・未来日は除く）
@@ -1156,6 +1166,30 @@ function draw(){
       // 実績と予測の境目
       const xb=(x.getPixelForValue(N-1)+x.getPixelForValue(N))/2;ctx.strokeStyle=css('--ink-3');ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(xb,a.top);ctx.lineTo(xb,a.bottom);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle=css('--ink-3');ctx.font='11px '+css('--f-ui');ctx.textAlign='right';ctx.fillText('実績',xb-6,a.top+12);ctx.textAlign='left';ctx.fillText('予測',xb+6,a.top+12);ctx.restore();}};
+  const WK=(ALLD.meta.periods||[]).filter(p=>p.k!=='all').sort((p,q)=>p.d0-q.d0),wr=weekRows(S,MK,WK,N);
+  document.getElementById('dTitle').textContent=(GRAIN==='week'?'週別 ':'日別 ')+ML();
+  document.getElementById('dLegend').innerHTML=GRAIN==='week'?'<span><i style="background:var(--ly)"></i>前年（同じ日付）</span><span><i style="background:var(--ty)"></i>今年（実績）</span><span><i style="background:var(--accent-soft);outline:1px dashed var(--ty)"></i>残りの日（予測）</span>'
+    :'<span><i style="background:var(--ly)"></i>2025年10月（前年）</span><span><i style="background:var(--ty)"></i>2026年10月（実績）</span><span><i class="dash"></i>予測（前年の同じ日×前年比）</span>';
+  document.getElementById('wkTrendWrap').hidden=GRAIN!=='week';document.getElementById('wkTrendNote').hidden=GRAIN!=='week';
+  const wl=r=>`10/${r.d0}〜${r.d1}`;
+  if(GRAIN==='week'){
+    const sel=r=>r.kind==='act'&&r.d0===pp.d0&&r.d1===pp.d1;
+    charts.push(new Chart(cDaily,{type:'bar',data:{labels:wr.map(r=>[wl(r),r.kind==='fc'?`予測・${r.n}日`:`${r.n}日間`]),datasets:[
+      {label:'前年',data:wr.map(r=>r.s25),backgroundColor:ly,borderRadius:2},
+      {label:'今年',data:wr.map(r=>r.s26),backgroundColor:wr.map(r=>r.kind==='fc'?css('--accent-soft'):ty),borderColor:wr.map(r=>r.kind==='fc'||sel(r)?css('--ty'):'transparent'),borderWidth:wr.map(r=>r.kind==='fc'?1.5:sel(r)?2.5:0),borderDash:[4,3],borderRadius:2}]},
+      options:{scales:{y:{beginAtZero:true,title:{display:true,text:ML()+'（円・週合計）',color:css('--ink-3'),font:{size:10.5}},ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},
+        plugins:{tooltip:{callbacks:{title:it=>{const r=wr[it[0].dataIndex];return `${wl(r)}（${r.kind==='fc'?'予測':r.n+'日間'}）`;},
+          label:x=>{const r=wr[x.dataIndex];return x.dataset.label==='前年'?` 前年（同じ日付）  ${yen(x.raw)}`:` ${r.kind==='fc'?'予測':'今年'}  ${r.s26==null?'—':yen(r.s26)}`;},
+          afterBody:it=>{const r=wr[it[0].dataIndex];if(r.s26==null)return [];const o=[`前年比 ${r.yoy==null?'—':pf(r.yoy)}　前年との差 ${r.diff>=0?'+':'-'}${yen(Math.abs(r.diff)).replace('-','')}`];
+            if(r.kind==='act'){o.push(`1日平均 ${yen(r.pd)}${r.wow!=null?`　前の週比（1日平均）${pf(r.wow)}`:''}`);if(r.skip)o.push(`前年比はデータのそろった${r.used}日で計算`);}
+            else o.push(`予測＝前年の同じ日 × 10/1〜${N}の前年比 ${r.r==null?'—':r.r.toFixed(3)}`);return o;}}}}}}));
+    const sg=v=>v==null?'—':(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
+    document.getElementById('tWkTrend').innerHTML=`<thead><tr><th class="l">週（${ML().replace('（売上）','')}）</th><th>日数</th><th>今年</th><th>前年（同じ日付）</th><th>前年との差</th><th>前年比</th><th>1日平均</th><th>前の週比（1日平均）</th></tr></thead><tbody>`+
+      wr.map(r=>`<tr${r.kind==='fc'?' style="color:var(--ink-2);font-style:italic"':sel(r)?' style="background:var(--accent-soft)"':''}><td class="l"><b>${wl(r)}</b>${r.kind==='fc'?'（予測）':''}</td><td class="num">${r.n}日</td><td class="num">${r.s26==null?'—':yen(r.s26)}</td><td class="num">${yen(r.s25)}</td><td class="num">${sg(r.diff)}</td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td class="num">${r.pd==null?'—':yen(r.pd)}</td><td>${r.kind==='fc'||r.wow==null?'—':chip(r.wow)}</td></tr>`).join('')+
+      (()=>{const A2=wr.filter(r=>r.kind==='act'),t26=A2.reduce((t,r)=>t+r.s26,0),t25=A2.reduce((t,r)=>t+r.s25,0);return `<tr style="font-weight:700"><td class="l">10/1〜${N} 合計</td><td class="num">${N}日</td><td class="num">${yen(t26)}</td><td class="num">${yen(t25)}</td><td class="num">${sg(t26-t25)}</td><td>${t25>0?chip(pct(t26,t25)):'—'}</td><td class="num">${yen(t26/N)}</td><td>—</td></tr>`;})()+'</tbody>';
+    document.getElementById('wkTrendNote').innerHTML=`週は月曜始まり（最初の週は10/1（木）〜4（日）の4日間）。前年は<b>同じ日付</b>の合計で、曜日の並びは違います。週によって日数が違うため、週どうしは「1日平均」と「前の週比（1日平均）」で比べてください。前年比は、今年・前年とも全店舗のデータがある日だけで計算します。最後の行は、残りの日の予測（前年の同じ日 × 10/1〜${N}の前年比）で、実績ではありません。`;
+    labelTables();
+  } else {
   charts.push(new Chart(cDaily,{type:'line',data:{labels:lab,datasets:[
     {label:'2025',data:S.daily25[MK],borderColor:ly,borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false},
     {label:'2026',data:lab.map((_,i)=>S.daily26[MK][i]??null),borderColor:ty,backgroundColor:ty,borderWidth:2.5,pointRadius:lab.map((_,i)=>S.cov26&&S.cov26[i]!=null&&S.cov26[i]<full?6:4),pointStyle:lab.map((_,i)=>S.cov26&&S.cov26[i]!=null&&S.cov26[i]<full?'triangle':'circle'),pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.25,spanGaps:false},
@@ -1170,6 +1204,7 @@ function draw(){
           afterBody:it=>{const d=it[0].dataIndex+1,a=S.daily26[MK][d-1],b=S.daily25[MK][d-1];if(d>N||a==null||b==null)return [];
             const okd=(S.cov26?S.cov26[d-1]===full:true)&&(S.cov25?S.cov25[d-1]===full:true);if(!okd)return ['前年比：一部の店舗だけの日のため出しません'];
             return [`前年比 ${b>0?pf(pct(a,b)):'—'}　前年との差 ${a-b>=0?'+':'-'}${yen(Math.abs(a-b)).replace('-','')}`];}}}}}}));
+  }
   charts.push(new Chart(cFcst,{type:'bar',data:{labels:['2025年10月（実績）','2026年10月（着地予測）'],datasets:[
       {label:'実績',data:[S.kpi.m25[MK],sc.act],backgroundColor:[ly,ty],borderRadius:0,maxBarThickness:80,stack:'s'},
       {label:'予測',data:[null,sc.restFc],backgroundColor:css('--accent-soft'),borderColor:ty,borderWidth:1.5,borderDash:[4,3],borderRadius:0,maxBarThickness:80,stack:'s'}]},
@@ -1213,7 +1248,7 @@ function draw(){
       plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`,afterBody:x=>`廃棄率 ${(L[x[0].dataIndex].wr*100).toFixed(1)}%`}}}}}));
 }
 function seg(id,set){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));set(b.dataset.k);draw()})}
-seg('segMix',k=>mixK=k);seg('segMet',k=>{MK=k;renderSalesTop();});seg('segWaste',k=>wasteK=k);
+let GRAIN='day';seg('segGrain',k=>GRAIN=k);seg('segMix',k=>mixK=k);seg('segMet',k=>{MK=k;renderSalesTop();});seg('segWaste',k=>wasteK=k);
 
 // ===== コピー機能（PowerPoint・Excel貼り付け用） =====
 const ICON='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';

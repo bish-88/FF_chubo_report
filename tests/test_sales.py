@@ -20,9 +20,9 @@ def grab(name):
 
 def js(calls):
     """calls: [(関数名, 引数リスト)] → 結果リスト"""
-    code = ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib'])
+    code = ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib', 'weekRows'])
     f = os.path.join(tempfile.mkdtemp(), 'in.json'); json.dump(calls, open(f, 'w', encoding='utf-8'), ensure_ascii=False)
-    prog = code + "const C=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const F={salesCalc,fcBacktest,fcDaytype,catContrib};" \
+    prog = code + "const C=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const F={salesCalc,fcBacktest,fcDaytype,catContrib,weekRows};" \
            "console.log(JSON.stringify(C.map(([n,a])=>F[n](...a))));"
     return json.loads(subprocess.run(['node', '-e', prog, f], capture_output=True, text=True, check=True).stdout)
 
@@ -90,6 +90,17 @@ def test_category_contribution_adds_up():
     c = next(r for r in X['rows'] if r['c'] == 'C'); assert c['yoy'] is None and abs(c['contrib'] - 4) < 1e-9   # 前年0は前年比を出さない
 
 
+def test_week_rows_by_hand():
+    d25 = [100.0] * 31; d26 = [110.0] * 4 + [120.0] * 7 + [None] + [130.0] * 6     # 10/12 欠損
+    weeks = [dict(d0=1, d1=4, label='a'), dict(d0=5, d1=11, label='b'), dict(d0=12, d1=18, label='c')]
+    R = js([('weekRows', [scope(d26, d25), '販売高', weeks, 18])])[0]
+    assert [r['kind'] for r in R] == ['act', 'act', 'act', 'fc']
+    assert R[0]['act'] == 440 and R[0]['s25'] == 400 and abs(R[0]['yoy'] - 10) < 1e-9
+    assert R[2]['nd'] == 6 and R[2]['skip'] == 1 and R[2]['s25'] == 600 and abs(R[2]['pd'] - 130) < 1e-9   # 欠損日は前年からも外す
+    assert abs(R[1]['wow'] - (120 / 110 - 1) * 100) < 1e-9                              # 前の週比は1日平均どうし
+    f = js([('salesCalc', [scope(d26, d25), '販売高', 1, 18, 18])])[0]
+    assert R[3]['n'] == 13 and abs(R[3]['s26'] - f['restFc']) < 1e-9 and R[3]['s25'] == 1300   # 予測の行＝着地予測の残り部分
+
 def test_real_data():
     data = os.path.join(ROOT, 'data')
     if not glob.glob(os.path.join(data, 'FF', '*.csv')):
@@ -114,6 +125,11 @@ def test_real_data():
                     for sc in ['ALL', SN[r['店舗名']]]:
                         day[(sc, met, y, d)] += v
                         if d <= N: cat[(sc, met, y, c)] += v
+        WK = sorted([p for p in D['meta']['periods'] if p['k'] != 'all'], key=lambda p: p['d0'])
+        wres = js([('weekRows', [D[dept]['ALL'], '販売高', WK, N])])[0]
+        assert abs(sum(r['act'] for r in wres if r['kind'] == 'act') - sum(day[('ALL', '販売高', 2026, d)] for d in range(1, N + 1))) < 0.5   # 週の合計＝月の合計
+        for r in wres:
+            if r['kind'] == 'act': assert abs(r['s25'] - sum(day[('ALL', '販売高', 2025, d)] for d in range(r['d0'], r['d1'] + 1))) < 0.5
         calls = []; keys = []
         for sc in ['ALL'] + list(SN.values()):
             for met in ['販売高', '荒利益高']:
