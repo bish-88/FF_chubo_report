@@ -130,6 +130,7 @@ button.go{font:inherit;font-size:12.5px;color:var(--accent);background:none;bord
 .kpi .fc{font-size:11px;color:var(--ink-3)}
 .kpis.k6{grid-template-columns:repeat(6,minmax(0,1fr))}
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.seg.seg-lg button{font-size:13px;padding:6px 18px;font-weight:700}
 @media (max-width:980px){.kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kpi .big2{font-size:12px;color:var(--ink-2)}
 .seg button[aria-pressed="true"]{box-shadow:inset 0 0 0 1px var(--accent)}
@@ -353,9 +354,9 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="kpis k4" id="salesKpi"></div>
   </section>
   <section class="sec" data-tab="sales">
-    <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と月末着地予測</h2><div class="seg" id="segMet" style="margin-left:auto"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
+    <div class="sh"><span class="lbl">TREND</span><h2>販売高（売上）・荒利益高の推移と月末着地予測</h2><div class="seg seg-lg" id="segGrain" style="margin-left:auto" role="tablist" aria-label="日別・週別の切り替え"><button aria-pressed="true" data-k="day">日別</button><button aria-pressed="false" data-k="week">週別</button></div><div class="seg" id="segMet"><button aria-pressed="true" data-k="販売高">販売高（売上）</button><button aria-pressed="false" data-k="荒利益高">荒利益高</button></div></div>
     <div class="g g-73">
-      <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="seg" id="segGrain"><button aria-pressed="true" data-k="day">日別</button><button aria-pressed="false" data-k="week">週別</button></div><div class="legend" id="dLegend"></div></div>
+      <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend" id="dLegend"></div></div>
         <div class="cv"><canvas id="cDaily" role="img" aria-label="日別・週別の販売高・荒利益高"></canvas></div></div>
       <div class="panel"><div class="ph"><h3 id="fTitle">10月 月末着地予測</h3><span class="sub">簡易予測：実績＋残りの日（前年の同じ日×前年比）</span></div>
         <div class="cv sm"><canvas id="cFcst" role="img" aria-label="月末着地予測"></canvas></div><p class="note" id="fcstNote"></p></div>
