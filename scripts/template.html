@@ -1070,6 +1070,7 @@ function renderWx(){
   if(isAll()){const s1=catLines('土',R),s2=catLines('日祝',R);facts.push(`カテゴリー別（販売数）：土曜は ${s1.length?s1.join('、'):'大きな差なし'}。日曜・祝日は ${s2.length?s2.join('、'):'大きな差なし'}。`);}
   else{const ss=STORES.map(s=>({s,i:A[s].st['日祝'].idx})).sort((a,b)=>a.i-b.i);facts.push(`日曜・祝日に強い店は ${ss.slice(-2).reverse().map(x=>x.s+'（'+(x.i*100).toFixed(0)+'%）').join('・')}、弱い店は ${ss.slice(0,2).map(x=>x.s+'（'+(x.i*100).toFixed(0)+'%）').join('・')}。`);}
   facts.push(FFm&&X.chukaBand?`<b>気温</b>が下がると中華まんが売れます（相関 ${X.chukaCorr.toFixed(2)}）。前年は最高22℃未満の日に1日平均 <b>${Math.round(X.chukaBand[0].avg)}個</b>、26℃以上の日は ${Math.round(X.chukaBand[2].avg)}個（5店合計）。`:FFm&&X.W.ice?`<b>気温</b>はマチカフェのアイス比率と強く連動（相関 ${X.corr.toFixed(2)}）。`:`<b>気温</b>と厨房の販売数の関係は弱い（相関 ${X.corr.toFixed(2)}）。厨房は天気より曜日で動くカテゴリーです。`);
+  {const un=ALLD.meta.wx26.filter(w=>w.rain==null);if(un.length) facts.push(`今年の降水量が未確認の日：${un.map(w=>'10/'+w.d).join('・')}（雨の日かどうかは判定していません）。`);}
   {const rd=ALLD.meta.wx26.filter(w=>w.rain>=2);if(rd.length) facts.push(`今年の雨の日：${rd.map(w=>`10/${w.d}（${'日月火水木金土'[new Date(2026,9,w.d).getDay()]}・${w.rain}mm）`).join('、')}。この日の落ち込みの一部は天気の影響です（気象庁 大阪の実績）。`);}
   document.getElementById('wxFacts').innerHTML=facts.map(f=>`<li>${f}</li>`).join('');
   const key=cal.filter(r=>r.d<=ALLD.meta.N+14&&(r.sig!=='normal'||r.hol)).slice(0,6);
