@@ -20,7 +20,7 @@ CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホ�
 M = ['販売数', '販売高', '廃棄数', '廃棄高', '荒利益高']
 num = lambda v: 0.0 if v in ('*', '') else float(v.replace(',', ''))
 clean = lambda n: ' '.join(n.replace('●', '').replace('　', ' ').split())
-off26 = lambda d: datetime.date(2026, 10, d).weekday() >= 5 or d == 12
+off26 = lambda d: (datetime.date(2026, 10, 1) + datetime.timedelta(days=d - 1)).weekday() >= 5 or d == 12
 res = collections.Counter(); bad = []
 
 def cmp(lbl, a, b, tol=0.5):
@@ -36,7 +36,7 @@ for dp in ['FF', '厨房']:
             if not c: continue
             key = tuple(r[k] for k in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
             if key in seen: continue
-            seen.add(key); y, _, d = map(int, r['年月日'].split('/'))
+            seen.add(key); y, d = (lambda s: (lambda y, mo, dd: (y, dd if mo == 10 else 31 + dd if mo == 11 else -99))(*map(int, s.split('/'))))(r['年月日'])
             R.append(dict(y=y, d=d, s=SN[r['店舗名']], c=c, n=clean(r['商品名']), **{k: num(r[k]) for k in M}))
     for p in D['meta']['periods']:
         X = D[dp] if p['k'] == 'all' else D['P'][p['k']][dp]
@@ -60,6 +60,17 @@ for dp in ['FF', '厨房']:
                 ds = [d for d in range(w['start'], w['end'] + 1) if sel(d)]
                 if not ds: continue
                 for k in M: cmp(f'PSA/D {dp}{sc}{w["label"]}{part}{k}', sum(r[k] for r in rr if r['y'] == 2026 and r['d'] in ds) / len(ds) / ns, w[part]['tot'][k], 0.01)
+    # 10月をはみ出す週（11月の日を含む）：先週比用の集計と、日別の追加分
+    for w in D['meta'].get('weeks', []):
+        if w['k'] not in D.get('PW', {}): continue
+        X = D['PW'][w['k']][dp]
+        for sc in ['ALL'] + ST:
+            rr = [r for r in R if (sc == 'ALL' or r['s'] == sc) and w['d0'] <= r['d'] <= w['d1'] and r['y'] == 2026]
+            for k in M: cmp(f'丸ごとの週 {dp}{w["k"]}{sc}{k}', sum(r[k] for r in rr), X[sc]['kpi']['p26'][k])
+    for sc in ['ALL'] + ST:
+        rr = [r for r in R if sc == 'ALL' or r['s'] == sc]
+        for k, arr in (D[dp][sc].get('ext26') or {}).items():
+            for i, v in enumerate(arr): cmp(f'追加の日 {dp}{sc}{D["meta"]["N"]+1+i}{k}', sum(r[k] for r in rr if r['y'] == 2026 and r['d'] == D['meta']['N'] + 1 + i), v)
     for p in ['p26', 'p25', 'm25']:
         for k in M: cmp(f'5店合計=全店 {dp}{p}{k}', sum(D[dp][s]['kpi'][p][k] for s in ST), D[dp]['ALL']['kpi'][p][k])
 print(f"OK {res['ok']}  NG {res['NG']}")

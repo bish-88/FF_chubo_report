@@ -14,7 +14,10 @@ def read(files,catfn,key):
         dfs.append(d)
     df=pd.concat(dfs)
     for c in m: df[c]=pd.to_numeric(df[c].str.replace(',',''),errors='coerce').fillna(0)
-    df['date']=pd.to_datetime(df['年月日']); df['year']=df.date.dt.year; df['d']=df.date.dt.day
+    df['date']=pd.to_datetime(df['年月日']); df['year']=df.date.dt.year
+    # 日付は「10月1日からの通し日数」で持つ（10/31＝31、11/1＝32）。11月の日は週別の比較だけに使う
+    df['d']=(df.date-pd.to_datetime(df.year.astype(str)+'-10-01')).dt.days+1
+    df=df[(df.d>=1)&((df.year==2026)|(df.d<=31))]
     df['cat']=catfn(df); df['store']=df.店舗名.map(SN)
     COV[key]=set(zip(df.year,df.store,df.d))
     df=df[(df[m]!=0).any(axis=1)&df.cat.notna()]
@@ -24,8 +27,13 @@ FF=read(sorted(glob.glob(os.path.join(DATA_DIR,'FF','*.csv'))),lambda d:d.CLASS�
 KI=read(sorted(glob.glob(os.path.join(DATA_DIR,'厨房','*.csv'))),lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])),'厨房')
 F=float
 # 今年のデータが何日まであるか（FF・厨房で共通の日数）
-N=int(min(FF[FF.year==2026].d.max(),KI[KI.year==2026].d.max()))
-def is_we(y,d): return datetime.date(y,10,d).weekday()>=5
+N=int(min(FF[(FF.year==2026)&(FF.d<=31)].d.max(),KI[(KI.year==2026)&(KI.d<=31)].d.max()))
+# 週別の比較で使う最後の日（11月の日を含む。10月の集計・前年比は N まで）
+NX=int(min(FF[FF.year==2026].d.max(),KI[KI.year==2026].d.max()))
+def DT(y,d): return datetime.date(y,10,1)+datetime.timedelta(days=int(d)-1)
+def DLAB(d): x=DT(2026,d); return f'{x.month}/{x.day}'
+def RNG(d0,d1): a,b=DT(2026,d0),DT(2026,d1); return f'{a.month}/{a.day}〜{b.day}' if a.month==b.month else f'{a.month}/{a.day}〜{b.month}/{b.day}'
+def is_we(y,d): return DT(y,d).weekday()>=5
 def tot(x): s=x[m].sum(); return {k:F(s[k]) for k in m}
 def clean(n): return ' '.join(n.replace('●','').replace('　',' ').split())
 AL={'常温　カリパン　ＫＹ':'常温　カリパン　Ｙ','常温　ジャイアントポークフランク　１本':'ＨＯＴ　ジャイアントポークフランク','常温　なんこつ入りつくね棒　１本':'ＨＯＴ　なんこつ入りつくね棒　１本'}
@@ -49,12 +57,12 @@ def fx(series):
     return dict(sat=F(np.exp(b[1])-1),sun=F(np.exp(b[2])-1),wet=F(np.exp(b[3])-1),t=F(np.exp(b[4])-1))
 
 HOL26={12}
-def is_off26(d): return datetime.date(2026,10,d).weekday()>=5 or d in HOL26
+def is_off26(d): return DT(2026,d).weekday()>=5 or d in HOL26
 def weekly(x,ns,cats):
     # 今年のデータを月曜始まりの週に分け、1店1日あたり（PSA/D）で比べる
     y=x[x.year==2026]
     days=sorted(int(v) for v in y.d.unique())
-    wkof=lambda d:datetime.date(2026,10,d).isocalendar()[1]
+    wkof=lambda d:DT(2026,d).isocalendar()[1]
     weeks=[]
     for w in sorted({wkof(d) for d in days}):
         ds=[d for d in days if wkof(d)==w]
@@ -69,7 +77,7 @@ def weekly(x,ns,cats):
             out['cat']={c:psa(z[z.cat==c],len(sd)) for c in cats}
             return out
         weeks.append(dict(label=f"{mon.month}/{mon.day}週",start=ds[0],end=ds[-1],
-            first='月火水木金土日'[datetime.date(2026,10,ds[0]).weekday()],last='月火水木金土日'[datetime.date(2026,10,ds[-1]).weekday()],
+            first='月火水木金土日'[DT(2026,ds[0]).weekday()],last='月火水木金土日'[DT(2026,ds[-1]).weekday()],
             all=block(lambda d:True),wk=block(lambda d:not is_off26(d)),we=block(is_off26)))
     # 曜日別 PSA/D（販売高・荒利益高・廃棄高）
     byd={}
@@ -98,6 +106,11 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
         o['dcat26']={c:{k:[(F(g.loc[(c,d),k]) if (c,d) in g.index else (0.0 if has(2026,stores,d) else None)) for d in range(1,N+1)] for k in ['販売高','荒利益高','廃棄高']} for c in cats}
         o['cov25']=[sum((2025,s,d) in COV[key] for s in stores) for d in range(1,32)]
         o['nst']=len(stores)
+        # 10月の後の日（週別の比較用）。ext26[指標][i] は N+1+i 日目
+        if NX>N:
+            o['ext26']={k:[F(y26all[y26all.d==d][k].sum()) if has(2026,stores,d) else None for d in range(N+1,NX+1)] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
+            o['extcov26']=[sum((2026,s,d) in COV[key] for s in stores) for d in range(N+1,NX+1)]
+            o['extcat26']={c:{k:[(F(y26all[(y26all.d==d)&(y26all.cat==c)][k].sum()) if has(2026,stores,d) else None) for d in range(N+1,NX+1)] for k in ['販売高','荒利益高','廃棄高']} for c in cats}
         o['cat']={'p25':bycat(sp25),'p26':bycat(y26),'m25':bycat(y25)}
         nc=x[~x.cat.isin(excl)]
         a=nc[(nc.year==2026)&nc.d.between(d0,d1)]; b=nc[(nc.year==2025)&nc.d.between(d0,d1)]; mm=nc[nc.year==2025]
@@ -149,7 +162,7 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
         yoy=o['kpi']['p26']['荒利益高']/o['kpi']['p25']['荒利益高']; yoys=o['kpi']['p26']['販売高']/o['kpi']['p25']['販売高']
         cal=[]
         for d in range(N+1,32):
-            dt=datetime.date(2026,10,d); wd='月火水木金土日'[dt.weekday()]
+            dt=DT(2026,d); wd='月火水木金土日'[dt.weekday()]
             typ='日祝' if dt.weekday()==6 or d in HOL else '土' if dt.weekday()==5 else '平日'
             f=fc.get(d); wet=bool(f and f[3]>=50)
             idx=ST[typ]['idx']*(1+ST['wet']['gp'] if wet else 1)
@@ -205,16 +218,22 @@ D['meta']=dict(N=N,w26=wcount(2026),w25=wcount(2025),fc=FC_ISSUED,
   wx26=[dict(d=d,rain=RAIN26.get(d),tmax=TMAX26.get(d)) for d in range(1,N+1)],
   dropped=[c for c in ['マチカフェ','中華まん'] if c not in FFC])
 # 期間（累計・週ごと）。週は月曜始まり。新しい週から順に並べる
-def wd_of(d): return '月火水木金土日'[datetime.date(2026,10,d).weekday()]
+def wd_of(d): return '月火水木金土日'[DT(2026,d).weekday()]
 PERIODS=[dict(k='all',label='累計',d0=1,d1=N)]
 for w in reversed(D['FF']['ALL']['wk']['weeks']):
-    PERIODS.append(dict(k=f"w{w['start']}",label=w['label'],d0=w['start'],d1=w['end']))
+    PERIODS.append(dict(k=f"w{w['start']}",label=w['label'],d0=w['start'],d1=min(w['end'],N)))   # 期間ボタンは10月の日だけ（前年比のため）
 for i,pp in enumerate(PERIODS[1:]): pp['tag']='今週' if i==0 else '先週' if i==1 else ''
 for pp in PERIODS:
-    pp['n']=pp['d1']-pp['d0']+1; pp['range']=f"10/{pp['d0']}〜{pp['d1']}"
+    pp['n']=pp['d1']-pp['d0']+1; pp['range']=RNG(pp['d0'],pp['d1'])
     pp['first']=wd_of(pp['d0']); pp['last']=wd_of(pp['d1'])
     pp['we26']=sum(is_off26(d) for d in range(pp['d0'],pp['d1']+1)); pp['we25']=sum(datetime.date(2025,10,d).weekday()>=5 or d==13 for d in range(pp['d0'],pp['d1']+1))
 D['meta']['periods']=PERIODS
+# 週別の比較（先週比・曜日別・週別グラフ）で使う週。11月の日まで含めた丸ごとの週
+D['meta']['NX']=NX
+D['meta']['weeks']=[dict(k=f"w{w['start']}",label=w['label'],d0=w['start'],d1=w['end'],range=RNG(w['start'],w['end']),n=w['end']-w['start']+1,first=w['first'],last=w['last']) for w in D['FF']['ALL']['wk']['weeks']]
+# 10月をはみ出す週は、先週比の計算用に丸ごとの週でも集計しておく（前年比には使わない）
+D['PW']={w['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True,w['d0'],w['d1'],True),
+                 '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False,w['d0'],w['d1'],True)} for w in D['meta']['weeks'] if w['d1']>N}
 D['meta']['built']=datetime.date.today().isoformat()   # ページを作った日（予測の更新日として表示）
 # 改善候補（実績からの自動抽出。式は scripts/candidates.py）
 # 2026年はジャイアントポークフランク・なんこつつくね棒がホットFF→常温FFへ移ったため、この2カテゴリーの前年比は確度を下げる

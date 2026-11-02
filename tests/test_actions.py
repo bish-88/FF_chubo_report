@@ -117,7 +117,7 @@ def test_real_data_eval():
                 ok = r['CLASS名'] in CM if dept == 'FF' else r['SUBCLASS名'] in ('弁当', '調理パン', '惣菜')
                 k = tuple(r[c] for c in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
                 if not ok or k in seen or all(num(r[c]) == 0 for c in M): continue
-                seen.add(k); d = int(r['年月日'].split('/')[2])
+                seen.add(k); _y, d = (lambda s: (lambda y, mo, dd: (y, dd if mo == 10 else 31 + dd if mo == 11 else -99))(*map(int, s.split('/'))))(r['年月日'])
                 day[(r['店舗名'], cl(r['商品名']), d)]['q'] += num(r['販売数']); day[(r['店舗名'], cl(r['商品名']), d)]['gp'] += num(r['荒利益高'])
         for rec, e in zip(recs, res):
             L = e['len']; aft = range(12, 12 + L); bef = range(12 - L, 12)

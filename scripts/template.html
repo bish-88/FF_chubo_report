@@ -584,7 +584,8 @@ function wkCmp(){
   const ps=PDS();if(!ps)return null;const wk=ps.filter(p=>p.k!=='all');
   const ci=PK==='all'?0:wk.findIndex(p=>p.k===PK);if(ci<0||ci+1>=wk.length)return null;
   const c=wk[ci],p=wk[ci+1];
-  return {c,p,label:`${c.tag||c.label}・${c.range} vs ${p.tag||p.label}・${p.range}`,cur:{d:dataOf(c.k,DEPT)},prev:{d:dataOf(p.k,DEPT)}};
+  const fw=k=>(ALLD.meta.weeks||[]).find(w=>w.k===k),rc=(fw(c.k)||c).range,rp=(fw(p.k)||p).range;
+  return {c:Object.assign({},c,{range:rc}),p:Object.assign({},p,{range:rp}),label:`${c.tag||c.label}・${rc} vs ${p.tag||p.label}・${rp}`,cur:{d:weekData(c.k,DEPT)},prev:{d:weekData(p.k,DEPT)}};
 }
 // ===== アクション（優先度・根拠・期待効果・確認事項・推移） =====
 function renderSalesTop(){
@@ -632,7 +633,7 @@ function renderContrib(){
 }
 // 週別：今年の週（月曜始まり）ごとに、今年と前年の同じ日付を合計して比べる。最後に、残りの日の予測を1本足す
 function weekRows(S,met,weeks,N){
-  const rows=weeks.map(w=>{const c=salesCalc(S,met,w.d0,w.d1,N),a=S.daily26[met]||[];let act=0,nd=0;for(let d=w.d0;d<=w.d1;d++)if(a[d-1]!=null){act+=a[d-1];nd++;}
+  const rows=weeks.map(w=>{const c=salesCalc(S,met,w.d0,w.d1,N);let act=0,nd=0;for(let d=w.d0;d<=w.d1;d++){const v=v26(S,met,d);if(v!=null){act+=v;nd++;}}
     return {kind:'act',d0:w.d0,d1:w.d1,label:w.label,n:w.d1-w.d0+1,nd,act,s26:c.s26,s25:c.s25,used:c.used.length,skip:c.skip.length,yoy:c.yoy,diff:c.s26-c.s25,pd:nd?act/nd:null};});
   rows.forEach((r,i)=>{const p=rows[i-1];r.wow=p&&p.pd&&r.pd!=null?(r.pd/p.pd-1)*100:null;});
   if(N<31){const f=salesCalc(S,met,1,N,N),b=S.daily25[met]||[];let s25=0;for(let d=N+1;d<=31;d++)s25+=b[d-1]??0;
@@ -643,21 +644,21 @@ function weekRows(S,met,weeks,N){
 function dowMatrix(S,met,weeks,N){
   const W='月火水木金土日',wd=(y,d)=>(new Date(y,9,d).getDay()+6)%7,a=S.daily26[met]||[],b=S.daily25[met]||[];
   return [...Array(7)].map((_,i)=>{
-    const wk=weeks.map(w=>{let d=null;for(let x=w.d0;x<=w.d1;x++)if(wd(2026,x)===i)d=x;return {d,v:d&&d<=N?a[d-1]??null:null};});
-    const v26=[];for(let d=1;d<=N;d++)if(wd(2026,d)===i&&a[d-1]!=null)v26.push(a[d-1]);
+    const wk=weeks.map(w=>{let d=null;for(let x=w.d0;x<=w.d1;x++)if(wd(2026,x)===i)d=x;return {d,v:d?v26(S,met,d):null};});
+    const L26=[];for(let d=1;d<=N;d++)if(wd(2026,d)===i&&a[d-1]!=null)L26.push(a[d-1]);
     const v25=[];for(let d=1;d<=31;d++)if(wd(2025,d)===i&&b[d-1]!=null)v25.push(b[d-1]);
-    const avg=v=>v.length?v.reduce((t,x)=>t+x,0)/v.length:null,a26=avg(v26),a25=avg(v25);
-    return {w:W[i],wk,a26,n26:v26.length,a25,n25:v25.length,yoy:a26!=null&&a25>0?(a26/a25-1)*100:null};
+    const avg=v=>v.length?v.reduce((t,x)=>t+x,0)/v.length:null,a26=avg(L26),a25=avg(v25);
+    return {w:W[i],wk,a26,n26:L26.length,a25,n25:v25.length,yoy:a26!=null&&a25>0?(a26/a25-1)*100:null};
   });
 }
 // 曜日別の増減：今週と先週を同じ曜日どうしで並べる（店の合計）。片方の週にない曜日は差を出さない
 function dowRows(S,met,P,C,cats){
-  const W='月火水木金土日',wd=d=>(new Date(2026,9,d).getDay()+6)%7,a=S.daily26[met]||[],dc=S.dcat26||{};
+  const W='月火水木金土日',wd=d=>(new Date(2026,9,d).getDay()+6)%7;
   const rows=[...Array(7)].map((_,i)=>({w:W[i],dp:null,dc:null,p:null,c:null,diff:null,cat:{}}));
-  for(let d=P.start;d<=P.end;d++){const r=rows[wd(d)];r.dp=d;r.p=a[d-1];}
-  for(let d=C.start;d<=C.end;d++){const r=rows[wd(d)];r.dc=d;r.c=a[d-1];}
+  for(let d=P.start;d<=P.end;d++){const r=rows[wd(d)];r.dp=d;r.p=v26(S,met,d);}
+  for(let d=C.start;d<=C.end;d++){const r=rows[wd(d)];r.dc=d;r.c=v26(S,met,d);}
   rows.forEach(r=>{if(r.p!=null&&r.c!=null)r.diff=r.c-r.p;
-    cats.forEach(c=>{const x=dc[c]&&dc[c][met]||[],p=r.dp?x[r.dp-1]:null,q=r.dc?x[r.dc-1]:null;r.cat[c]=p!=null&&q!=null?q-p:null;});});
+    cats.forEach(c=>{const p=r.dp?vcat26(S,c,met,r.dp):null,q=r.dc?vcat26(S,c,met,r.dc):null;r.cat[c]=p!=null&&q!=null?q-p:null;});});
   const both=rows.filter(r=>r.diff!=null),tot=both.reduce((t,r)=>t+r.diff,0);
   return {rows,tot,pTot:both.reduce((t,r)=>t+r.p,0),cTot:both.reduce((t,r)=>t+r.c,0),n:both.length};
 }
@@ -667,6 +668,11 @@ function fcCheckpoints(S,met,N){
     let rest=0;for(let d=k+1;d<=N;d++)rest+=b[d-1]??0;out.push({k,fc:c.act+rest*c.r,r:c.r});}
   return out;
 }
+// 日付は10/1からの通し日数（10/31＝31、11/1＝32）。11月の日は週別の比較だけに使う
+const DL=d=>{const x=new Date(2026,9,d);return `${x.getMonth()+1}/${x.getDate()}`;};
+function v26(S,met,d){const N=ALLD.meta.N;if(d<=N){const a=S.daily26[met];return a?a[d-1]??null:null;}const e=S.ext26&&S.ext26[met];return e?e[d-N-1]??null:null;}
+function vcat26(S,c,met,d){const N=ALLD.meta.N;if(d<=N){const x=S.dcat26&&S.dcat26[c]&&S.dcat26[c][met];return x?x[d-1]??null:null;}const e=S.extcat26&&S.extcat26[c]&&S.extcat26[c][met];return e?e[d-N-1]??null:null;}
+const weekData=(k,d)=>ALLD.PW&&ALLD.PW[k]?ALLD.PW[k][d]:dataOf(k,d);
 // ===== 売上分析の計算（SALESタブ・総合タブ・テストで共通） =====
 // 前年比は「今年も前年も、その範囲の全店舗のデータがある日」だけで計算する（欠損日・一部店舗だけの日・未来日は除く）
 function salesCalc(S,met,d0,d1,N){
@@ -1072,7 +1078,7 @@ function renderDow(){
   const sec=document.getElementById('dowSec'),pr=wkPair();sec.hidden=!pr;if(!pr)return [];const [P,C]=pr,S=A[scope];
   const X=dowRows(S,DOWK,P,C,CATS),lb={販売高:'販売高（売上）',荒利益高:'荒利益高',廃棄高:'廃棄高'}[DOWK],inv=DOWK==='廃棄高';
   const HOLS={12:'祝'},wx=d=>{const w=(ALLD.meta.wx26||[]).find(x=>x.d===d);if(!w)return '';return `${w.tmax!=null?w.tmax+'℃':''}${w.rain==null?'':w.rain>=2?'・雨'+w.rain+'mm':''}`;};
-  const dt=d=>d?`10/${d}${HOLS[d]?'（祝）':''}`:'—';
+  const dt=d=>d?`${DL(d)}${HOLS[d]?'（祝）':''}`:'—';
   const sg=v=>v==null?'—':(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
   const bad=r=>r.diff!=null&&(inv?r.diff>0:r.diff<0);
   const worst=[...X.rows].filter(bad).sort((p,q)=>inv?q.diff-p.diff:p.diff-q.diff),best=[...X.rows].filter(r=>r.diff!=null&&!bad(r)&&Math.abs(r.diff)>0.5).sort((p,q)=>inv?p.diff-q.diff:q.diff-p.diff);
@@ -1099,7 +1105,7 @@ function renderDow(){
 }
 function renderWk(){
   const sec=document.getElementById('weekly'),pr=wkPair();sec.hidden=!pr;if(!pr)return;const [P,C]=pr;
-  const lbl=w=>`${w.label}（10/${w.start}${w.first}〜10/${w.end}${w.last}・${w.all.n}日）`;
+  const lbl=w=>`${w.label}（${DL(w.start)}${w.first}〜${DL(w.end)}${w.last}・${w.all.n}日）`;
   document.getElementById('wkSub').textContent=`今週＝${lbl(C)}　先週＝${lbl(P)}`;
   const fmt=(k,v)=>k==='wr'?(v*100).toFixed(1)+'%':k==='販売数'?v.toFixed(1)+'個':yen(v);
   const dl=(k,a,b,inv)=>k==='wr'?ptchip((b-a)*100,true):(a?chip(pct(b,a),inv):'—');
@@ -1120,7 +1126,7 @@ function renderWk(){
 
 // ===== 先週比（実額） =====
 function renderVs(){
-  const [P,C]=wkPair(),pk=w=>'w'+w.start,DP=dataOf(pk(P),DEPT),DC=dataOf(pk(C),DEPT),same=P.all.n===C.all.n;
+  const [P,C]=wkPair(),pk=w=>'w'+w.start,DP=weekData(pk(P),DEPT),DC=weekData(pk(C),DEPT),same=P.all.n===C.all.n;
   const nP=P.all.n,nC=C.all.n,adj=v=>same?v:v*nC/nP;  // 日数が違うときは先週を今週の日数に換算
   const cls=(d,inv)=>Math.abs(d)<0.5?'flat':((inv?d<0:d>0)?'up':'down');
   const sgn=v=>(v>=0?'+':'-');
@@ -1236,7 +1242,7 @@ function draw(){
   {const pr=wkPair();if(pr){const [P,C]=pr,S0=A[scope].wk.byday,rng=w=>{const a=[];for(let d=w.start;d<=w.end;d++)a.push(d);return a},pd=rng(P),cd=rng(C),common=pd.map(WDN).filter(w=>cd.map(WDN).includes(w)),val=(ds,w)=>S0[ds.find(d=>WDN(d)===w)].販売高;
    charts.push(new Chart(cWk,{type:'bar',data:{labels:common,datasets:[{label:'先週',data:common.map(w=>val(pd,w)),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:common.map(w=>val(cd,w)),backgroundColor:css('--ty'),borderRadius:2}]},
      options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`}}}}}));}}
-  {const pr=wkPair();if(pr){const X=dowRows(A[scope],DOWK,pr[0],pr[1],CATS),inv=DOWK==='廃棄高',sg=v=>(v>=0?'+':'-')+yen(Math.abs(v)).replace('-',''),labs=X.rows.map(r=>[r.w+'曜',`${r.dp?'10/'+r.dp:'—'}→${r.dc?'10/'+r.dc:'—'}`]);
+  {const pr=wkPair();if(pr){const X=dowRows(A[scope],DOWK,pr[0],pr[1],CATS),inv=DOWK==='廃棄高',sg=v=>(v>=0?'+':'-')+yen(Math.abs(v)).replace('-',''),labs=X.rows.map(r=>[r.w+'曜',`${r.dp?DL(r.dp):'—'}→${r.dc?DL(r.dc):'—'}`]);
     charts.push(new Chart(cDow,{type:'bar',data:{labels:labs,datasets:[{label:'差',data:X.rows.map(r=>r.diff),backgroundColor:X.rows.map(r=>r.diff==null?css('--ly'):((inv?r.diff>0:r.diff<0)?css('--bad'):css('--good'))),borderRadius:2}]},
       options:{scales:{y:{ticks:{callback:yTick},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>{const r=X.rows[x.dataIndex];return [` 差 ${sg(r.diff)}`,` 先週 ${yen(r.p)} → 今週 ${yen(r.c)}`];}}}}}}));
     charts.push(new Chart(cDow2,{type:'bar',data:{labels:labs,datasets:[{label:'先週',data:X.rows.map(r=>r.p),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:X.rows.map(r=>r.c),backgroundColor:css('--ty'),borderRadius:2}]},
@@ -1253,20 +1259,20 @@ function draw(){
       if(N>=31){ctx.restore();return;}
       const xb=(x.getPixelForValue(N-1)+x.getPixelForValue(N))/2;ctx.strokeStyle=css('--ink-3');ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(xb,a.top);ctx.lineTo(xb,a.bottom);ctx.stroke();ctx.setLineDash([]);
       ctx.fillStyle=css('--ink-3');ctx.font='11px '+css('--f-ui');ctx.textAlign='right';ctx.fillText('実績',xb-6,a.top+12);ctx.textAlign='left';ctx.fillText('予測',xb+6,a.top+12);ctx.restore();}};
-  const WK=(ALLD.meta.periods||[]).filter(p=>p.k!=='all').sort((p,q)=>p.d0-q.d0),wr=weekRows(S,MK,WK,N);
+  const WK=(ALLD.meta.weeks||(ALLD.meta.periods||[]).filter(p=>p.k!=='all')).slice().sort((p,q)=>p.d0-q.d0),wr=weekRows(S,MK,WK,N);
+  const wl=r=>{const a=DL(r.d0),b=DL(r.d1);return a.split('/')[0]===b.split('/')[0]?`${a}〜${b.split('/')[1]}`:`${a}〜${b}`;};
   document.getElementById('dTitle').textContent=(GRAIN==='week'?'週別 ':'日別 ')+ML();
   document.getElementById('dLegend').innerHTML=GRAIN==='week'?'<span><i style="background:var(--ly)"></i>前年 週合計</span><span><i style="background:var(--ty)"></i>今年 週合計</span><span><i style="background:var(--accent-soft);outline:1px dashed var(--ty)"></i>予測</span><span><i style="background:var(--c-kara);height:3px"></i>今年 1日平均（線）</span><span><i style="background:var(--ink-3);height:2px"></i>前年 1日平均（線）</span>'
     :'<span><i style="background:var(--ly)"></i>2025年10月（前年）</span><span><i style="background:var(--ty)"></i>2026年10月（実績）</span>'+(N>=31?'':'<span><i class="dash"></i>予測（前年の同じ日×前年比）</span>');
   document.getElementById('wkTrendWrap').hidden=GRAIN!=='week';document.getElementById('wkTrendNote').hidden=GRAIN!=='week';
-  const wl=r=>`10/${r.d0}〜${r.d1}`;
   document.getElementById('dowTrendWrap').hidden=GRAIN!=='dow';document.getElementById('dowTrendNote').hidden=GRAIN!=='dow';
   ['dowTrendWrap','wkTrendWrap'].forEach(id=>{const e=document.getElementById(id),p=e.previousElementSibling;if(p&&p.classList.contains('tbar'))p.hidden=e.hidden;});
   if(GRAIN==='dow'){
     const DM=dowMatrix(S,MK,WK,N),pal=['#c3ccd6','#93a7bf','#5f7fa3','#163f6e','#0b1d33'],cols=WK.map((_,i)=>pal[Math.max(0,pal.length-WK.length+i)]);
     document.getElementById('dTitle').textContent='曜日別 '+ML();
-    document.getElementById('dLegend').innerHTML=WK.map((w,i)=>`<span><i style="background:${cols[i]}"></i>10/${w.d0}〜${w.d1}</span>`).join('')+'<span><i style="background:var(--c-kara);height:3px"></i>今月の曜日平均</span><span><i style="background:var(--ink-3);height:2px"></i>前年10月の曜日平均</span>';
+    document.getElementById('dLegend').innerHTML=WK.map((w,i)=>`<span><i style="background:${cols[i]}"></i>${wl(w)}</span>`).join('')+'<span><i style="background:var(--c-kara);height:3px"></i>今月の曜日平均</span><span><i style="background:var(--ink-3);height:2px"></i>前年10月の曜日平均</span>';
     charts.push(new Chart(cDaily,{type:'bar',data:{labels:DM.map(r=>r.w+'曜'),datasets:[
-      ...WK.map((w,i)=>({label:`10/${w.d0}〜${w.d1}`,data:DM.map(r=>r.wk[i].v),backgroundColor:cols[i],borderRadius:2,order:2})),
+      ...WK.map((w,i)=>({label:`${wl(w)}`,data:DM.map(r=>r.wk[i].v),backgroundColor:cols[i],borderRadius:2,order:2})),
       {type:'line',label:'今月の曜日平均',data:DM.map(r=>r.a26),borderColor:css('--c-kara'),backgroundColor:css('--c-kara'),borderWidth:2.5,pointRadius:4,tension:.2,order:0},
       {type:'line',label:'前年10月の曜日平均',data:DM.map(r=>r.a25),borderColor:css('--ink-3'),backgroundColor:css('--ink-3'),borderWidth:1.75,borderDash:[3,3],pointRadius:3,tension:.2,order:1}]},
       options:{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,title:{display:true,text:ML()+'（円・1日）',color:css('--ink-3'),font:{size:10.5}},ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},
@@ -1274,34 +1280,34 @@ function draw(){
           label:x=>{const r=DM[x.dataIndex],i=x.datasetIndex;if(i<WK.length){const d=r.wk[i].d;return ` 10/${d}${d===12?'（祝）':''}  ${yen(x.raw)}`;}return ` ${x.dataset.label}  ${yen(x.raw)}`;},
           afterBody:it=>{const r=DM[it[0].dataIndex];return r.yoy==null?[]:[`今月平均の前年比 ${pf(r.yoy)}（今月${r.n26}日・前年${r.n25}日の平均）`];}}}}}}));
     const latest=WK.length-1;
-    document.getElementById('tDowTrend').innerHTML=`<thead><tr><th class="l">曜日（${ML().replace('（売上）','')}）</th>${WK.map(w=>`<th>10/${w.d0}〜${w.d1}</th>`).join('')}<th>今月の平均</th><th>前年10月の平均</th><th>前年比（平均）</th><th>最新週 vs 今月平均</th></tr></thead><tbody>`+
+    document.getElementById('tDowTrend').innerHTML=`<thead><tr><th class="l">曜日（${ML().replace('（売上）','')}）</th>${WK.map(w=>`<th>${wl(w)}</th>`).join('')}<th>今月の平均</th><th>前年10月の平均</th><th>前年比（平均）</th><th>最新週 vs 今月平均</th></tr></thead><tbody>`+
       DM.map(r=>{const lv=r.wk[latest].v;return `<tr><td class="l"><b>${r.w}</b></td>${r.wk.map((c,i)=>`<td class="num"${i===latest?' style="font-weight:700"':''}>${c.v==null?'—':yen(c.v)}${c.d===12?'<span style="color:var(--ink-3);font-size:10.5px">（祝）</span>':''}</td>`).join('')}<td class="num">${r.a26==null?'—':yen(r.a26)}</td><td class="num" style="color:var(--ink-2)">${r.a25==null?'—':yen(r.a25)}</td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td>${lv==null||!r.a26?'—':chip(pct(lv,r.a26))}</td></tr>`;}).join('')+'</tbody>';
-    const best=[...DM].filter(r=>r.a26!=null).sort((p,q)=>q.a26-p.a26),wl=[...DM].filter(r=>r.yoy!=null).sort((p,q)=>p.yoy-q.yoy);
-    document.getElementById('dowTrendNote').innerHTML=`今月（10/1〜${N}）で一番売れている曜日は <b>${best[0].w}曜</b>（1日平均 ${yen(best[0].a26)}）、一番少ないのは <b>${best[best.length-1].w}曜</b>（${yen(best[best.length-1].a26)}）。前年比が一番低い曜日は <b>${wl[0].w}曜</b>（${pf(wl[0].yoy)}）。<br>
+    const best=[...DM].filter(r=>r.a26!=null).sort((p,q)=>q.a26-p.a26),wlow=[...DM].filter(r=>r.yoy!=null).sort((p,q)=>p.yoy-q.yoy);
+    document.getElementById('dowTrendNote').innerHTML=`今月（10/1〜${N}）で一番売れている曜日は <b>${best[0].w}曜</b>（1日平均 ${yen(best[0].a26)}）、一番少ないのは <b>${best[best.length-1].w}曜</b>（${yen(best[best.length-1].a26)}）。前年比が一番低い曜日は <b>${wlow[0].w}曜</b>（${pf(wlow[0].yoy)}）。<br>
       棒は今月の各週のその曜日の値、オレンジの線は今月の曜日平均、灰色の点線は前年10月（2025年）の同じ曜日の平均です。10/12（月）はスポーツの日のため、月曜の平均に祝日が1日入っています（前年は10/13（月）が祝日）。曜日ごとの日数は3〜5日と少ないので、1日の天気やイベントで平均が動きます。`;
     labelTables();
   } else if(GRAIN==='week'){
     const sel=r=>r.kind==='act'&&r.d0===pp.d0&&r.d1===pp.d1;
-    charts.push(new Chart(cDaily,{type:'bar',data:{labels:wr.map(r=>[wl(r),r.kind==='fc'?`予測・${r.n}日`:`${r.n}日間`]),datasets:[
+    charts.push(new Chart(cDaily,{type:'bar',data:{labels:wr.map(r=>[wl(r),r.kind==='fc'?`予測・${r.n}日`:r.used<r.n&&r.kind==='act'?`${r.n}日間（前年は${r.used}日分）`:`${r.n}日間`]),datasets:[
       {label:'前年',data:wr.map(r=>r.s25),backgroundColor:ly,borderRadius:2},
-      {label:'今年',data:wr.map(r=>r.s26),backgroundColor:wr.map(r=>r.kind==='fc'?css('--accent-soft'):ty),borderColor:wr.map(r=>r.kind==='fc'||sel(r)?css('--ty'):'transparent'),borderWidth:wr.map(r=>r.kind==='fc'?1.5:sel(r)?2.5:0),borderDash:[4,3],borderRadius:2,order:2},
+      {label:'今年',data:wr.map(r=>r.kind==='act'?r.act:r.s26),backgroundColor:wr.map(r=>r.kind==='fc'?css('--accent-soft'):ty),borderColor:wr.map(r=>r.kind==='fc'||sel(r)?css('--ty'):'transparent'),borderWidth:wr.map(r=>r.kind==='fc'?1.5:sel(r)?2.5:0),borderDash:[4,3],borderRadius:2,order:2},
       // 折れ線：1日平均（週によって日数が違うので、週どうしの比較はこちら）。右の目盛り
       {type:'line',label:'今年 1日平均',data:wr.map(r=>r.pd),yAxisID:'y2',borderColor:css('--c-kara'),backgroundColor:css('--c-kara'),borderWidth:2.5,pointRadius:5,pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.2,order:0,
         segment:{borderDash:c=>wr[c.p1DataIndex]&&wr[c.p1DataIndex].kind==='fc'?[5,4]:undefined}},
-      {type:'line',label:'前年 1日平均',data:wr.map(r=>r.s25/r.n),yAxisID:'y2',borderColor:css('--ink-3'),backgroundColor:css('--ink-3'),borderWidth:1.75,borderDash:[2,3],pointRadius:3,tension:.2,order:1}]},
+      {type:'line',label:'前年 1日平均',data:wr.map(r=>r.kind==='act'?(r.used?r.s25/r.used:null):r.s25/r.n),yAxisID:'y2',borderColor:css('--ink-3'),backgroundColor:css('--ink-3'),borderWidth:1.75,borderDash:[2,3],pointRadius:3,tension:.2,order:1}]},
       options:{interaction:{mode:'index',intersect:false},scales:{y:{beginAtZero:true,title:{display:true,text:'棒：週合計（円）',color:css('--ink-3'),font:{size:10.5}},ticks:{callback:yTick},grid:grid(),border:{display:false}},
           y2:{position:'right',beginAtZero:false,grace:'15%',title:{display:true,text:'線：1日平均（円）',color:css('--ink-3'),font:{size:10.5}},ticks:{callback:yTick},grid:{display:false},border:{display:false}},x:{grid:{display:false}}},
         plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{title:it=>{const r=wr[it[0].dataIndex];return `${wl(r)}（${r.kind==='fc'?'予測':r.n+'日間'}）`;},
           label:x=>{const r=wr[x.dataIndex];if(x.raw==null)return null;if(x.dataset.label==='今年 1日平均')return ` 今年 1日平均${r.kind==='fc'?'（予測）':''}  ${yen(x.raw)}`;if(x.dataset.label==='前年 1日平均')return ` 前年 1日平均  ${yen(x.raw)}`;
-            return x.dataset.label==='前年'?` 前年（週合計）  ${yen(x.raw)}`:` ${r.kind==='fc'?'予測':'今年'}（週合計）  ${r.s26==null?'—':yen(r.s26)}`;},
+            return x.dataset.label==='前年'?` 前年（週合計${r.used<r.n&&r.kind==='act'?'・'+r.used+'日分':''}）  ${yen(x.raw)}`:` ${r.kind==='fc'?'予測':'今年'}（週合計）  ${x.raw==null?'—':yen(x.raw)}`;},
           afterBody:it=>{const r=wr[it[0].dataIndex];if(r.s26==null)return [];const o=[`前年比 ${r.yoy==null?'—':pf(r.yoy)}　前年との差 ${r.diff>=0?'+':'-'}${yen(Math.abs(r.diff)).replace('-','')}`];
-            if(r.kind==='act'){if(r.wow!=null)o.push(`前の週比（1日平均）${pf(r.wow)}`);if(r.skip)o.push(`前年比はデータのそろった${r.used}日で計算`);}
+            if(r.kind==='act'){if(r.wow!=null)o.push(`前の週比（1日平均）${pf(r.wow)}`);if(r.used<r.n)o.push(`前年比・前年との差は、前年データのある${r.used}日分（今年 ${yen(r.s26)}）で計算`);}
             else o.push(`予測＝前年の同じ日 × 10/1〜${N}の前年比 ${r.r==null?'—':r.r.toFixed(3)}`);return o;}}}}}}));
     const sg=v=>v==null?'—':(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
     document.getElementById('tWkTrend').innerHTML=`<thead><tr><th class="l">週（${ML().replace('（売上）','')}）</th><th>日数</th><th>今年</th><th>前年（同じ日付）</th><th>前年との差</th><th>前年比</th><th>1日平均</th><th>前の週比（1日平均）</th></tr></thead><tbody>`+
-      wr.map(r=>`<tr${r.kind==='fc'?' style="color:var(--ink-2);font-style:italic"':sel(r)?' style="background:var(--accent-soft)"':''}><td class="l"><b>${wl(r)}</b>${r.kind==='fc'?'（予測）':''}</td><td class="num">${r.n}日</td><td class="num">${r.s26==null?'—':yen(r.s26)}</td><td class="num">${yen(r.s25)}</td><td class="num">${sg(r.diff)}</td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td class="num">${r.pd==null?'—':yen(r.pd)}</td><td>${r.kind==='fc'||r.wow==null?'—':chip(r.wow)}</td></tr>`).join('')+
-      (()=>{const A2=wr.filter(r=>r.kind==='act'),t26=A2.reduce((t,r)=>t+r.s26,0),t25=A2.reduce((t,r)=>t+r.s25,0);return `<tr style="font-weight:700"><td class="l">10/1〜${N} 合計</td><td class="num">${N}日</td><td class="num">${yen(t26)}</td><td class="num">${yen(t25)}</td><td class="num">${sg(t26-t25)}</td><td>${t25>0?chip(pct(t26,t25)):'—'}</td><td class="num">${yen(t26/N)}</td><td>—</td></tr>`;})()+'</tbody>';
-    document.getElementById('wkTrendNote').innerHTML=`週は月曜始まり（最初の週は10/1（木）〜4（日）の4日間）。前年は<b>同じ日付</b>の合計で、曜日の並びは違います。週によって日数が違うため、週どうしは折れ線の「1日平均」（右の目盛り）と「前の週比（1日平均）」で比べてください。前年比は、今年・前年とも全店舗のデータがある日だけで計算します。最後の行は、残りの日の予測（前年の同じ日 × 10/1〜${N}の前年比）で、実績ではありません。`;
+      wr.map(r=>`<tr${r.kind==='fc'?' style="color:var(--ink-2);font-style:italic"':sel(r)?' style="background:var(--accent-soft)"':''}><td class="l"><b>${wl(r)}</b>${r.kind==='fc'?'（予測）':''}</td><td class="num">${r.n}日</td><td class="num">${r.kind==='act'?yen(r.act):r.s26==null?'—':yen(r.s26)}</td><td class="num">${yen(r.s25)}${r.kind==='act'&&r.used<r.n?`<span style="color:var(--ink-3);font-size:10.5px">（${r.used}日分）</span>`:''}</td><td class="num">${sg(r.diff)}${r.kind==='act'&&r.used<r.n?`<span style="color:var(--ink-3);font-size:10.5px">（${r.used}日分）</span>`:''}</td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td class="num">${r.pd==null?'—':yen(r.pd)}</td><td>${r.kind==='fc'||r.wow==null?'—':chip(r.wow)}</td></tr>`).join('')+
+      (()=>{const A2=wr.filter(r=>r.kind==='act'),t26=salesCalc(S,MK,1,N,N).s26,t25=salesCalc(S,MK,1,N,N).s25;return `<tr style="font-weight:700"><td class="l">10/1〜${N} 合計</td><td class="num">${N}日</td><td class="num">${yen(t26)}</td><td class="num">${yen(t25)}</td><td class="num">${sg(t26-t25)}</td><td>${t25>0?chip(pct(t26,t25)):'—'}</td><td class="num">${yen(t26/N)}</td><td>—</td></tr>`;})()+'</tbody>';
+    document.getElementById('wkTrendNote').innerHTML=`週は月曜始まり（最初の週は10/1（木）〜4（日）の4日間）。前年は<b>同じ日付</b>の合計で、曜日の並びは違います。週によって日数が違うため、週どうしは折れ線の「1日平均」（右の目盛り）と「前の週比（1日平均）」で比べてください。前年比は、今年・前年とも全店舗のデータがある日だけで計算します。${N<31?`最後の行は、残りの日の予測（前年の同じ日 × 10/1〜${N}の前年比）で、実績ではありません。`:''}${(ALLD.meta.NX||N)>N?`最後の週は ${DL(N+1)} を含む丸ごとの週です。前年は${DL(N+1)}のデータがないため、その週の前年比・前年との差は10月の日だけで計算しています。合計行は10/1〜${N}（10月分）です。`:''}`;
     labelTables();
   } else {
   charts.push(new Chart(cDaily,{type:'line',data:{labels:lab,datasets:[

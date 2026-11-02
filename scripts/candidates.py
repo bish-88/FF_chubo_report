@@ -92,7 +92,8 @@ def _down(c):
 
 
 def _rng(d0, d1, wd):
-    return f'10/{d0}（{wd(d0)}）〜10/{d1}（{wd(d1)}）'
+    L = lambda d: f'10/{d}' if d <= 31 else f'11/{d - 31}'
+    return f'{L(d0)}（{wd(d0)}）〜{L(d1)}（{wd(d1)}）'
 
 
 def build(df, dept, ff, d0, d1, weeks, is_off, clean, year=2026, reclass=None):
@@ -100,7 +101,8 @@ def build(df, dept, ff, d0, d1, weeks, is_off, clean, year=2026, reclass=None):
     weeks: 今年の週 [(start,end), ...]（古い順）。is_off(d): 土日祝なら True。
     reclass: {カテゴリー: 説明}。前年から分類が変わったカテゴリーは、前年比の確度を「低」にする。"""
     reclass = reclass or {}
-    wd = lambda d: '月火水木金土日'[datetime.date(year, 10, d).weekday()]
+    DTd = lambda d: datetime.date(year, 10, 1) + datetime.timedelta(days=d - 1)
+    wd = lambda d: '月火水木金土日'[DTd(d).weekday()]
     out = []
     y = df[(df.year == year)]
     p = y[y.d.between(d0, d1)]

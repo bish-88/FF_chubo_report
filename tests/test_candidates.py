@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts'))
 import candidates as C
 
 M = C.M
-off = lambda d: datetime.date(2026, 10, d).weekday() >= 5
+off = lambda d: (datetime.date(2026, 10, 1) + datetime.timedelta(days=d - 1)).weekday() >= 5
 clean = lambda n: n
 
 
@@ -146,7 +146,7 @@ def test_real_data_reproduces():
                 if not cat: continue
                 k = tuple(r[c] for c in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
                 if k in seen or all(num(r[c]) == 0 for c in M): continue
-                seen.add(k); y, _, d = map(int, r['年月日'].split('/'))
+                seen.add(k); y, d = (lambda s: (lambda y, mo, dd: (y, dd if mo == 10 else 31 + dd if mo == 11 else -99))(*map(int, s.split('/'))))(r['年月日'])
                 if y != 2026: continue
                 for c in M: day[(SN[r['店舗名']], cl(r['商品名']), d)][c] += num(r[c])
         for pk, per in D['cand'].items():
