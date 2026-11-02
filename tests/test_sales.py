@@ -20,9 +20,9 @@ def grab(name):
 
 def js(calls):
     """calls: [(関数名, 引数リスト)] → 結果リスト"""
-    code = ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib', 'weekRows', 'dowRows', 'dowMatrix'])
+    code = ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib', 'weekRows', 'dowRows', 'dowMatrix', 'fcCheckpoints'])
     f = os.path.join(tempfile.mkdtemp(), 'in.json'); json.dump(calls, open(f, 'w', encoding='utf-8'), ensure_ascii=False)
-    prog = code + "const C=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const F={salesCalc,fcBacktest,fcDaytype,catContrib,weekRows,dowRows,dowMatrix};" \
+    prog = code + "const C=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const F={salesCalc,fcBacktest,fcDaytype,catContrib,weekRows,dowRows,dowMatrix,fcCheckpoints};" \
            "console.log(JSON.stringify(C.map(([n,a])=>F[n](...a))));"
     return json.loads(subprocess.run(['node', '-e', prog, f], capture_output=True, text=True, check=True).stdout)
 
@@ -127,6 +127,14 @@ def test_dow_matrix_by_hand():
     assert th['a25'] == (20 + 90 + 160 + 230 + 300) / 5 and abs(th['yoy'] - (8 / 160 - 1) * 100) < 1e-9
     mo = M[0]; assert [c['d'] for c in mo['wk']] == [None, 5, 12]               # 最初の週に月曜はない
 
+def test_month_closed_checkpoints():
+    # 31日分そろったら残りの予測は0、途中の日曜時点の予測＝その日までの実績＋残りの前年×その時点の前年比
+    d25 = [100.0] * 31; d26 = [110.0] * 10 + [120.0] * 21
+    r, cps = js([('salesCalc', [scope(d26, d25), '販売高', 1, 31, 31]), ('fcCheckpoints', [scope(d26, d25), '販売高', 31])])
+    assert r['rest'] == [] and r['restFc'] == 0 and r['fc'] == r['act'] == sum(d26)
+    assert [c['k'] for c in cps] == [4, 11, 18, 25]                                    # 2026年10月の日曜
+    c = cps[1]; s26 = 110 * 10 + 120; assert abs(c['r'] - s26 / 1100) < 1e-12 and abs(c['fc'] - (s26 + 2000 * s26 / 1100)) < 1e-9
+
 def test_real_data():
     data = os.path.join(ROOT, 'data')
     if not glob.glob(os.path.join(data, 'FF', '*.csv')):
@@ -159,8 +167,11 @@ def test_real_data():
         P, C = WK[-2], WK[-1]
         X = js([('dowRows', [D[dept]['ALL'], '荒利益高', dict(start=P['d0'], end=P['d1']), dict(start=C['d0'], end=C['d1']), D[dept]['cats']])])[0]
         assert abs(X['cTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(C['d0'], C['d1'] + 1))) < 0.5      # 曜日の合計＝今週の合計
-        assert abs(X['pTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(P['d0'], P['d1'] + 1))) < 0.5
-        for r in X['rows']: assert abs(sum(v for v in r['cat'].values()) - r['diff']) < 0.5
+        cw = {datetime.date(2026, 10, d).weekday() for d in range(C['d0'], C['d1'] + 1)}          # 今週にある曜日だけ（同じ曜日どうしで比べる）
+        assert abs(X['pTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(P['d0'], P['d1'] + 1) if datetime.date(2026, 10, d).weekday() in cw)) < 0.5
+        for r in X['rows']:
+            if r['diff'] is None: assert all(v is None for v in r['cat'].values()); continue   # 片方の週にない曜日は差を出さない
+            assert abs(sum(v for v in r['cat'].values()) - r['diff']) < 0.5
         DM = js([('dowMatrix', [D[dept]['ALL'], '販売高', [dict(d0=p['d0'], d1=p['d1']) for p in WK], N])])[0]
         for i, r in enumerate(DM):
             ds = [d for d in range(1, N + 1) if datetime.date(2026, 10, d).weekday() == i]
