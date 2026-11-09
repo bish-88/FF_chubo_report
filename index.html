@@ -9,14 +9,17 @@
 <style>
 /* Layout: report band header + sticky store switcher; 12-col grid of panels below, collapsing to one column on phones */
 :root{
-  --bg:#f3f5f8; --panel:#ffffff; --ink:#0e1a2b; --ink-2:#465467; --ink-3:#8290a1; --rule:#e2e7ee; --rule-2:#cdd5df;
-  --band:#0b1d33; --band-ink:#f1f5fa; --band-2:#93a7bf;
-  --accent:#1f5fa6; --accent-soft:#eaf1fa;
-  --ly:#c3ccd6; --ty:#163f6e;
-  --good:#16704a; --good-bg:#e7f4ed; --warn:#94650a; --warn-bg:#fbf2dc; --bad:#b0302a; --bad-bg:#fbeceb;
-  --c-kara:#d9822b; --c-machi:#1f5fa6; --c-hot:#8e6bb8; --c-jo:#2a9d8f; --c-thermal:#c2a23a;
+  /* パレット：Navy #163A63・Blue #2563EB・Teal #0891B2・背景 #F5F7FB・文字 #111827／#64748B
+     良い・悪い・注意の文字色は、白地で読める濃さ（WCAG AA）に合わせ、塗り（-fill）は指定色を使う */
+  --bg:#f5f7fb; --panel:#ffffff; --ink:#111827; --ink-2:#475569; --ink-3:#64748b; --rule:#e5e7eb; --rule-2:#d1d5db;
+  --band:#163a63; --band-ink:#ffffff; --band-2:#b4c6dd;
+  --accent:#2563eb; --accent-soft:#eef4ff;
+  --ly:#cbd5e1; --ty:#163a63; --fc:#0891b2; --fc-soft:#e0f4f8;
+  --good:#15803d; --good-bg:#e9f8ef; --warn:#b45309; --warn-bg:#fef5e1; --bad:#dc2626; --bad-bg:#fdeeee;
+  --good-fill:#16a34a; --warn-fill:#f59e0b; --bad-fill:#dc2626;
+  --c-kara:#d9822b; --c-machi:#2563eb; --c-hot:#8e6bb8; --c-jo:#2a9d8f; --c-thermal:#c2a23a;
   --f-sat:#1f5fa6; --f-sun:#d9822b; --f-rain:#8e6bb8;
-  --shadow:0 1px 2px rgba(14,26,43,.05),0 1px 1px rgba(14,26,43,.03);
+  --shadow:0 1px 2px rgba(17,24,39,.05),0 1px 3px rgba(17,24,39,.04);
   --f-ui:"Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif;
   --f-num:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
 }
@@ -25,12 +28,14 @@
   --band:#08111d; --band-ink:#f1f5fa; --band-2:#8297b0; --accent:#6ea6e6; --accent-soft:#18283c; --ly:#4a5868; --ty:#3f86d3;
   --good:#5fcf95; --good-bg:#132b20; --warn:#e8b552; --warn-bg:#33270f; --bad:#f08680; --bad-bg:#3a1a1a;
   --c-kara:#c4701d; --c-machi:#3f86d3; --c-hot:#8a6cc0; --c-jo:#119a82; --c-thermal:#a88a20; --f-sat:#3f86d3; --f-sun:#c4701d; --f-rain:#8a6cc0;
+  --fc:#22b8d6; --fc-soft:#10303a; --good-fill:#3fb871; --warn-fill:#e8a93a; --bad-fill:#e5605a; --band:#0f2440;
   --shadow:none; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d131b; --panel:#151d28; --ink:#e9eef5; --ink-2:#aeb9c7; --ink-3:#7c8a9b; --rule:#233040; --rule-2:#304054;
   --band:#08111d; --band-ink:#f1f5fa; --band-2:#8297b0; --accent:#6ea6e6; --accent-soft:#18283c; --ly:#4a5868; --ty:#3f86d3;
   --good:#5fcf95; --good-bg:#132b20; --warn:#e8b552; --warn-bg:#33270f; --bad:#f08680; --bad-bg:#3a1a1a;
   --c-kara:#c4701d; --c-machi:#3f86d3; --c-hot:#8a6cc0; --c-jo:#119a82; --c-thermal:#a88a20; --f-sat:#3f86d3; --f-sun:#c4701d; --f-rain:#8a6cc0;
+  --fc:#22b8d6; --fc-soft:#10303a; --good-fill:#3fb871; --warn-fill:#e8a93a; --bad-fill:#e5605a; --band:#0f2440;
   --shadow:none; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:13.5px;line-height:1.65;-webkit-font-smoothing:antialiased}
@@ -151,7 +156,7 @@ button.go{font:inherit;font-size:12.5px;color:var(--accent);background:none;bord
 .sh p{margin:0;color:var(--ink-3);font-size:12px;margin-left:auto}
 .g{display:grid;gap:14px}
 .g-2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.g-73{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.g-73{grid-template-columns:minmax(0,7fr) minmax(0,5fr);align-items:start}
 .g-3{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) minmax(0,1fr)}
 .panel{background:var(--panel);border:1px solid var(--rule);border-radius:4px;padding:16px 18px;min-width:0;display:flex;flex-direction:column;gap:10px}
 .ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -288,6 +293,96 @@ tbody tr:hover td{background:var(--accent-soft)}
 .lock-in .lock-msg{color:var(--bad);min-height:1.4em}
 .lock-in .lock-foot{font-size:11px;color:var(--ink-3);text-align:right;letter-spacing:.1em}
 
+
+/* ---- エンタープライズ UI レイヤー（配色・カード・ナビ・新しい部品） ---- */
+body{background:var(--bg);font-feature-settings:"palt" 1}
+.band{border-bottom:1px solid color-mix(in srgb,var(--band-ink) 14%,transparent)}
+.band-in{align-items:center;padding-block:12px}
+.brand{display:flex;flex-direction:column;gap:1px;margin-right:auto}
+.brand .eyebrow{font-size:10px;letter-spacing:.2em;color:var(--band-2);font-weight:700;font-family:var(--f-num)}
+.brand .bt{font-size:18px;font-weight:700;letter-spacing:.04em;color:var(--band-ink)}
+.dept{background:color-mix(in srgb,var(--band-ink) 10%,transparent);border-color:color-mix(in srgb,var(--band-ink) 25%,transparent)}
+.dept button{color:color-mix(in srgb,var(--band-ink) 80%,transparent)}
+.dept button[aria-pressed="true"]{background:#fff;color:var(--band)}
+.band .meta{color:var(--band-2)}
+.switch{background:var(--panel);border-bottom:1px solid var(--rule)}
+.sw{border-bottom-width:3px;transition:background-color .15s}
+.sw[aria-pressed="true"]{border-bottom-color:var(--accent);background:var(--accent-soft)}
+.tab{transition:color .15s,background-color .15s}
+.tab[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.pb[aria-pressed="true"]{background:var(--band);border-color:var(--band)}
+.panel,.kpis,.summary,.tw,.alert,.cand,.csum>div,.method,.savebar{border-color:var(--rule);box-shadow:var(--shadow);border-radius:10px}
+.sh .lbl{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent);background:var(--accent-soft)}
+.sh h2{color:var(--ink)}
+th{color:var(--ink-3);background:#f8fafc}
+:root[data-theme="dark"] th{background:var(--panel)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) th{background:var(--panel)}}
+.seg button[aria-pressed="true"]{background:var(--band);color:#fff}
+.chip.up{color:var(--good);background:var(--good-bg)}.chip.down{color:var(--bad);background:var(--bad-bg)}
+@media (prefers-reduced-motion:no-preference){.panel,.kpi,.ins{animation:fadeIn .25s ease-out both}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+/* 総合 KPI カード（6枚・同じ高さ） */
+.xk{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.xk .card{background:var(--panel);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);padding:14px 16px 12px;display:flex;flex-direction:column;gap:6px;min-width:0;position:relative;border-top:3px solid var(--band)}
+.xk .card.st-bad{border-top-color:var(--bad-fill)}.xk .card.st-warn{border-top-color:var(--warn-fill)}.xk .card.st-good{border-top-color:var(--good-fill)}.xk .card.fcst{border-top-color:var(--fc)}
+.xk .k{font-size:11.5px;font-weight:700;color:var(--ink-2);letter-spacing:.04em;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.xk .card.hs .k{padding-right:66px}
+.xk .v{font-family:var(--f-num);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;line-height:1.2;letter-spacing:-.01em;color:var(--ink)}
+.xk .v small{font-size:12px;color:var(--ink-3);font-weight:500;margin-left:2px}
+.xk .spark{position:absolute;right:14px;top:14px;width:58px;height:22px}
+.xk dl{margin:2px 0 0;display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:11.5px;align-items:center}
+.xk dt{color:var(--ink-3)}.xk dd{margin:0;text-align:right;font-family:var(--f-num);font-variant-numeric:tabular-nums;color:var(--ink-2)}
+.xk dd b{color:var(--ink);font-weight:600}
+.xk .foot{margin-top:auto;padding-top:6px;border-top:1px solid var(--rule);font-size:10.5px;color:var(--ink-3);line-height:1.5}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 8px;white-space:nowrap}
+.badge.bad{background:var(--bad-bg);color:var(--bad)}.badge.warn{background:var(--warn-bg);color:var(--warn)}.badge.good{background:var(--good-bg);color:var(--good)}.badge.info{background:var(--accent-soft);color:var(--accent)}.badge.mute{background:var(--bg);color:var(--ink-3);border:1px solid var(--rule)}
+.subk{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.subk .kpi{background:var(--panel);border:1px solid var(--rule);border-radius:10px;box-shadow:var(--shadow);padding:10px 16px}
+.subk .kpi+.kpi{border-left:1px solid var(--rule)}
+.subk .kpi .v{font-size:19px}
+.fstrip{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;font-size:12px;margin:0}
+.fstrip div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--rule);padding:4px 0}
+.fstrip dt{color:var(--ink-3);margin:0}.fstrip dd{margin:0;font-family:var(--f-num);font-variant-numeric:tabular-nums;font-weight:600}
+.fstrip .tot dd{color:var(--fc)}
+.kpis.subk{background:none;border:0;box-shadow:none}
+/* 分析インサイト */
+.ins-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.ins{background:var(--panel);border:1px solid var(--rule);border-left:4px solid var(--ink-3);border-radius:10px;box-shadow:var(--shadow);padding:12px 14px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.ins.bad{border-left-color:var(--bad-fill)}.ins.warn{border-left-color:var(--warn-fill)}.ins.good{border-left-color:var(--good-fill)}.ins.info{border-left-color:var(--accent)}
+.ins .hd{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ins .ar{font-size:10.5px;color:var(--ink-3);font-weight:700;letter-spacing:.06em}
+.ins h4{margin:0;font-size:13.5px;line-height:1.5;font-weight:700}
+.ins .why,.ins .todo{font-size:12px;line-height:1.6;color:var(--ink-2);margin:0}
+.ins .why b,.ins .todo b{color:var(--ink)}
+.ins .why::before{content:"根拠　";color:var(--ink-3);font-weight:700;font-size:11px}
+.ins .todo::before{content:"推奨　";color:var(--accent);font-weight:700;font-size:11px}
+.ins-more{justify-self:start}
+/* 店舗比較 */
+.sortable th[data-sk]{cursor:pointer;user-select:none;white-space:nowrap}
+.sortable th[data-sk]::after{content:"↕";margin-left:4px;color:var(--rule-2);font-size:10px}
+.sortable th[aria-sort="ascending"]::after{content:"▲";color:var(--accent)}.sortable th[aria-sort="descending"]::after{content:"▼";color:var(--accent)}
+.sortable th[data-sk]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+tr.under td{background:color-mix(in srgb,var(--bad-bg) 55%,transparent)}
+tr.hotw td{background:color-mix(in srgb,var(--warn-bg) 60%,transparent)}
+.cmpbar{display:inline-block;width:64px;height:6px;background:var(--rule);border-radius:3px;vertical-align:middle;margin-left:6px;position:relative;overflow:hidden}
+.cmpbar>span{position:absolute;top:0;bottom:0;left:0;background:var(--accent);border-radius:3px}
+.why-s{display:block;font-size:10.5px;color:var(--ink-3);font-weight:400;white-space:normal;line-height:1.4;margin-top:2px}
+.legend .lt{cursor:pointer;border:0;background:none;font:inherit;color:inherit;padding:0;display:inline-flex;align-items:center}
+.legend .lt[aria-pressed="false"]{opacity:.38;text-decoration:line-through}
+.legend .lt:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+.legend i.dash.fc{border-top-color:var(--fc)}
+.datanote{font-size:11.5px;color:var(--ink-3);margin:0}
+.pri{white-space:nowrap;font-weight:700;font-size:12px}
+@media (max-width:1200px){.xk{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:980px){.ins-list{grid-template-columns:1fr}}
+@media (max-width:640px){
+  .brand .bt{font-size:15px}.brand .eyebrow{display:none}
+  .xk{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .xk .card{padding:11px 12px}.xk .v{font-size:19px}.xk .k{padding-right:0}.xk .spark{display:none}
+  .xk dl{font-size:11px;gap:2px 6px}
+  .subk{gap:8px}.fstrip{grid-template-columns:1fr}
+  #segSc{flex-wrap:wrap;border-radius:14px}#segSc button{white-space:nowrap;padding:3px 9px}
+}
 /* ---- スマホ表示 ---- */
 @media (max-width:640px){
   .band-in{padding-inline:16px;align-items:flex-start}
@@ -307,21 +402,18 @@ tbody tr:hover td{background:var(--accent-soft)}
   .panel{padding:14px}
   .cv{height:240px}.cv.tall{height:320px}
   .tbar{margin-bottom:0}
-  .tw{overflow:visible;border:0;background:transparent;box-shadow:none}
-  .tw table{min-width:0!important;display:block}
-  .tw thead{display:none}
-  .tw tbody{display:flex;flex-direction:column;gap:10px}
-  .tw tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px;background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow)}
-  .tw tbody tr.we,.tw tbody tr.cur{background:var(--accent-soft)}
-  .tw tbody tr:hover td,.tw tbody tr.we td,.tw tbody tr.cur td{background:transparent!important}
-  .tw td{border:0;padding:3px 0;display:flex;justify-content:space-between;align-items:baseline;gap:8px;white-space:normal;text-align:right;min-width:0;font-size:12.5px}
-  .tw td::before{content:attr(data-label);color:var(--ink-3);font-size:10.5px;text-align:left;font-family:var(--f-ui);flex-shrink:0;max-width:48%}
-  .tw td:first-child{grid-column:1/-1;justify-content:flex-start;font-size:14px;font-weight:700;padding-bottom:6px;margin-bottom:4px;border-bottom:1px solid var(--rule)}
-  .tw td:first-child::before,.tw td.name::before{display:none}
-  .tw td.name{grid-column:1/-1;display:block;text-align:left;font-weight:600;font-size:13.5px;min-width:0}
-  .tw td.adv{grid-column:1/-1;display:block;text-align:left;min-width:0}
-  .tw td.adv::before{display:block;margin-bottom:2px}
-  .tw td:empty{display:none}
+  /* 表：スマホでも列をそろえて横にスクロール（1列目は固定）。実施管理の表だけはカード表示 */
+  .tw:not(.cards){-webkit-overflow-scrolling:touch}
+  .tw:not(.cards) th,.tw:not(.cards) td{padding:7px 10px;font-size:12px}
+  .tw:not(.cards) th:first-child,.tw:not(.cards) td:first-child{position:sticky;left:0;z-index:1;background:var(--panel);box-shadow:1px 0 0 var(--rule)}
+  .tw:not(.cards) td.name{min-width:170px}
+  .tw.cards{overflow:visible;border:0;background:transparent;box-shadow:none}
+  .tw.cards table{min-width:0!important;display:block}
+  .tw.cards thead{display:none}
+  .tw.cards tbody{display:flex;flex-direction:column;gap:10px}
+  .tw.cards tbody tr{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;box-shadow:var(--shadow)}
+  .tw.cards td{border:0}
+  .tw.cards td:empty{display:none}
   .meter{width:36px}
   .ibar{width:44px}
 }
@@ -340,6 +432,7 @@ tbody tr:hover td{background:var(--accent-soft)}
 </head>
 <body>
 <header class="band"><div class="band-in">
+    <div class="brand" data-locked><span class="eyebrow">RETAIL PERFORMANCE · BI</span><span class="bt" id="brandT">FF・厨房 実績レビュー</span></div>
     <div class="dept" id="dept" data-locked role="group" aria-label="部門切り替え"><button data-d="FF" aria-pressed="true">FF</button><button data-d="厨房" aria-pressed="false">厨房</button></div>
   <div class="meta" data-locked id="hdrMeta"></div>
 </div></header>
@@ -350,9 +443,16 @@ tbody tr:hover td{background:var(--accent-soft)}
   <!-- ===== TAB 1 総合 ===== -->
   <section class="sec" data-tab="overview">
     <div class="sh"><span class="lbl">SUMMARY</span><h2 id="scopeTitle"></h2><p id="sumNote">荒利益高は廃棄控除後。前年比＝前年の同じ日付との比較。先週比＝1日あたりで比較。目標（予算）データはないため目標比は表示しません。</p></div>
-    <div class="kpis" id="kpis"></div>
+    <div class="xk" id="kpis" role="list" aria-label="主要KPI"></div>
+    <div class="kpis subk" id="kpis2"></div>
     <div class="alerts" id="alerts"></div>
     <div class="summary"><div><h3>現状</h3><ul id="sumFacts"></ul></div><div><h3>優先アクション</h3><ol id="sumActs"></ol></div></div>
+  </section>
+
+  <section class="sec" data-tab="overview" id="insSec">
+    <div class="sh"><span class="lbl">INSIGHTS</span><h2>分析インサイト・改善提案</h2><p id="insSub"></p></div>
+    <div class="ins-list" id="insList"></div>
+    <p class="datanote" id="insNote"></p>
   </section>
 
   <!-- ===== TAB 2 売上・荒利益 ===== -->
@@ -366,10 +466,19 @@ tbody tr:hover td{background:var(--accent-soft)}
       <div class="panel"><div class="ph"><h3 id="dTitle">日別 販売高（売上）</h3><div class="legend" id="dLegend"></div></div>
         <div class="cv"><canvas id="cDaily" role="img" aria-label="日別・週別の販売高・荒利益高"></canvas></div></div>
       <div class="panel"><div class="ph"><h3 id="fTitle">{{M}}月 月末着地予測</h3><span class="sub" id="fSub">簡易予測：実績＋残りの日（前年の同じ日×前年比）</span></div>
-        <div class="cv sm"><canvas id="cFcst" role="img" aria-label="月末着地予測"></canvas></div><p class="note" id="fcstNote"></p></div>
+        <div class="cv sm"><canvas id="cFcst" role="img" aria-label="月末着地予測"></canvas></div><dl class="fstrip" id="fcGrid"></dl><p class="note" id="fcstNote"></p></div>
     </div>
     <div class="tw" id="dowTrendWrap" hidden><table id="tDowTrend" style="min-width:860px"></table></div><p class="note" id="dowTrendNote" hidden></p>
     <div class="tw" id="wkTrendWrap" hidden><table id="tWkTrend" style="min-width:860px"></table></div><p class="note" id="wkTrendNote" hidden></p>
+  </section>
+  <section class="sec" data-tab="sales" id="gmSec">
+    <div class="sh"><span class="lbl">MARGIN</span><h2>荒利益高の前年比・荒利益率の推移</h2><p id="gmSub">荒利益高は廃棄控除後。荒利益率＝荒利益高 ÷ 販売高</p></div>
+    <div class="g g-2">
+      <div class="panel"><div class="ph"><h3>日別 荒利益高の前年同日比</h3><div class="legend"><span><i style="background:var(--good-fill)"></i>前年より多い</span><span><i style="background:var(--bad-fill)"></i>前年より少ない</span></div></div>
+        <div class="cv sm"><canvas id="cGmYoy" role="img" aria-label="日別の荒利益高 前年同日比"></canvas></div><p class="datanote" id="gmYoyNote"></p></div>
+      <div class="panel"><div class="ph"><h3>日別 荒利益率</h3><div class="legend" id="gmLegend"></div></div>
+        <div class="cv sm"><canvas id="cGm" role="img" aria-label="日別の荒利益率"></canvas></div><p class="datanote" id="gmNote"></p></div>
+    </div>
   </section>
   <section class="sec" data-tab="sales" id="weekly">
     <div class="sh"><span class="lbl">WEEKLY</span><h2>先週比　いくら上がった？下がった？</h2><p id="wkSub"></p></div>
@@ -427,6 +536,7 @@ tbody tr:hover td{background:var(--accent-soft)}
     </div>
     <h3 class="subh">単品別 廃棄高ランキング（<span class="pR"></span>）</h3>
     <div class="tw"><table id="tWsku" style="min-width:900px"></table></div>
+    <p class="datanote" id="wskuNote"></p>
   </section>
 
   <!-- ===== TAB 4 単品別生産判断 ===== -->
@@ -441,6 +551,13 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <!-- ===== TAB 5 店舗別 ===== -->
+  <section class="sec" data-tab="store" id="storeCmp">
+    <div class="sh"><span class="lbl">PERFORMANCE</span><h2>店舗別 パフォーマンス比較</h2><p id="scSub"></p></div>
+    <div class="panel"><div class="ph"><h3 id="scTitle">店舗ランキング</h3><div class="seg" id="segSc" role="group" aria-label="ランキングの指標"><button aria-pressed="true" data-k="amt">売上高</button><button aria-pressed="false" data-k="gp">荒利益高</button><button aria-pressed="false" data-k="ds">売上前年比</button><button aria-pressed="false" data-k="dg">荒利益前年比</button><button aria-pressed="false" data-k="gm">荒利益率</button></div></div>
+      <div class="cv"><canvas id="cStoreRank" role="img" aria-label="店舗ランキング"></canvas></div><p class="datanote" id="scNote"></p></div>
+    <div class="tw"><table id="tStorePerf" class="sortable" style="min-width:1000px"></table></div>
+    <p class="note" id="spNote"></p>
+  </section>
   <section class="sec" data-tab="store">
     <div class="sh"><span class="lbl">STORE</span><h2>店舗別分析</h2><p>店舗ごとに営業日数が違っても比べられるよう、1日あたり（1店1日）で比較します。</p></div>
     <div class="tw" data-only="all"><table id="tStoreRank" style="min-width:1080px"></table></div>
@@ -472,10 +589,16 @@ tbody tr:hover td{background:var(--accent-soft)}
   </section>
 
   <!-- ===== TAB 7 アクション・教訓 ===== -->
+  <section class="sec" data-tab="action" id="ctrSec">
+    <div class="sh"><span class="lbl">ACTION CENTER</span><h2>改善アクション・教訓</h2><p id="ctrSub"></p></div>
+    <div class="flt" id="ctrFlt"></div>
+    <div class="tw"><table id="tCtr" style="min-width:1040px"></table></div>
+    <p class="note" id="ctrNote"></p>
+  </section>
   <section class="sec" data-tab="action" id="actSec">
     <div class="sh"><span class="lbl">TRACKING</span><h2>実施管理</h2><p id="actSub"></p></div>
     <div class="savebar" id="actSave"></div>
-    <div class="tw"><table id="tTrack" style="min-width:1100px"></table></div>
+    <div class="tw cards"><table id="tTrack" style="min-width:1100px"></table></div>
     <p class="note" id="actNote"></p>
     <input type="file" id="actFile" accept=".json,application/json" hidden>
   </section>
@@ -537,6 +660,18 @@ const pct=(a,b)=>(b&&a!=null&&isFinite(a/b))?((a/b-1)*100):null;
 const pf=(v,d=1)=>v==null||!isFinite(v)?'—':(100+v).toFixed(d)+'%';
 const ppt=(v,d=1)=>v==null||!isFinite(v)?'—':(v>=0?'+':'-')+Math.abs(v).toFixed(d)+'pt';
 const wrOf=o=>(o.販売数+o.廃棄数)?o.廃棄数/(o.販売数+o.廃棄数)*100:0;
+// ===== 判定の基準（画面の既存の基準と同じ値。変えるときはここだけ直す） =====
+// wasteWarn：廃棄率の基準（%）。「確認すべき店舗」「要対策」と同じ10%
+// wasteCaution：廃棄率の注意（%）。店舗の廃棄表の「注意」と同じ6%
+// skuWasteLine：単品の廃棄率の線（%）。散布図の赤い線・単品判定と同じ15%
+// sellTarget：販売率（数量）の目標（%）。目標データがないため未設定（null）。数字を入れると目標比を表示
+// marginGap：店舗の荒利益率が全店より何pt低いと「注意」にするか
+const CONFIG={wasteWarn:10,wasteCaution:6,skuWasteLine:15,sellTarget:null,marginGap:2};
+// 荒利益率（荒利益高÷販売高）と販売率（数量：販売数÷(販売数＋廃棄数)）。基準がないときは null
+const gmOf=o=>o&&o.販売高?o.荒利益高/o.販売高*100:null;
+const stOf=o=>o&&(o.販売数+o.廃棄数)?o.販売数/(o.販売数+o.廃棄数)*100:null;
+const sgY=v=>v==null?'—':(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
+const PRI={high:['bad','🔴 高'],mid:['warn','🟠 中'],good:['good','🟢 好調']};
 const chip=(d,inv)=>{if(d==null)return '<span class="chip flat">—</span>';const g=inv?d<0:d>0;const c=Math.abs(d)<1?'flat':(g?'up':'down');return `<span class="chip ${c}">${pf(d)}</span>`};
 const ptchip=(d,inv)=>{if(d==null||!isFinite(d))return '<span class="chip flat">—</span>';const g=inv?d<0:d>0;return `<span class="chip ${Math.abs(d)<.3?'flat':(g?'up':'down')}">${d>=0?'+':'-'}${Math.abs(d).toFixed(1)}pt</span>`};
 const yTick=v=>Math.abs(v)>=10000?(v/10000).toFixed(v%10000?1:0)+'万':n0(v);
@@ -627,6 +762,13 @@ function renderSalesTop(){
     document.getElementById('fcstNote').innerHTML=`<b>${MO}月の実績 ${yen(cM.act)}</b>（全日のデータがそろいました。前年${MO}月 ${yen(m25[MK])}、差 <b>${cM.act>=m25[MK]?'+':'-'}${yen(Math.abs(cM.act-m25[MK])).replace('-','')}</b>・前年比 ${pf(pct(cM.act,m25[MK]))}）。<br>
       このページの予測方法（実績＋残りの日＝前年の同じ日×前年比）で、月の途中に予測していた場合：`+cps.map(c=>`${MO}/${c.k}時点 ${yen(c.fc)}（実績比 ${pf(pct(c.fc,cM.act))}）`).join('、')+`。<br>予測は月の途中の目安で、実績と分けて見てください。`;}
   else document.getElementById('fcstNote').innerHTML=fcN;
+  {const lb=ML().replace('（売上）',''),it=N>=DIM
+     ?[[`${MO}月 実績（確定）`,yen(cM.act),'tot'],[`前年${MO}月 実績`,yen(m25[MK])],['前年比',pf(pct(cM.act,m25[MK]))]]
+     :cM.fc==null?[]:[[`実績（${MO}/1〜${N}）`,yen(cM.act)],[`残りの予測（${cM.restOk.length}日）`,yen(cM.restFc)],['月末着地予測',yen(cM.fc),'tot'],[`前年${MO}月 実績`,yen(m25[MK])],
+       ['予測の前年比',pf(pct(cM.fc,m25[MK]))],['予測の幅（誤差の目安）',bt?`${yen(cM.act+cM.restFc*(1-bt.mae/100))}〜${yen(cM.act+cM.restFc*(1+bt.mae/100))}`:'—'],
+       ['使った前年比',`${cM.r.toFixed(3)}（${p.range}）`],['参考：曜日区分の平均で埋めた場合',alt==null?'—':yen(alt)]];
+   document.getElementById('fcGrid').innerHTML=it.map(([t,v,c])=>`<div${c?` class="${c}"`:''}><dt>${t}</dt><dd>${v}</dd></div>`).join('');
+   document.getElementById('fcGrid').setAttribute('aria-label',`${lb}の月末着地予測の内訳`);}
   S._sales={cS,cG,cM,bt};
 }
 function renderContrib(){
@@ -816,6 +958,7 @@ function renderActs(){
   document.getElementById('actNote').innerHTML=`<b>実施後の実績</b>は、実施日の前と後で同じ日数（最大7日）を1日あたりで比べた実績です（CSVから自動計算。データは${MO}/${ALLD.meta.N}まで）。単品は記録のある日だけで平均し、前後どちらかの記録が3日未満なら比べません。天気・曜日の並び・他の施策の影響も含むため、差をそのまま施策の効果とは断定できません。<br>
     担当欄には個人名ではなく役割（店長・夕勤リーダーなど）を入れることをおすすめします。ページを開ける人は全員、共有版の内容を見られます。<br>
     この画面にはログインや権限の仕組みはありません。誰が変更したかは記録されません（「書き出し」のファイルに更新日時だけが入ります）。`;
+  renderCenter();
 }
 async function actExport(){
   actInit();const items=actMerged().map(r=>{const o=Object.assign({},r);delete o._src;return o;});
@@ -950,8 +1093,9 @@ function renderStoreRank(){
 function renderWasteSku(){
   const P=[...A[scope].prod].filter(r=>r.wy>0).sort((a,b)=>b.wy-a.wy).slice(0,15);
   document.getElementById('tWsku').innerHTML=`<thead><tr><th class="l">順位</th><th class="l">商品名</th><th>廃棄高</th><th>廃棄数</th><th>廃棄率</th><th>販売数</th><th>荒利益高</th><th>廃棄÷荒利</th><th class="l">判定</th></tr></thead><tbody>`+
-    (P.length?P.map((r,i)=>{const [cl,lb]=VL[r.v];return `<tr><td class="l num">${i+1}</td><td class="l name">${r.name}<span class="c">${r.cat}</span></td><td class="num"><b>${yen(r.wy)}</b></td><td class="num">${n0(r.w)}個</td><td class="num" style="color:var(${r.wr>=0.15?'--bad':'--ink'})">${(r.wr*100).toFixed(1)}%</td><td class="num">${n0(r.sold)}個</td><td class="num">${yen(r.gp)}</td><td class="num">${r.gp>0?(r.wy/r.gp*100).toFixed(0)+'%':'—'}</td><td class="l"><span class="tag ${cl}">${lb}</span></td></tr>`}).join('')
+    (P.length?P.map((r,i)=>{const [cl,lb]=VL[r.v];return `<tr${r.wr*100>=CONFIG.skuWasteLine?' class="hotw"':''}><td class="l num">${i+1}</td><td class="l name">${r.name}<span class="c">${r.cat}</span></td><td class="num"><b>${yen(r.wy)}</b></td><td class="num">${n0(r.w)}個</td><td class="num" style="color:var(${r.wr>=0.15?'--bad':'--ink'})">${(r.wr*100).toFixed(1)}%</td><td class="num">${n0(r.sold)}個</td><td class="num">${yen(r.gp)}</td><td class="num">${r.gp>0?(r.wy/r.gp*100).toFixed(0)+'%':'—'}</td><td class="l"><span class="tag ${cl}">${lb}</span></td></tr>`}).join('')
     :'<tr><td class="l" colspan="9" style="color:var(--ink-3)">この期間に廃棄はありません。</td></tr>')+'</tbody>';
+  document.getElementById('wskuNote').textContent=`黄色の行＝廃棄率${CONFIG.skuWasteLine}%以上（散布図の赤い線と同じ基準）。時間帯別の廃棄・作成数（生産計画）はCSVにないため表示していません。作成数の代わりに「販売数＋廃棄数」を使っています。`;
 }
 // ===== 単品フィルター =====
 let skuCat='all',skuV='all';
@@ -970,6 +1114,205 @@ const COMMON_METHOD=()=>`<li>荒利益高は、元データの荒利益高（廃
 <li>データがない日（欠損）はグラフで空白、売上ゼロの日は0として区別しています。比較の基準が0またはない場合は「—」と表示します。</li>
 <li>単品判定：販売日が3日未満の単品は「判定保留」。販売数と廃棄数の合計が少ない単品（全店10個未満・店舗3個未満）は表に出していません。</li>
 <li>アクションの期待効果は上限の目安です（減産は廃棄の8割を減らせた場合）。増産は売り切れ時刻のデータがないため金額を推定しません。</li>`;
+// ===== 店舗の評価（店舗別の比較表・インサイト・改善アクションで共通） =====
+// 期間合計どうしの前年比（今年・前年とも同じ日付）。判定のきまり：
+//  🔴 要対策：売上前年比と荒利益前年比がどちらも100%未満、または 廃棄率が基準（CONFIG.wasteWarn）以上
+//  🟠 注意　：どちらか一方が100%未満、または 荒利益率が全店より CONFIG.marginGap pt 以上低い、または 廃棄率が注意（CONFIG.wasteCaution）以上
+//  🟢 良好　：それ以外
+function storeEval(){
+  const T={p26:{販売高:0,荒利益高:0},p25:{販売高:0,荒利益高:0}};
+  STORES.forEach(s=>{const o=A.stores[s];['p26','p25'].forEach(y=>{T[y].販売高+=o[y].販売高;T[y].荒利益高+=o[y].荒利益高;});});
+  const area={amt:STORES.reduce((t,s)=>t+A.stores[s].p26.販売高,0)/NS,gp:STORES.reduce((t,s)=>t+A.stores[s].p26.荒利益高,0)/NS,
+    ds:pct(T.p26.販売高,T.p25.販売高),dg:pct(T.p26.荒利益高,T.p25.荒利益高),gm:gmOf(T.p26)};
+  const R=STORES.map(s=>{const o=A.stores[s],r={s,amt:o.p26.販売高,gp:o.p26.荒利益高,ds:pct(o.p26.販売高,o.p25.販売高),dg:pct(o.p26.荒利益高,o.p25.荒利益高),
+      gm:gmOf(o.p26),gm25:gmOf(o.p25),w:wrOf(o.nc26),days:o.days26};
+    const bad=[],warn=[];
+    if(r.ds!=null&&r.dg!=null&&r.ds<0&&r.dg<0)bad.push(`売上・荒利とも前年割れ（${pf(r.ds)}・${pf(r.dg)}）`);
+    else{if(r.ds!=null&&r.ds<0)warn.push(`売上 前年比 ${pf(r.ds)}`);if(r.dg!=null&&r.dg<0)warn.push(`荒利 前年比 ${pf(r.dg)}`);}
+    if(r.w>=CONFIG.wasteWarn)bad.push(`廃棄率 ${r.w.toFixed(1)}%（基準${CONFIG.wasteWarn}%以上）`);
+    else if(r.w>=CONFIG.wasteCaution)warn.push(`廃棄率 ${r.w.toFixed(1)}%（注意${CONFIG.wasteCaution}%以上）`);
+    if(r.gm!=null&&area.gm!=null&&r.gm<=area.gm-CONFIG.marginGap)warn.push(`荒利益率 ${r.gm.toFixed(1)}%（全店 ${area.gm.toFixed(1)}%より${(area.gm-r.gm).toFixed(1)}pt低い）`);
+    r.lv=bad.length?'bad':warn.length?'warn':'good';r.why=bad.concat(warn);
+    if(!r.why.length)r.why=[`売上 ${pf(r.ds)}・荒利 ${pf(r.dg)}・廃棄率 ${r.w.toFixed(1)}%`];
+    return r;});
+  return {R,area};
+}
+const EVL={bad:['bad','🔴 要対策'],warn:['warn','🟠 注意'],good:['good','🟢 良好']};
+
+// ===== 分析インサイト・改善提案（実績の計算からルールで作る。原因は断定しない） =====
+function insights(){
+  const S=A[scope],N=ALLD.meta.N,p=PDS()?CUR():{d0:1,d1:N,range:PER(),n:N},k26=S.kpi.p26,k25=S.kpi.p25,m25=S.kpi.m25,nc=S.nc,out=[];
+  const add=(lv,area,title,why,todo,score,tab)=>out.push({lv,area,title,why,todo,score,tab});
+  const cS=salesCalc(S,'販売高',p.d0,p.d1,N),cG=salesCalc(S,'荒利益高',p.d0,p.d1,N);
+  const basis=c=>`今年 ${yen(c.s26)} ÷ 前年 ${yen(c.s25)}（${p.range}のうち、今年・前年とも全店舗のデータがある同じ日付 ${c.used.length}日）`;
+  // 1. 売上
+  if(cS.yoy!=null){
+    if(cS.yoy<0)add('bad','売上',`売上前年比が ${pf(cS.yoy)} で、100%を下回っています`,basis(cS),'曜日別（売上・荒利益タブの「曜日別」）と、カテゴリーの寄与・単品の前年同日比を確認してください。',60+Math.abs(cS.yoy),'sales');
+    else if(cS.yoy>=5)add('good','売上',`売上前年比 ${pf(cS.yoy)}。前年を上回っています`,basis(cS),'伸びているカテゴリー・単品の作成数と売り場を維持します。',10+Math.min(cS.yoy,40),'sales');
+  }
+  // 2. 荒利益と売上の伸びの差
+  if(cS.yoy!=null&&cG.yoy!=null){const d=cG.yoy-cS.yoy,g26=gmOf(k26),g25=gmOf(k25),gt=g26!=null&&g25!=null?`荒利益率 ${g25.toFixed(1)}% → ${g26.toFixed(1)}%（${ppt(g26-g25)}）`:'';
+    if(d>=1)add('good','荒利益',`荒利益高の前年比（${pf(cG.yoy)}）が売上高の前年比（${pf(cS.yoy)}）を上回っています`,`${gt}。荒利益高は廃棄控除後`,'廃棄の減少と商品構成のどちらで差が出たかを、廃棄タブとカテゴリーの寄与で確認し、続けます。',15+Math.min(d,30),'sales');
+    else if(d<=-1)add('warn','荒利益',`荒利益高の前年比（${pf(cG.yoy)}）が売上高の前年比（${pf(cS.yoy)}）を下回っています`,`${gt}。荒利益高は廃棄控除後`,'廃棄高の増減と、荒利益率の低い商品の構成比を確認してください（廃棄タブ・カテゴリー別）。',40+Math.min(-d,30),'waste');}
+  // 3. 廃棄率
+  const w26=wrOf(nc.p26),w25=wrOf(nc.p25),ex=A.excl.length?`（${A.excl.join('・')}を除く）`:'';
+  const wb=`廃棄数 ${n0(nc.p26.廃棄数)}個 ÷（販売数 ${n0(nc.p26.販売数)}個＋廃棄数）${ex}。前年 ${w25.toFixed(1)}%`;
+  if(w26>=CONFIG.wasteWarn)add('bad','廃棄',`廃棄率 ${w26.toFixed(1)}% が設定基準（${CONFIG.wasteWarn}%）を超えています`,wb,'作成計画の見直しが必要です。単品別生産判断の「減産」から、廃棄高の大きい順に作成数を減らしてください。',70+w26,'sku');
+  else if(w26-w25>=1)add('warn','廃棄',`廃棄率が前年より ${(w26-w25).toFixed(1)}pt 上がっています（${w25.toFixed(1)}% → ${w26.toFixed(1)}%）`,wb,'廃棄高の大きい単品（廃棄タブのランキング）から、ピーク後の追加作成を控えます。',35+(w26-w25)*3,'waste');
+  else if(w25-w26>=1)add('good','廃棄',`廃棄率が前年より ${(w25-w26).toFixed(1)}pt 下がっています（${w25.toFixed(1)}% → ${w26.toFixed(1)}%）`,`廃棄高 ${yen(k25.廃棄高)} → ${yen(k26.廃棄高)}。${wb}`,'今の作成量の決め方を続けます。売り切れが早すぎないか（機会ロス）も、増産の候補で確認します。',12+(w25-w26),'waste');
+  // 4. 販売率の目標（設定したときだけ）
+  if(CONFIG.sellTarget!=null){const st=stOf(nc.p26);if(st!=null&&st<CONFIG.sellTarget)add('warn','販売率',`販売率（数量）${st.toFixed(1)}% が目標 ${CONFIG.sellTarget}% を下回っています`,`販売数 ÷（販売数＋廃棄数）${ex}`,'単品ごとの作成数を確認してください（時間帯別のデータはないため、曜日別・単品別で確認）。',45,'sku');}
+  // 5. カテゴリーの寄与（売上）
+  {const X=catContrib(S,'販売高',CATS),ok=X.rows.filter(r=>r.contrib!=null),lo=[...ok].sort((a,b)=>a.contrib-b.contrib)[0],hi=[...ok].sort((a,b)=>b.contrib-a.contrib)[0];
+   if(lo&&lo.contrib<=-1)add('warn','カテゴリー',`${lo.c} が売上を ${ppt(lo.contrib)} 押し下げています`,`${lo.c} 前年比 ${pf(lo.yoy)}・前年差 ${sgY(lo.diff)}（寄与度＝カテゴリーの前年差 ÷ 前年の合計）`,`${lo.c} の単品（単品別生産判断タブで絞り込み）のうち、前年同日比が下がった単品を確認してください。`,30+Math.abs(lo.contrib)*4,'sku');
+   if(hi&&hi.contrib>=2)add('good','カテゴリー',`${hi.c} が売上を ${ppt(hi.contrib)} 押し上げています`,`${hi.c} 前年比 ${pf(hi.yoy)}・前年差 ${sgY(hi.diff)}`,`${hi.c} の売れ筋で売り切れが早くないか、増産の候補を確認します。`,8+Math.min(hi.contrib,20),'sales');}
+  // 6. 月末の見込み
+  if(N<DIM&&cS.fc!=null){const d=pct(cS.fc,m25.販売高),why=`着地予測 ${yen(cS.fc)} ＝ 実績 ${yen(cS.act)} ＋ 残り${cS.restOk.length}日の予測 ${yen(cS.restFc)}（前年の同じ日 × ${p.range}の前年比 ${cS.r.toFixed(3)}）。前年${MO}月 ${yen(m25.販売高)}`;
+    if(d!=null&&d<0)add('warn','予測',`月末の売上は、前年${MO}月を下回る見込みです（前年比 ${pf(d)}）`,why,'予測は「今の前年比が続く」前提です。週ごとに前年比を確認し、下回る週の作成数・売り場を見直します。',40+Math.abs(d),'sales');
+    else if(d!=null)add('info','予測',`月末の売上は、前年${MO}月を上回る見込みです（前年比 ${pf(d)}）`,why,'予測は「今の前年比が続く」前提の簡易予測です。予測の幅は売上・荒利益タブで確認できます。',5,'sales');}
+  // 7. 店舗（全店表示のとき）
+  if(isAll()){const {R}=storeEval(),b=R.filter(r=>r.lv==='bad'),g=R.filter(r=>r.lv==='good').sort((x,y)=>(y.dg??-99)-(x.dg??-99));
+    if(b.length)add('bad','店舗',`要対策の店舗：${b.map(r=>r.s).join('・')}`,b.map(r=>`${r.s}：${r.why.join('、')}`).join('／'),'店舗別タブで該当店舗を開き、アクションタブの改善候補（廃棄削減・急変）を優先して実施管理に登録してください。',55+b.length*5,'store');
+    if(g.length)add('good','店舗',`好調な店舗：${g.slice(0,3).map(r=>r.s).join('・')}`,g.slice(0,3).map(r=>`${r.s}：売上 ${pf(r.ds)}・荒利 ${pf(r.dg)}・廃棄率 ${r.w.toFixed(1)}%`).join('／'),'作成量・売り場の決め方を、要対策・注意の店舗と共有します。',9,'store');}
+  // 8. 曜日（今月の曜日平均 vs 前年同月の同じ曜日の平均）
+  {const WK=(ALLD.meta.weeks||[]).slice().sort((a,b)=>a.d0-b.d0),DM=dowMatrix(S,'販売高',WK,N).filter(r=>r.yoy!=null&&r.n25>=3),lo=[...DM].sort((a,b)=>a.yoy-b.yoy)[0];
+   if(lo&&lo.yoy<=-10)add('warn','曜日',`${lo.w}曜の売上が、前年${MO}月の${lo.w}曜平均の ${pf(lo.yoy)} です`,`今月 ${lo.n26}日の平均 ${yen(lo.a26)}、前年${MO}月 ${lo.n25}日の平均 ${yen(lo.a25)}。今月の日数が少ないため、天気・行事の影響を含みます`,`${lo.w}曜の作成数と売り場を確認します（売上・荒利益タブの「曜日別」）。`,25+Math.abs(lo.yoy)/2,'sales');}
+  // 9. 先週比（1日あたり）
+  {const wc=wkCmp();if(wc){const a=wc.cur.d[scope],b=wc.prev.d[scope],na=a.days.p26,nb=b.days.p26;
+    if(na&&nb){const d=pct(a.kpi.p26.販売高/na,b.kpi.p26.販売高/nb),why=`1日あたり ${yen(b.kpi.p26.販売高/nb)} → ${yen(a.kpi.p26.販売高/na)}（${wc.label}）`;
+      if(d!=null&&d<=-10)add('warn','先週比',`売上が先週比 ${pf(d)} に下がっています`,why,'曜日の並び（土日祝の日数）の違いを確認したうえで、下がったカテゴリー・単品（売上・荒利益タブの先週比）を確認してください。',30+Math.abs(d)/2,'sales');
+      else if(d!=null&&d>=10)add('good','先週比',`売上が先週比 ${pf(d)} に伸びています`,why,'伸びた単品で売り切れが出ていないか確認します。',7,'sales');}}}
+  // 10. 単品の判定
+  {const red=S.prod.filter(r=>r.v==='reduce').sort((a,b)=>b.wy-a.wy),inc=S.prod.filter(r=>r.v==='increase'),tw=red.reduce((t,r)=>t+r.wy,0);
+   if(red.length)add('warn','単品',`減産の候補が ${red.length}品あります（廃棄高 合計 ${yen(tw)}）`,`判定：廃棄率${CONFIG.skuWasteLine}%以上かつ廃棄高${isAll()?'1,000':'500'}円以上、または廃棄高が荒利益高の6割超。上位：${red.slice(0,3).map(r=>short(r.name)).join('、')}`,'単品別生産判断の「生産の目安」の数だけ作成数を減らし、実施管理に登録して前後の実績を確認します。',35+Math.min(red.length*3,20),'sku');
+   if(inc.length)add('good','単品',`増産の候補が ${inc.length}品あります`,`判定：廃棄率5%以下・完売日率80%以上・1日の販売数が多い。例：${inc.slice(0,3).map(r=>short(r.name)).join('、')}`,'売り切れの時刻を確認し、ピーク前に1〜2個追加します（売り切れ時刻のデータはないため推定）。',11,'sku');}
+  const ord={bad:0,warn:1,good:2,info:3};
+  return out.sort((a,b)=>ord[a.lv]-ord[b.lv]||b.score-a.score);
+}
+let INS_ALL=false;
+function renderInsights(){
+  const L=insights(),LV={bad:['bad','🔴 要対策'],warn:['warn','🟠 注意'],good:['good','🟢 好調'],info:['info','ⓘ 参考']},TL=Object.fromEntries(TABS);
+  const show=INS_ALL?L:L.slice(0,8),cnt=k=>L.filter(x=>x.lv===k).length;
+  document.getElementById('insSub').textContent=`${isAll()?`全店（${NS}店舗）`:scope}・${DEPT}・${PER()}　要対策 ${cnt('bad')}件・注意 ${cnt('warn')}件・好調 ${cnt('good')}件`;
+  document.getElementById('insList').innerHTML=(show.length?show.map(x=>`<article class="ins ${x.lv}"><div class="hd"><span class="badge ${LV[x.lv][0]}">${LV[x.lv][1]}</span><span class="ar">${x.area}</span></div>
+    <h4>${x.title}</h4><p class="why">${x.why}</p><p class="todo">${x.todo}</p><button class="go" data-tab-go="${x.tab}">${TL[x.tab]}を見る →</button></article>`).join('')
+    :'<p class="datanote">この期間・範囲では、基準に当てはまる変化はありません。</p>')+
+    (L.length>8?`<button class="link ins-more" id="insMore">${INS_ALL?'上位8件だけ表示':`すべて表示（${L.length}件）`}</button>`:'');
+  const mb=document.getElementById('insMore');if(mb)mb.onclick=()=>{INS_ALL=!INS_ALL;renderInsights();};
+  document.getElementById('insNote').textContent=`このページの実績から決まったルールで自動作成しています（AIの文章生成は使っていません）。基準：廃棄率 ${CONFIG.wasteWarn}%・前年比100%・寄与度±1〜2pt・先週比±10%・曜日±10%など。相関や差を示すもので、原因を断定するものではありません。並び順は 要対策 → 注意 → 好調 → 参考、同じ区分の中は差の大きい順です。`;
+  wireGo(document.getElementById('insList'));
+}
+
+// ===== 店舗別 パフォーマンス比較（並べ替えできる表・ランキンググラフ） =====
+let SPS={k:'amt',dir:-1},SCM='amt';
+function renderStorePerf(){
+  const {R,area}=storeEval(),N=ALLD.meta.N;
+  const val=(r,k)=>k==='s'?r.s:k==='lv'?{bad:0,warn:1,good:2}[r.lv]:r[k];
+  const L=[...R].sort((a,b)=>{const x=val(a,SPS.k),y=val(b,SPS.k);if(x==null)return 1;if(y==null)return -1;return (typeof x==='string'?x.localeCompare(y,'ja'):x-y)*SPS.dir;});
+  const rkAmt=[...R].sort((a,b)=>b.amt-a.amt).map(r=>r.s);
+  const mx=Math.max(...R.map(r=>r.amt),1),mg=Math.max(...R.map(r=>r.gp),1);
+  const H=[['rk','順位'],['s','店舗'],['amt','売上高'],['ds','売上前年比'],['gp','荒利益高'],['dg','荒利益前年比'],['gm','荒利益率'],['w','廃棄率'],['lv','評価']];
+  document.getElementById('scSub').textContent=`${Y}年${PER()} vs ${LY}年の同じ日付・${DEPT}・期間合計で比較（1店1日あたりの比較は下の表）`;
+  document.getElementById('tStorePerf').innerHTML=`<thead><tr>${H.map(([k,l])=>k==='rk'?`<th class="l">${l}</th>`:`<th${k==='s'||k==='lv'?' class="l"':''} data-sk="${k}" tabindex="0" aria-sort="${SPS.k===k?(SPS.dir>0?'ascending':'descending'):'none'}">${l}</th>`).join('')}</tr></thead><tbody>`+
+    L.map(r=>`<tr class="${r.lv==='bad'?'under ':''}${r.s===scope?'cur':''}"><td class="l num"><b>${rkAmt.indexOf(r.s)+1}</b></td><td class="l"><button class="link" data-go="${r.s}">${r.s}</button><span class="why-s">${r.days}日分</span></td>
+      <td class="num"><b>${yen(r.amt)}</b><span class="cmpbar" aria-hidden="true"><span style="width:${(r.amt/mx*100).toFixed(1)}%"></span></span></td><td>${chip(r.ds)}</td>
+      <td class="num">${yen(r.gp)}<span class="cmpbar" aria-hidden="true"><span style="width:${(r.gp/mg*100).toFixed(1)}%"></span></span></td><td>${chip(r.dg)}</td>
+      <td class="num">${r.gm==null?'—':r.gm.toFixed(1)+'%'} ${r.gm==null||area.gm==null?'':`<span class="why-s">全店比 ${ppt(r.gm-area.gm)}</span>`}</td>
+      <td class="num" style="color:var(${r.w>=CONFIG.wasteWarn?'--bad':r.w>=CONFIG.wasteCaution?'--warn':'--ink'})">${r.w.toFixed(1)}%</td>
+      <td class="l" style="white-space:normal;min-width:190px"><span class="badge ${EVL[r.lv][0]}">${EVL[r.lv][1]}</span><span class="why-s">${r.why.join('・')}</span></td></tr>`).join('')+
+    `<tr style="font-weight:700;background:var(--bg)"><td class="l"></td><td class="l">全店</td><td class="num">${yen(area.amt)}<span class="why-s">1店平均</span></td><td>${chip(area.ds)}</td><td class="num">${yen(area.gp)}<span class="why-s">1店平均</span></td><td>${chip(area.dg)}</td><td class="num">${area.gm==null?'—':area.gm.toFixed(1)+'%'}</td><td class="num">${wrOf(A.ALL.nc.p26).toFixed(1)}%</td><td class="l"></td></tr></tbody>`;
+  const th=document.querySelectorAll('#tStorePerf th[data-sk]'),sort=k=>{SPS=SPS.k===k?{k,dir:-SPS.dir}:{k,dir:k==='s'||k==='lv'?1:-1};renderStorePerf();};
+  th.forEach(h=>{h.onclick=()=>sort(h.dataset.sk);h.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();sort(h.dataset.sk);}};});
+  wireGo(document.getElementById('tStorePerf'));labelTables();
+  document.getElementById('spNote').innerHTML=`<b>評価のきまり</b>　🔴 要対策：売上・荒利益の前年比がどちらも100%未満、または廃棄率 ${CONFIG.wasteWarn}%以上。🟠 注意：どちらか一方が100%未満、廃棄率 ${CONFIG.wasteCaution}%以上、または荒利益率が全店より${CONFIG.marginGap}pt以上低い。🟢 良好：それ以外。<br>
+    売上高・荒利益高は期間合計の金額（店の規模の差を含む）、前年比は伸び率です。全店の前年比・荒利益率は全店合計から計算し、金額は1店平均です。廃棄率は${A.excl.length?A.excl.join('・')+'を除く':'全カテゴリー'}。見出しをクリックすると並べ替えられます（順位は売上高の順）。`;
+}
+function drawStoreRank(){
+  const {R,area}=storeEval(),M={amt:['売上高',r=>r.amt,area.amt,'1店平均',false],gp:['荒利益高',r=>r.gp,area.gp,'1店平均',false],ds:['売上前年比',r=>r.ds,area.ds,'全店',true],dg:['荒利益前年比',r=>r.dg,area.dg,'全店',true],gm:['荒利益率',r=>r.gm,area.gm,'全店',false]}[SCM];
+  const [lb,f,av,avl,isY]=M,L=[...R].filter(r=>f(r)!=null).sort((a,b)=>f(b)-f(a)),isP=SCM==='gm';
+  document.getElementById('scTitle').textContent=`店舗ランキング：${lb}${isY?'（前年＝100%）':isP?'（%）':'（期間合計）'}`;
+  const fmt=v=>v==null?'—':isY?pf(v):isP?v.toFixed(1)+'%':yen(v);
+  const col=r=>r.s===scope?css('--accent'):isY?(f(r)>=0?css('--good-fill'):css('--bad-fill')):css('--ty');
+  const avgLine={id:'avg',afterDatasetsDraw(ch){if(av==null)return;const {ctx,chartArea:a,scales:{x}}=ch,px=x.getPixelForValue(av);ctx.save();ctx.strokeStyle=css('--warn-fill');ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(px,a.top);ctx.lineTo(px,a.bottom);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=css('--warn');ctx.font='600 11px '+css('--f-ui');ctx.textAlign=px>a.right-90?'right':'left';ctx.fillText(`${avl} ${fmt(av)}`,px+(px>a.right-90?-6:6),a.top-6);ctx.restore();}};
+  const vals=L.map(f),mn=Math.min(...vals,av??0),mxv=Math.max(...vals,av??0);
+  charts.push(new Chart(cStoreRank,{type:'bar',data:{labels:L.map(r=>r.s),datasets:[{label:lb,data:vals,backgroundColor:L.map(col),borderRadius:3,maxBarThickness:26}]},plugins:[avgLine],
+    options:{layout:{padding:{top:16}},indexAxis:'y',onClick:(e,el)=>{if(el.length)go(L[el[0].index].s)},onHover:(e,el)=>e.native.target.style.cursor=el.length?'pointer':'default',
+      scales:{x:{beginAtZero:!isP,min:isP?Math.floor(Math.min(mn,av??mn)-2):undefined,suggestedMax:isY?Math.max(5,Math.ceil(mxv+2)):undefined,suggestedMin:isY?Math.min(-5,Math.floor(mn-2)):undefined,
+        ticks:{callback:v=>isY?(100+v)+'%':isP?v+'%':yTick(v)},grid:{color:c=>isY&&c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},y:{grid:{display:false}}},
+      plugins:{tooltip:{callbacks:{label:x=>{const r=L[x.dataIndex];return [` ${lb}  ${fmt(x.raw)}`,` ${avl}  ${fmt(av)}`,` 評価  ${EVL[r.lv][1]}`];},footer:()=>'クリックで店舗詳細'}}}}}));
+  document.getElementById('scNote').textContent=isY?`棒は前年からの伸び（前年＝100%からの差）。緑＝前年より多い、赤＝前年より少ない。オレンジの点線は全店合計の前年比。`
+    :isP?'荒利益率＝荒利益高（廃棄控除後）÷ 販売高。オレンジの点線は全店合計の荒利益率。':`金額は期間合計（店の規模の差を含む）。オレンジの点線は1店平均。${scope!=='ALL'?'青い棒は選んでいる店。':''}`;
+}
+
+// ===== 改善アクション・教訓（一覧）：店舗の評価と改善候補から、優先度と対応状況を並べる =====
+let CTR='all';
+// 改善候補の優先度：増産と、良い方向の急変（売上・荒利の増加、廃棄の減少）は 🟢。それ以外は確度「高」＝🔴、「中」＝🟠
+const candGood=c=>c.type==='増産'||(c.type==='急変'&&(/廃棄/.test(c.metric||'')?c.dir==='減':c.dir==='増'));
+const candPri=c=>candGood(c)?'good':c.conf==='高'?'high':'mid';
+function renderCenter(){
+  const rows=[],reg=c=>actMerged().filter(r=>r.key===candKey(c));
+  if(A&&A.stores){const {R}=storeEval();R.filter(r=>isAll()||r.s===scope).forEach(r=>{
+    if(r.lv==='bad')rows.push({pri:'high',store:r.s,issue:'店舗の実績（要対策）',kpi:r.why.join('・'),act:'下の改善候補から、この店の廃棄削減・急変（減少）を優先して実施管理に登録し、実施後の実績を確認します。',st:null});
+    else if(r.lv==='good')rows.push({pri:'good',store:r.s,issue:'店舗の実績（良好）',kpi:`売上 ${pf(r.ds)}・荒利 ${pf(r.dg)}・廃棄率 ${r.w.toFixed(1)}%`,act:'作成量・売り場の決め方を、要対策・注意の店舗と共有します。',st:null});});}
+  candAll().filter(c=>!c.neg&&c.conf!=='低').forEach(c=>{const ex=reg(c);
+    rows.push({pri:candPri(c),store:c.store,issue:`${candTitle(c)}：${short(c.name)}`,cand:c,
+      kpi:`${c.est.map(([l,v,u])=>`${l} ${u==='%'?fmtV(v,u):sgnY(v,u)}`).join('・')}（確度 ${c.conf}・${c.n_days}日分）`,act:c.action,st:ex.length?ex.map(r=>r.status).join('・'):''});});
+  const ord={high:0,mid:1,good:2},cf=r=>r.cand?(r.cand.conf==='高'?0:1):-1,L=rows.filter(r=>CTR==='all'||r.pri===CTR).sort((a,b)=>ord[a.pri]-ord[b.pri]||cf(a)-cf(b));
+  const cnt=k=>rows.filter(r=>r.pri===k).length;
+  document.getElementById('ctrSub').textContent=`${isAll()?`${NS}店舗`:scope}・${DEPT}・${PER()}　🔴 ${cnt('high')}件・🟠 ${cnt('mid')}件・🟢 ${cnt('good')}件`;
+  document.getElementById('ctrFlt').innerHTML=`<div class="grp"><span>優先度</span>${[['all','すべて'],['high','🔴 高'],['mid','🟠 中'],['good','🟢 好調']].map(([k,l])=>`<button class="pb" data-ctr="${k}" aria-pressed="${k===CTR}"><b>${l}</b><span class="r">${k==='all'?rows.length:cnt(k)}</span></button>`).join('')}</div>`;
+  document.querySelectorAll('#ctrFlt [data-ctr]').forEach(b=>b.onclick=()=>{CTR=b.dataset.ctr;renderCenter();});
+  const IDX=[];
+  document.getElementById('tCtr').innerHTML=`<thead><tr><th class="l">優先度</th><th class="l">店舗名</th><th class="l">課題</th><th class="l">根拠となるKPI</th><th class="l">推奨アクション</th><th class="l">対応状況</th></tr></thead><tbody>`+
+    (L.length?L.map(r=>{const i=IDX.push(r.cand)-1;return `<tr${r.pri==='high'?' class="under"':''}><td class="l"><span class="badge ${PRI[r.pri][0]}">${PRI[r.pri][1]}</span></td>
+      <td class="l"><button class="link" data-go="${esc(r.store)}">${esc(r.store)}</button></td><td class="l" style="white-space:normal;min-width:200px">${esc(r.issue)}</td>
+      <td class="l" style="white-space:normal;min-width:220px;font-size:12px">${esc(r.kpi)}</td><td class="l" style="white-space:normal;min-width:240px;font-size:12px">${esc(r.act)}</td>
+      <td class="l">${r.cand?(r.st?`<span class="badge info">${esc(r.st)}</span><span class="why-s">実施管理で更新</span>`:`<button class="cp" data-ctradd="${i}">実施管理に追加</button>`):'<span style="color:var(--ink-3)">—</span>'}</td></tr>`;}).join('')
+    :'<tr><td class="l" colspan="6" style="color:var(--ink-3)">この条件に当てはまるアクションはありません。</td></tr>')+'</tbody>';
+  document.querySelectorAll('#tCtr [data-ctradd]').forEach(b=>b.onclick=()=>actAdd(IDX[+b.dataset.ctradd]));
+  wireGo(document.getElementById('tCtr'));labelTables();
+  document.getElementById('ctrNote').innerHTML=`<b>優先度のきまり</b>　🔴 高：確度「高」の改善候補（廃棄削減、売上・荒利の減少や廃棄の増加の急変）と、評価が「要対策」の店舗。🟠 中：確度「中」の同じ候補。🟢 好調：増産の候補、良い方向の急変（売上・荒利の増加・廃棄の減少）、評価が「良好」の店舗。確度「低」と、試算で荒利益高が下がる候補は除いています。<br>
+    <b>対応状況</b>は下の「実施管理」の記録です。「実施管理に追加」すると<b>この端末のこのブラウザにだけ一時保存</b>されます（他の人には見えません）。全員で共有するには、実施管理の「書き出し（JSON）」を管理者に渡し、ページを作り直してもらいます。`;
+}
+
+// 凡例をクリックして、グラフの線・棒を表示／非表示にする（凡例の data-ds＝データセットの番号）
+function wireLegend(ch,id){
+  if(!ch)return;document.querySelectorAll('#'+id+' .lt').forEach(b=>{const i=+b.dataset.ds;if(i>=ch.data.datasets.length)return;
+    const set=()=>b.setAttribute('aria-pressed',ch.isDatasetVisible(i));set();
+    const t=()=>{ch.setDatasetVisibility(i,!ch.isDatasetVisible(i));ch.update();set();};
+    b.onclick=t;b.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();t();}};});
+}
+const LT=(i,html)=>`<span class="lt" role="button" tabindex="0" data-ds="${i}" aria-pressed="true" title="クリックで表示／非表示">${html}</span>`;
+// マウスを置いた日に縦線を引く（日付のハイライト）
+const crossLine={id:'cross',afterDatasetsDraw(ch){const a=ch.tooltip&&ch.tooltip.getActiveElements&&ch.tooltip.getActiveElements();if(!a||!a.length)return;
+  const {ctx,chartArea:c}=ch,x=a[0].element.x;ctx.save();ctx.strokeStyle=css('--rule-2');ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,c.top);ctx.lineTo(x,c.bottom);ctx.stroke();ctx.restore();}};
+// 日別の荒利益高の前年同日比・荒利益率（全店舗のデータがそろった日だけで比べる。前年比の計算は salesCalc と同じ条件）
+function gmDaily(S,N){
+  const a=S.daily26,b=S.daily25,c26=S.cov26||[],c25=S.cov25||[],full=S.nst||1,out=[];
+  for(let d=1;d<=DIM;d++){const ok=d<=N&&a.荒利益高[d-1]!=null&&b.荒利益高[d-1]!=null&&(c26[d-1]??full)===full&&(c25[d-1]??full)===full;
+    out.push({d,yoy:ok&&b.荒利益高[d-1]>0?(a.荒利益高[d-1]/b.荒利益高[d-1]-1)*100:null,
+      g26:d<=N&&a.販売高[d-1]?a.荒利益高[d-1]/a.販売高[d-1]*100:null,g25:b.販売高[d-1]?b.荒利益高[d-1]/b.販売高[d-1]*100:null,ok});}
+  return out;
+}
+function drawGm(){
+  const S=A[scope],N=ALLD.meta.N,G=gmDaily(S,N),lab=G.map(r=>r.d+'日'),G26=G.slice(0,N);
+  charts.push(new Chart(cGmYoy,{type:'bar',data:{labels:G26.map(r=>r.d+'日'),datasets:[{label:'荒利益高 前年同日比',data:G26.map(r=>r.yoy),backgroundColor:G26.map(r=>r.yoy==null?css('--ly'):r.yoy>=0?css('--good-fill'):css('--bad-fill')),borderRadius:2}]},plugins:[crossLine],
+    options:{interaction:{mode:'index',intersect:false},scales:{y:{ticks:{callback:v=>(100+v)+'%'},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},x:{grid:{display:false},ticks:{maxTicksLimit:11}}},
+      plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{title:it=>{const d=G26[it[0].dataIndex].d;return `${MO}/${d}（${Y}年は${WDJ(d)}・${LY}年は${WDJ25(d)}）`;},
+        label:x=>{const d=G26[x.dataIndex].d;return [` 前年同日比  ${pf(x.raw)}`,` 今年 ${yen(S.daily26.荒利益高[d-1])}／前年 ${yen(S.daily25.荒利益高[d-1])}`];}}}}}}));
+  const skip=G26.filter(r=>!r.ok).length;
+  document.getElementById('gmYoyNote').textContent=`前年の同じ日付との比較（曜日の並びは違います）。0の線＝前年と同じ（100%）。${skip?`データの欠けた日・一部店舗だけの日（${skip}日）は出していません。`:''}`;
+  document.getElementById('gmLegend').innerHTML=LT(0,`<i style="background:var(--ly);height:3px"></i>${LY}年${MO}月`)+LT(1,`<i style="background:var(--ty);height:3px"></i>${Y}年${MO}月`);
+  const ch=new Chart(cGm,{type:'line',data:{labels:lab,datasets:[
+    {label:String(LY),data:G.map(r=>r.g25),borderColor:css('--ly'),borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false},
+    {label:String(Y),data:G.map(r=>r.g26),borderColor:css('--ty'),backgroundColor:css('--ty'),borderWidth:2.5,pointRadius:3,tension:.25,spanGaps:false}]},plugins:[crossLine],
+    options:{interaction:{mode:'index',intersect:false},scales:{y:{grace:'10%',ticks:{callback:v=>v+'%'},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{maxTicksLimit:11}}},
+      plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{title:it=>`${MO}/${it[0].dataIndex+1}`,label:x=>` ${x.dataset.label}年  荒利益率 ${x.raw.toFixed(1)}%`}}}}});
+  charts.push(ch);wireLegend(ch,'gmLegend');
+  const k=S.kpi,g26=gmOf(k.p26),g25=gmOf(k.p25);
+  document.getElementById('gmNote').textContent=`${PER()}の荒利益率：今年 ${g26==null?'—':g26.toFixed(1)+'%'}、前年 ${g25==null?'—':g25.toFixed(1)+'%'}（${g26==null||g25==null?'—':ppt(g26-g25)}）。荒利益高は廃棄控除後のため、廃棄の多い日は荒利益率が下がります。`;
+}
 function render(){
   const S=A[scope],k25=S.kpi.p25,k26=S.kpi.p26,m25=S.kpi.m25,nc=S.nc;
   switcher();
@@ -991,17 +1334,50 @@ function render(){
     const x=a.kpi.p26[k]/na,y=b.kpi.p26[k]/nb;return `<span class="row lbl2">${chip(pct(x,y),inv)}<span class="num">${lab}　${isN?n0(y)+'→'+n0(x)+'個':yen(y)+'→'+yen(x)}</span></span>`;};
   const lyRow=(d,txt)=>`<span class="row">${d}<span class="num">前年同日比　前年 ${txt}</span></span>`;
   const SPK=['販売高','荒利益高','販売数','廃棄高'];
-  const K=[
-    ['販売高（売上）',yen(k26.販売高),lyRow(chip(pct(k26.販売高,k25.販売高)),yen(k25.販売高)),wkRow('販売高'),0],
-    ['荒利益高',yen(k26.荒利益高),lyRow(chip(pct(k26.荒利益高,k25.荒利益高)),yen(k25.荒利益高)),wkRow('荒利益高'),1],
+  const sk=(i,bad)=>spark(S.daily25[SPK[i]].slice(0,ALLD.meta.N),S.daily26[SPK[i]],bad);
+  // 補助KPI（販売数・廃棄高）：従来のカードの表示をそのまま残す
+  const K2=[
     ['販売数',n0(k26.販売数)+'<small>個</small>',lyRow(chip(pct(k26.販売数,k25.販売数)),n0(k25.販売数)+'個'),wkRow('販売数',false,true),2],
-    ['廃棄高',yen(k26.廃棄高),lyRow(chip(pct(k26.廃棄高,k25.廃棄高),true),yen(k25.廃棄高)),wkRow('廃棄高',true),3],
-    ['廃棄率',wrOf(nc.p26).toFixed(1)+'<small>%</small>',lyRow(ptchip(wrOf(nc.p26)-wrOf(nc.p25),true),wrOf(nc.p25).toFixed(1)+'%'),wkRow(null,true,false,true),-1],
-    ALLD.meta.N>=DIM?[`${MO}月 実績（確定・販売高）`,yen(cS.act),`<span class="row">${chip(pct(cS.act,m25.販売高))}<span class="num">前年${MO}月比　前年 ${yen(m25.販売高)}</span></span>`,`<span class="row lbl2"><span class="num">荒利益高 ${yen(cG.act)}（${pf(pct(cG.act,m25.荒利益高))}）</span></span><span class="fc">${MO}/1〜${DIM} の全日の実績（予測ではありません）</span>`,-1]:
-    [`${MO}月 月末着地予測（販売高）`,fcS==null?'—':yen(fcS),fcS==null?'<span class="row">前年比が出せないため予測なし</span>':`<span class="row">${chip(pct(fcS,m25.販売高))}<span class="num">前年${MO}月比　前年 ${yen(m25.販売高)}</span></span>`,`<span class="row lbl2"><span class="num">荒利益高 ${fcG==null?'—':yen(fcG)+'（'+pf(pct(fcG,m25.荒利益高))+'）'}</span></span><span class="fc">簡易予測＝実績＋残り${cS.rest.length}日（前年の同じ日×${PER()}の前年比）</span>`,-1]];
-  document.getElementById('kpis').className='kpis k6';
+    ['廃棄高',yen(k26.廃棄高),lyRow(chip(pct(k26.廃棄高,k25.廃棄高),true),yen(k25.廃棄高)),wkRow('廃棄高',true),3]];
+  document.getElementById('kpis2').innerHTML=K2.map(([k,v,r1,r2,si])=>`<div class="kpi">${sk(si,si===3)}<span class="k">${k}</span><span class="v num">${v}</span>${r1}${r2}</div>`).join('');
+  // 総合KPI 6枚（売上高・荒利益高・荒利益率・月末売上予測・廃棄率・販売率）。前年比の計算は従来の総合KPIと同じ（期間合計どうし）
+  const wkF=f=>{if(!wc)return null;const a=wc.cur.d[scope],b=wc.prev.d[scope];return a.days.p26&&b.days.p26?f(a,b):null;};
+  const wkLab=wc?`${wc.c.tag||wc.c.label} vs ${wc.p.tag||wc.p.label}`:'';
+  const g26=gmOf(k26),g25=gmOf(k25),w26=wrOf(nc.p26),w25=wrOf(nc.p25),s26=stOf(nc.p26),s25=stOf(nc.p25),exl=A.excl.length?`${A.excl.join('・')}を除く`:'';
+  const yS=pct(k26.販売高,k25.販売高),yG=pct(k26.荒利益高,k25.荒利益高);
+  const dl=rows=>`<dl>${rows.filter(Boolean).map(([t,d])=>`<dt>${t}</dt><dd>${d}</dd>`).join('')}</dl>`;
+  const card=(cls,k,badge,v,body,foot,spk)=>`<div class="card ${cls}${spk?' hs':''}" role="listitem">${spk||''}<span class="k">${k}${badge||''}</span><span class="v">${v}</span>${body}<div class="foot">${foot}</div></div>`;
+  const winF=PDS()&&PK!=='all'?CUR().n:null,btS=fcBacktest(S,'販売高',ALLD.meta.N,winF);
+  const gmWk=wkF((a,b)=>[gmOf(b.kpi.p26),gmOf(a.kpi.p26)]);
+  const XK=[
+    card(yS==null?'':yS>=0?'st-good':'st-bad','売上高','',yen(k26.販売高),
+      dl([['前年',yen(k25.販売高)],['前年比',chip(yS)],['前年差',`<b>${sgY(k26.販売高-k25.販売高)}</b>`]]),wkRow('販売高'),sk(0)),
+    card(yG==null?'':yG>=0?'st-good':'st-bad','荒利益高','',yen(k26.荒利益高),
+      dl([['前年',yen(k25.荒利益高)],['前年比',chip(yG)],['前年差',`<b>${sgY(k26.荒利益高-k25.荒利益高)}</b>`]]),wkRow('荒利益高'),sk(1)),
+    card(g26==null||g25==null?'':g26>=g25?'st-good':'st-bad','荒利益率','',g26==null?'—':g26.toFixed(1)+'<small>%</small>',
+      dl([['前年',g25==null?'—':g25.toFixed(1)+'%'],['前年差',g26==null||g25==null?'—':ptchip(g26-g25)],
+          wc?[wkLab,gmWk&&gmWk[0]!=null&&gmWk[1]!=null?`${gmWk[0].toFixed(1)}%→<b>${gmWk[1].toFixed(1)}%</b>`:'—']:null]),
+      '荒利益高（廃棄控除後）÷ 販売高'),
+    ALLD.meta.N>=DIM
+     ?card('fcst',`${MO}月 売上実績（確定）`,'',yen(cS.act),
+        dl([[`前年${MO}月`,yen(m25.販売高)],['前年比',chip(pct(cS.act,m25.販売高))],['荒利益高',`${yen(cG.act)}（${pf(pct(cG.act,m25.荒利益高))}）`]]),
+        `${MO}/1〜${DIM} の全日の実績（予測ではありません）`)
+     :card('fcst','月末売上予測','<span class="badge info">予測</span>',fcS==null?'—':yen(fcS),
+        fcS==null?'<p class="datanote">前年比が出せないため予測なし</p>'
+          :dl([[`実績 ${MO}/1〜${ALLD.meta.N}`,yen(cS.act)],[`残りの予測 ${cS.restOk.length}日`,yen(cS.restFc)],[`前年${MO}月`,yen(m25.販売高)],['前年比',chip(pct(fcS,m25.販売高))]]),
+        `実績＋残りの日（前年の同じ日×前年比 ${cS.r==null?'—':cS.r.toFixed(3)}）${btS?`・誤差の目安 ±${btS.mae.toFixed(1)}%`:''}<br>荒利益高の予測 ${fcG==null?'—':yen(fcG)+'（前年比 '+pf(pct(fcG,m25.荒利益高))+'）'}`),
+    card(w26>=CONFIG.wasteWarn?'st-bad':w26>=CONFIG.wasteCaution?'st-warn':'st-good','廃棄率',
+      w26>=CONFIG.wasteWarn?`<span class="badge bad">基準${CONFIG.wasteWarn}%超</span>`:w26>=CONFIG.wasteCaution?'<span class="badge warn">注意</span>':'',
+      w26.toFixed(1)+'<small>%</small>',
+      dl([['前年',w25.toFixed(1)+'%'],['前年差',ptchip(w26-w25,true)],['基準',`${CONFIG.wasteWarn}%（注意 ${CONFIG.wasteCaution}%）`]]),
+      wkRow(null,true,false,true)+`<br>廃棄数 ÷（販売数＋廃棄数）${exl?'。'+exl:''}`),
+    card(CONFIG.sellTarget==null||s26==null?'':s26>=CONFIG.sellTarget?'st-good':'st-bad','販売率（数量）',
+      CONFIG.sellTarget==null?'<span class="badge mute">目標未設定</span>':s26>=CONFIG.sellTarget?'<span class="badge good">目標達成</span>':'<span class="badge bad">目標未達</span>',
+      s26==null?'—':s26.toFixed(1)+'<small>%</small>',
+      dl([['前年',s25==null?'—':s25.toFixed(1)+'%'],['前年差',s26==null||s25==null?'—':ptchip(s26-s25)],['目標',CONFIG.sellTarget==null?'未設定':`${CONFIG.sellTarget}%（${s26==null?'—':ppt(s26-CONFIG.sellTarget)}）`]]),
+      `販売数 ÷（販売数＋廃棄数）。作成数のデータがないため、販売数＋廃棄数を作成数の代わりに使います（＝100%−廃棄率）${exl?'。'+exl:''}`)];
+  document.getElementById('kpis').innerHTML=XK.join('');
   document.getElementById('sumNote').textContent=`荒利益高は廃棄控除後。前年比＝前年の同じ日付（${PER()}）との比較。先週比＝${wc?`${wc.c.tag||wc.c.label}（${wc.c.range}）と${wc.p.tag||wc.p.label}（${wc.p.range}）の1日あたり比較`:'比較できる週なし'}。目標（予算）データはないため目標比は表示しません。`;
-  document.getElementById('kpis').innerHTML=K.map(([k,v,r1,r2,si])=>`<div class="kpi">${si>=0?spark(S.daily25[SPK[si]].slice(0,ALLD.meta.N),S.daily26[SPK[si]],si===3):''}<span class="k">${k}</span><span class="v num">${v}</span>${r1}${r2}</div>`).join('');
   // summary
   const cats=CATS.map(c=>({c,d:pct(S.cat.p26[c].荒利益高,S.cat.p25[c].荒利益高),diff:S.cat.p26[c].荒利益高-S.cat.p25[c].荒利益高})).filter(x=>S.cat.p25[x.c].荒利益高>0);
   const best=[...cats].sort((a,b)=>b.diff-a.diff)[0],worst=[...cats].sort((a,b)=>a.diff-b.diff)[0];
@@ -1063,7 +1439,9 @@ function render(){
   renderWx();
   renderWk();
   renderAlerts();
+  renderInsights();
   renderStoreRank();
+  if(A.stores)renderStorePerf();
   renderWasteSku();
   renderSkuFlt();
   renderActs();
@@ -1251,7 +1629,12 @@ function pie(id,obj,keys,lg){
     plugins:[{id:'c',afterDraw(ch){const{ctx,chartArea:a}=ch;ctx.save();ctx.textAlign='center';ctx.fillStyle=css('--ink-3');const fs=Math.min(44,Math.max(15,Math.min(a.right-a.left,a.bottom-a.top)*0.075));ctx.font=Math.round(fs*0.7)+'px '+css('--f-ui');ctx.fillText('合計',(a.left+a.right)/2,(a.top+a.bottom)/2-fs*0.55);ctx.fillStyle=css('--ink');ctx.font='600 '+Math.round(fs)+'px '+css('--f-num');ctx.fillText(yen(tot),(a.left+a.right)/2,(a.top+a.bottom)/2+fs*0.75);ctx.restore()}}]});
 }
 function draw(){
-  charts.forEach(c=>c.destroy());charts=[];base();drawWx();
+  charts.forEach(c=>c.destroy());charts=[];base();
+  // 表示中のタブのグラフだけ描く（タブを切り替えたときに draw が呼ばれる）。隠れたタブのグラフは作らない
+  const on=t=>TAB===t;
+  if(on('demand'))drawWx();else{wxCharts.forEach(c=>c.destroy());wxCharts=[];}
+  const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
+  if(on('sales')){
   {const pr=wkPair();if(pr){const [P,C]=pr,S0=A[scope].wk.byday,rng=w=>{const a=[];for(let d=w.start;d<=w.end;d++)a.push(d);return a},pd=rng(P),cd=rng(C),common=pd.map(WDN).filter(w=>cd.map(WDN).includes(w)),val=(ds,w)=>S0[ds.find(d=>WDN(d)===w)].販売高;
    charts.push(new Chart(cWk,{type:'bar',data:{labels:common,datasets:[{label:'先週',data:common.map(w=>val(pd,w)),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:common.map(w=>val(cd,w)),backgroundColor:css('--ty'),borderRadius:2}]},
      options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`}}}}}));}}
@@ -1260,7 +1643,6 @@ function draw(){
       options:{scales:{y:{ticks:{callback:yTick},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>{const r=X.rows[x.dataIndex];return [` 差 ${sg(r.diff)}`,` 先週 ${yen(r.p)} → 今週 ${yen(r.c)}`];}}}}}}));
     charts.push(new Chart(cDow2,{type:'bar',data:{labels:labs,datasets:[{label:'先週',data:X.rows.map(r=>r.p),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:X.rows.map(r=>r.c),backgroundColor:css('--ty'),borderRadius:2}]},
       options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`}}}}}));}}
-  const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
   const lab=S.daily25.荒利益高.map((_,i)=>(i+1)+'日');
   document.getElementById('dTitle').textContent='日別 '+ML();document.getElementById('cTitle').textContent=ML().replace('（売上）','')+'（'+PER()+'）';document.getElementById('mTitle').textContent=ML().replace('（売上）','')+' 構成比';
   const N=ALLD.meta.N,pp=PDS()?CUR():{d0:1,d1:N},sc=salesCalc(S,MK,pp.d0,pp.d1,N),full=S.nst||1;
@@ -1275,15 +1657,15 @@ function draw(){
   const WK=(ALLD.meta.weeks||(ALLD.meta.periods||[]).filter(p=>p.k!=='all')).slice().sort((p,q)=>p.d0-q.d0),wr=weekRows(S,MK,WK,N);
   const wl=r=>{const a=DL(r.d0),b=DL(r.d1);return a.split('/')[0]===b.split('/')[0]?`${a}〜${b.split('/')[1]}`:`${a}〜${b}`;};
   document.getElementById('dTitle').textContent=(GRAIN==='week'?'週別 ':'日別 ')+ML();
-  document.getElementById('dLegend').innerHTML=GRAIN==='week'?'<span><i style="background:var(--ly)"></i>前年 週合計</span><span><i style="background:var(--ty)"></i>今年 週合計</span><span><i style="background:var(--accent-soft);outline:1px dashed var(--ty)"></i>予測</span><span><i style="background:var(--c-kara);height:3px"></i>今年 1日平均（線）</span><span><i style="background:var(--ink-3);height:2px"></i>前年 1日平均（線）</span>'
-    :`<span><i style="background:var(--ly)"></i>${LY}年${MO}月（前年）</span><span><i style="background:var(--ty)"></i>${Y}年${MO}月（実績）</span>`+(N>=DIM?'':'<span><i class="dash"></i>予測（前年の同じ日×前年比）</span>');
+  document.getElementById('dLegend').innerHTML=GRAIN==='week'?LT(0,'<i style="background:var(--ly)"></i>前年 週合計')+LT(1,'<i style="background:var(--ty)"></i>今年 週合計')+'<span><i style="background:var(--fc-soft);outline:1px dashed var(--fc)"></i>予測</span>'+LT(2,'<i style="background:var(--c-kara);height:3px"></i>今年 1日平均（線）')+LT(3,'<i style="background:var(--ink-3);height:2px"></i>前年 1日平均（線）')
+    :LT(0,`<i style="background:var(--ly)"></i>${LY}年${MO}月（前年）`)+LT(1,`<i style="background:var(--ty)"></i>${Y}年${MO}月（実績）`)+(N>=DIM?'':LT(2,'<i class="dash fc"></i>予測（前年の同じ日×前年比）'));
   document.getElementById('wkTrendWrap').hidden=GRAIN!=='week';document.getElementById('wkTrendNote').hidden=GRAIN!=='week';
   document.getElementById('dowTrendWrap').hidden=GRAIN!=='dow';document.getElementById('dowTrendNote').hidden=GRAIN!=='dow';
   ['dowTrendWrap','wkTrendWrap'].forEach(id=>{const e=document.getElementById(id),p=e.previousElementSibling;if(p&&p.classList.contains('tbar'))p.hidden=e.hidden;});
   if(GRAIN==='dow'){
     const DM=dowMatrix(S,MK,WK,N),pal=['#c3ccd6','#93a7bf','#5f7fa3','#163f6e','#0b1d33'],cols=WK.map((_,i)=>pal[Math.max(0,pal.length-WK.length+i)]);
     document.getElementById('dTitle').textContent='曜日別 '+ML();
-    document.getElementById('dLegend').innerHTML=WK.map((w,i)=>`<span><i style="background:${cols[i]}"></i>${wl(w)}</span>`).join('')+`<span><i style="background:var(--c-kara);height:3px"></i>今月の曜日平均</span><span><i style="background:var(--ink-3);height:2px"></i>前年${MO}月の曜日平均</span>`;
+    document.getElementById('dLegend').innerHTML=WK.map((w,i)=>LT(i,`<i style="background:${cols[i]}"></i>${wl(w)}`)).join('')+LT(WK.length,'<i style="background:var(--c-kara);height:3px"></i>今月の曜日平均')+LT(WK.length+1,`<i style="background:var(--ink-3);height:2px"></i>前年${MO}月の曜日平均`);
     charts.push(new Chart(cDaily,{type:'bar',data:{labels:DM.map(r=>r.w+'曜'),datasets:[
       ...WK.map((w,i)=>({label:`${wl(w)}`,data:DM.map(r=>r.wk[i].v),backgroundColor:cols[i],borderRadius:2,order:2})),
       {type:'line',label:'今月の曜日平均',data:DM.map(r=>r.a26),borderColor:css('--c-kara'),backgroundColor:css('--c-kara'),borderWidth:2.5,pointRadius:4,tension:.2,order:0},
@@ -1303,7 +1685,7 @@ function draw(){
     const sel=r=>r.kind==='act'&&r.d0===pp.d0&&r.d1===pp.d1;
     charts.push(new Chart(cDaily,{type:'bar',data:{labels:wr.map(r=>[wl(r),r.kind==='fc'?`予測・${r.n}日`:r.used<r.n&&r.kind==='act'?`${r.n}日間（前年は${r.used}日分）`:`${r.n}日間`]),datasets:[
       {label:'前年',data:wr.map(r=>r.s25),backgroundColor:ly,borderRadius:2},
-      {label:'今年',data:wr.map(r=>r.kind==='act'?r.act:r.s26),backgroundColor:wr.map(r=>r.kind==='fc'?css('--accent-soft'):ty),borderColor:wr.map(r=>r.kind==='fc'||sel(r)?css('--ty'):'transparent'),borderWidth:wr.map(r=>r.kind==='fc'?1.5:sel(r)?2.5:0),borderDash:[4,3],borderRadius:2,order:2},
+      {label:'今年',data:wr.map(r=>r.kind==='act'?r.act:r.s26),backgroundColor:wr.map(r=>r.kind==='fc'?css('--fc-soft'):ty),borderColor:wr.map(r=>r.kind==='fc'?css('--fc'):sel(r)?css('--accent'):'transparent'),borderWidth:wr.map(r=>r.kind==='fc'?1.5:sel(r)?2.5:0),borderDash:[4,3],borderRadius:2,order:2},
       // 折れ線：1日平均（週によって日数が違うので、週どうしの比較はこちら）。右の目盛り
       {type:'line',label:'今年 1日平均',data:wr.map(r=>r.pd),yAxisID:'y2',borderColor:css('--c-kara'),backgroundColor:css('--c-kara'),borderWidth:2.5,pointRadius:5,pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.2,order:0,
         segment:{borderDash:c=>wr[c.p1DataIndex]&&wr[c.p1DataIndex].kind==='fc'?[5,4]:undefined}},
@@ -1326,8 +1708,8 @@ function draw(){
   charts.push(new Chart(cDaily,{type:'line',data:{labels:lab,datasets:[
     {label:'2025',data:S.daily25[MK],borderColor:ly,borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false},
     {label:'2026',data:lab.map((_,i)=>S.daily26[MK][i]??null),borderColor:ty,backgroundColor:ty,borderWidth:2.5,pointRadius:lab.map((_,i)=>S.cov26&&S.cov26[i]!=null&&S.cov26[i]<full?6:4),pointStyle:lab.map((_,i)=>S.cov26&&S.cov26[i]!=null&&S.cov26[i]<full?'triangle':'circle'),pointBorderColor:css('--panel'),pointBorderWidth:2,tension:.25,spanGaps:false},
-    {label:'予測',data:fcArr,borderColor:ty,borderDash:[5,4],borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false}]},
-    plugins:[bound],
+    {label:'予測',data:fcArr,borderColor:css('--fc'),borderDash:[5,4],borderWidth:1.75,pointRadius:0,pointHoverRadius:3,tension:.25,spanGaps:false}]},
+    plugins:[bound,crossLine],
     options:{interaction:{mode:'index',intersect:false},scales:{y:{grace:'10%',title:{display:true,text:ML()+'（円）',color:css('--ink-3'),font:{size:10.5}},ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{maxTicksLimit:11}}},
       plugins:{tooltip:{filter:x=>x.raw!=null&&!(x.dataset.label==='予測'&&x.dataIndex+1===N),
         callbacks:{title:it=>{const d=it[0].dataIndex+1;return `${MO}/${d}（${Y}年は${WDJ(d)}・${LY}年は${WDJ25(d)}）`;},
@@ -1338,13 +1720,14 @@ function draw(){
             const okd=(S.cov26?S.cov26[d-1]===full:true)&&(S.cov25?S.cov25[d-1]===full:true);if(!okd)return ['前年比：一部の店舗だけの日のため出しません'];
             return [`前年比 ${b>0?pf(pct(a,b)):'—'}　前年との差 ${a-b>=0?'+':'-'}${yen(Math.abs(a-b)).replace('-','')}`];}}}}}}));
   }
+  wireLegend(Chart.getChart('cDaily'),'dLegend');
   if(N>=DIM){const cps=fcCheckpoints(S,MK,N);
     charts.push(new Chart(cFcst,{type:'bar',data:{labels:[`${LY}年${MO}月 実績`,...cps.map(c=>`${MO}/${c.k}時点の予測`),`${Y}年${MO}月 実績`],datasets:[{data:[S.kpi.m25[MK],...cps.map(c=>c.fc),sc.act],backgroundColor:[ly,...cps.map(()=>css('--accent-soft')),ty],borderColor:[ly,...cps.map(()=>ty),ty],borderWidth:[0,...cps.map(()=>1.5),0],borderDash:[4,3],borderRadius:2,maxBarThickness:70}]},
       options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{font:{size:10}}}},plugins:{tooltip:{callbacks:{label:x=>' '+yen(x.raw)}}}}}));
   } else
   charts.push(new Chart(cFcst,{type:'bar',data:{labels:[`${LY}年${MO}月（実績）`,`${Y}年${MO}月（着地予測）`],datasets:[
       {label:'実績',data:[S.kpi.m25[MK],sc.act],backgroundColor:[ly,ty],borderRadius:0,maxBarThickness:80,stack:'s'},
-      {label:'予測',data:[null,sc.restFc],backgroundColor:css('--accent-soft'),borderColor:ty,borderWidth:1.5,borderDash:[4,3],borderRadius:0,maxBarThickness:80,stack:'s'}]},
+      {label:'予測',data:[null,sc.restFc],backgroundColor:css('--fc-soft'),borderColor:css('--fc'),borderWidth:1.5,borderDash:[4,3],borderRadius:0,maxBarThickness:80,stack:'s'}]},
     options:{scales:{y:{stacked:true,beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{stacked:true,grid:{display:false}}},
       plugins:{legend:{display:true,position:'top',align:'end',labels:{boxWidth:10,boxHeight:10,color:css('--ink-2')}},tooltip:{filter:x=>x.raw!=null,callbacks:{label:x=>x.dataIndex===0?` 前年${MO}月 実績  ${yen(x.raw)}`:x.dataset.label==='実績'?` 実績（${MO}/1〜${N}）  ${yen(x.raw)}`:` 予測（${MO}/${N+1}〜${DIM}）  ${yen(x.raw)}`,
         footer:it=>it[0].dataIndex===1&&sc.fc!=null?`着地予測 合計 ${yen(sc.fc)}`:''}}}}}));
@@ -1355,6 +1738,9 @@ function draw(){
     options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{font:{size:10.5}}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}年  ${yen(x.raw)}`}}}}}));
   const gm={};CATS.forEach(c=>gm[c]=S.cat[mixK][c][MK]);
   charts.push(pie('cMix',gm,CATS,'lgMix'));
+  drawGm();
+  } else renderContrib();
+  if(on('waste')){
   charts.push(pie('cWaste',S.wcat[wasteK],WC,'lgWaste'));
   charts.push(new Chart(cWDaily,{type:'bar',data:{labels:S.daily26.廃棄高.map((_,i)=>(i+1)+'日'),datasets:[
     {label:'2025',data:S.daily25.廃棄高.slice(0,ALLD.meta.N),backgroundColor:ly,borderRadius:2},
@@ -1371,21 +1757,27 @@ function draw(){
     {label:'2026',data:STORES.map(s=>wrOf(A.stores[s].nc26)),backgroundColor:bad,borderRadius:2}]},
     options:{indexAxis:'y',onClick:(e,el)=>{if(el.length)go(STORES[el[0].index])},onHover:(e,el)=>e.native.target.style.cursor=el.length?'pointer':'default',
       scales:{x:{beginAtZero:true,ticks:{callback:v=>v+'%'},grid:grid(),border:{display:false}},y:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}年  ${x.raw.toFixed(1)}%`,footer:()=>'クリックで店舗詳細'}}}}}));
+  }
+  if(on('sku')){
   const P=skuRows(),mx=Math.max(...P.map(r=>r.gp),1),ymax=Math.min(60,Math.ceil(Math.max(...P.map(r=>r.wr*100),20)/5)*5+5);
   charts.push(new Chart(cScatter,{type:'bubble',data:{datasets:['increase','keep','watch','reduce','hold'].map(g=>({label:VL[g][1],data:P.filter(r=>r.v===g).map(r=>({x:r.per,y:r.wr*100,r:4+Math.sqrt(Math.max(r.gp,0)/mx)*17,n:r.name,gp:r.gp,wy:r.wy})),
     backgroundColor:css(VL[g][2])+'b8',borderColor:css('--panel'),borderWidth:1.5}))},
     options:{scales:{x:{min:0,title:{display:true,text:isAll()?'1店1日あたり販売数（個）':'1日あたり販売数（個）',color:css('--ink-2')},grid:grid(),border:{display:false}},
       y:{min:-2,max:ymax,title:{display:true,text:'廃棄率',color:css('--ink-2')},ticks:{stepSize:5,callback:v=>v<0?'':v+'%'},grid:{color:c=>c.tick.value===15?bad:css('--rule')},border:{display:false}}},
       plugins:{tooltip:{callbacks:{title:x=>x[0].raw.n,label:x=>[` ${x.raw.x.toFixed(1)}個/日　廃棄率 ${x.raw.y.toFixed(1)}%`,` 荒利益高 ${yen(x.raw.gp)}　廃棄高 ${yen(x.raw.wy)}`]}}}}}));
+  }
+  if(on('action')){
   const L=S.lesson;
   charts.push(new Chart(cLesson,{type:'bar',data:{labels:L.map(r=>short(r.name).slice(0,20)),datasets:[
     {label:'廃棄高',data:L.map(r=>r.wy),backgroundColor:bad,borderRadius:2},
     {label:'荒利益高',data:L.map(r=>r.gp),backgroundColor:ty,borderRadius:2}]},
     options:{indexAxis:'y',scales:{x:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},y:{grid:{display:false}}},
       plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`,afterBody:x=>`廃棄率 ${(L[x[0].dataIndex].wr*100).toFixed(1)}%`}}}}}));
+  }
+  if(on('store')&&A.stores)drawStoreRank();
 }
 function seg(id,set){document.querySelectorAll('#'+id+' button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.setAttribute('aria-pressed',x===b));set(b.dataset.k);draw()})}
-let GRAIN='day';seg('segGrain',k=>GRAIN=k);seg('segDow',k=>{DOWK=k;renderDow();});seg('segMix',k=>mixK=k);seg('segMet',k=>{MK=k;renderSalesTop();});seg('segWaste',k=>wasteK=k);
+let GRAIN='day';seg('segGrain',k=>GRAIN=k);seg('segDow',k=>{DOWK=k;renderDow();});seg('segMix',k=>mixK=k);seg('segMet',k=>{MK=k;renderSalesTop();});seg('segWaste',k=>wasteK=k);seg('segSc',k=>SCM=k);
 
 // ===== コピー機能（PowerPoint・Excel貼り付け用） =====
 const ICON='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M11 5V3.5A1.5 1.5 0 0 0 9.5 2h-6A1.5 1.5 0 0 0 2 3.5v6A1.5 1.5 0 0 0 3.5 11H5"/></svg>';
