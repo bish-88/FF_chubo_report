@@ -39,7 +39,15 @@ async def main():
                                 for k in ['荒利益高', '廃棄高', '販売高']: await pg.click(f'#segDow button[data-k="{k}"]')
                                 ok = await pg.evaluate("Chart.getChart('cDaily').data.datasets.length===3&&document.getElementById('salesKpi').children.length===4")
                                 if not ok: problems.append((w, dept, per, s, t, 'sales charts/KPI'))
+                            if t == 'overview':
+                                if not await pg.evaluate("document.querySelectorAll('#kpis .card').length===6&&document.querySelectorAll('#insList .ins').length>0"): problems.append((w, dept, per, s, t, 'KPI 6枚・インサイト'))
+                            if t == 'store':
+                                for k in ['gp', 'ds', 'dg', 'gm', 'amt']: await pg.click(f'#segSc button[data-k="{k}"]')
+                                await pg.click('#tStorePerf th[data-sk="ds"]'); await pg.click('#tStorePerf th[data-sk="ds"]'); await pg.click('#tStorePerf th[data-sk="amt"]')
+                                if not await pg.evaluate("!!Chart.getChart('cStoreRank')&&document.querySelectorAll('#tStorePerf tbody tr').length===ALLD.meta.stores.length+1"): problems.append((w, dept, per, s, t, '店舗比較'))
                             if t == 'action':
+                                for k in ['high', 'mid', 'good', 'all']: await pg.click(f'#ctrFlt [data-ctr="{k}"]')
+
                                 for cf in ['廃棄削減', '増産', '急変先週', '急変前年', 'all']:
                                     await pg.click(f'[data-cf="{cf}"]')
                                 await pg.click('#cfLow'); await pg.click('#cfLow')
