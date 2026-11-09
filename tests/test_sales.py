@@ -8,6 +8,7 @@ template.html からそのまま取り出して動かし、
 """
 import csv, glob, json, os, re, subprocess, sys, tempfile, collections, datetime
 
+MO_ = 10   # 本物のCSVの照合では meta の月に置き換える
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = open(os.path.join(ROOT, 'scripts', 'template.html'), encoding='utf-8').read()
 
@@ -20,9 +21,14 @@ def grab(name):
     return m.group(0)
 
 
+META = {}   # 本物のCSVの照合では meta（年・月・祝日・N）を入れる
+
+
 def js(calls):
     """calls: [(関数名, 引数リスト)] → 結果リスト"""
-    code = 'const ALLD={meta:{N:31}};function setN(n){ALLD.meta.N=n;return n;}' + ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib', 'weekRows', 'dowRows', 'dowMatrix', 'fcCheckpoints', 'v26', 'vcat26'])
+    g = dict(Y=2026, LY=2025, MO=10, DIM=31, hol26={'12': 'スポーツの日'}, hol25={'13': 'スポーツの日'}); g.update({k: META[k] for k in g if k in META})
+    code = (f"let Y={g['Y']},LY={g['LY']},MO={g['MO']},MI={g['MO'] - 1},DIM={g['DIM']},HOL26={json.dumps(g['hol26'], ensure_ascii=False)},HOL25={json.dumps(g['hol25'], ensure_ascii=False)};"
+            f"const ALLD={{meta:{{N:{META.get('N', 31)}}}}};") + 'function setN(n){ALLD.meta.N=n;return n;}function setN(n){ALLD.meta.N=n;return n;}' + ''.join(grab(n) for n in ['salesCalc', 'fcBacktest', 'fcDaytype', 'catContrib', 'weekRows', 'dowRows', 'dowMatrix', 'fcCheckpoints', 'v26', 'vcat26'])
     f = os.path.join(tempfile.mkdtemp(), 'in.json'); json.dump(calls, open(f, 'w', encoding='utf-8'), ensure_ascii=False)
     prog = code + "const C=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const F={salesCalc,fcBacktest,fcDaytype,catContrib,weekRows,dowRows,dowMatrix,fcCheckpoints,setN};" \
            "console.log(JSON.stringify(C.map(([n,a])=>F[n](...a))));"
@@ -144,8 +150,9 @@ def test_real_data():
     out = os.path.join(tempfile.mkdtemp(), 'p.html'); env = dict(os.environ, OUT_FILE=out); env.pop('REPORT_PASSWORD', None)
     subprocess.run([sys.executable, os.path.join(ROOT, 'scripts', 'build.py')], env=env, check=True, capture_output=True)
     D = json.loads(re.search(r'let ALLD=(\{.*?\});\n', open(out, encoding='utf-8').read()).group(1)); N = D['meta']['N']
-    SN = {'新御堂筋上新田': '上新田', '吹田朝日町': '朝日町', '豊中服部元町一丁目': '元町一', '吹田豊津中学校前': '豊津中', '吹田青山台三丁目': '青山台'}
-    CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん'}
+    global MO_; MO_ = D['meta'].get('MO', 10); META.update(D['meta'])
+    SN = {'新御堂筋上新田': '上新田', '吹田朝日町': '朝日町', '豊中服部元町一丁目': '元町一', '吹田豊津中学校前': '豊津中', '吹田青山台三丁目': '青山台', '箕面白島二丁目': '白島二', '豊中原田南一丁目': '原田南'}
+    CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん', '販売）マチカフェ': 'マチカフェ'}
     M = ['販売数', '販売高', '廃棄数', '廃棄高', '荒利益高']; num = lambda v: 0.0 if v in ('*', '') else float(v.replace(',', ''))
     n = 0
     for dept in ['FF', '厨房']:
@@ -155,7 +162,7 @@ def test_real_data():
                 c = CM.get(r['CLASS名']) if dept == 'FF' else (r['SUBCLASS名'] if r['SUBCLASS名'] in ('弁当', '調理パン', '惣菜') else None)
                 k = tuple(r[x] for x in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
                 if not c or k in seen or all(num(r[x]) == 0 for x in M): continue
-                seen.add(k); y, d = (lambda s: (lambda y, mo, dd: (y, dd if mo == 10 else 31 + dd if mo == 11 else -99))(*map(int, s.split('/'))))(r['年月日'])
+                seen.add(k); y, d = (lambda s: (lambda y, mo, dd: (y, (datetime.date(y, mo, dd) - datetime.date(y, MO_, 1)).days + 1))(*map(int, s.split('/'))))(r['年月日'])
                 for met in ['販売高', '荒利益高']:
                     v = num(r[met])
                     for sc in ['ALL', SN[r['店舗名']]]:
@@ -170,17 +177,18 @@ def test_real_data():
                 assert abs(r['s25'] - sum(day[('ALL', '販売高', 2025, d)] for d in range(r['d0'], min(r['d1'], N) + 1))) < 0.5   # 前年は10月の日だけ
         P, C = WK[-2], WK[-1]
         X = js([('dowRows', [D[dept]['ALL'], '荒利益高', dict(start=P['d0'], end=P['d1']), dict(start=C['d0'], end=C['d1']), D[dept]['cats']])])[0]
-        assert abs(X['cTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(C['d0'], C['d1'] + 1))) < 0.5      # 曜日の合計＝今週の合計
-        cw = {(datetime.date(2026, 10, 1) + datetime.timedelta(days=d - 1)).weekday() for d in range(C['d0'], C['d1'] + 1)}          # 今週にある曜日だけ（同じ曜日どうしで比べる）
-        assert abs(X['pTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(P['d0'], P['d1'] + 1) if (datetime.date(2026, 10, 1) + datetime.timedelta(days=d - 1)).weekday() in cw)) < 0.5
+        pw = {(datetime.date(2026, MO_, 1) + datetime.timedelta(days=d - 1)).weekday() for d in range(P['d0'], P['d1'] + 1)}          # 先週にもある曜日
+        assert abs(X['cTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(C['d0'], C['d1'] + 1) if (datetime.date(2026, MO_, 1) + datetime.timedelta(days=d - 1)).weekday() in pw)) < 0.5      # 曜日の合計＝両方の週にある曜日の、今週の合計
+        cw = {(datetime.date(2026, MO_, 1) + datetime.timedelta(days=d - 1)).weekday() for d in range(C['d0'], C['d1'] + 1)}          # 今週にある曜日だけ（同じ曜日どうしで比べる）
+        assert abs(X['pTot'] - sum(day[('ALL', '荒利益高', 2026, d)] for d in range(P['d0'], P['d1'] + 1) if (datetime.date(2026, MO_, 1) + datetime.timedelta(days=d - 1)).weekday() in cw)) < 0.5
         for r in X['rows']:
             if r['diff'] is None: assert all(v is None for v in r['cat'].values()); continue   # 片方の週にない曜日は差を出さない
             assert abs(sum(v for v in r['cat'].values()) - r['diff']) < 0.5
         DM = js([('dowMatrix', [D[dept]['ALL'], '販売高', [dict(d0=p['d0'], d1=p['d1']) for p in WK], N])])[0]
         for i, r in enumerate(DM):
-            ds = [d for d in range(1, N + 1) if (datetime.date(2026, 10, 1) + datetime.timedelta(days=d - 1)).weekday() == i]
+            ds = [d for d in range(1, N + 1) if (datetime.date(2026, MO_, 1) + datetime.timedelta(days=d - 1)).weekday() == i]
             assert abs(r['a26'] - sum(day[('ALL', '販売高', 2026, d)] for d in ds) / len(ds)) < 1e-6
-            ds = [d for d in range(1, 32) if datetime.date(2025, 10, d).weekday() == i]
+            ds = [d for d in range(1, D['meta'].get('DIM', 31) + 1) if datetime.date(2025, MO_, d).weekday() == i]
             assert abs(r['a25'] - sum(day[('ALL', '販売高', 2025, d)] for d in ds) / len(ds)) < 1e-6
         calls = []; keys = []
         for sc in ['ALL'] + list(SN.values()):
@@ -191,7 +199,7 @@ def test_real_data():
         for i, (sc, met) in enumerate(keys):
             r, X, bt = res[3 * i], res[3 * i + 1], res[3 * i + 2]
             s26 = sum(day[(sc, met, 2026, d)] for d in range(1, N + 1)); s25 = sum(day[(sc, met, 2025, d)] for d in range(1, N + 1))
-            rest = sum(day[(sc, met, 2025, d)] for d in range(N + 1, 32))
+            rest = sum(day[(sc, met, 2025, d)] for d in range(N + 1, D['meta'].get('DIM', 31) + 1))
             assert abs(r['s26'] - s26) < 0.5 and abs(r['s25'] - s25) < 0.5, (dept, sc, met)
             assert abs(r['fc'] - (s26 + rest * s26 / s25)) < 0.5, (dept, sc, met)
             assert abs(r['s26'] - D[dept][sc]['kpi']['p26'][met]) < 0.5          # 日別の合計＝KPIの合計
@@ -204,6 +212,7 @@ def test_real_data():
                 rr = sum(day[(sc, met, 2026, d)] for d in range(1, k + 1)) / sum(day[(sc, met, 2025, d)] for d in range(1, k + 1))
                 p = sum(day[(sc, met, 2025, d)] * rr for d in range(k + 1, N + 1)); q = sum(day[(sc, met, 2026, d)] for d in range(k + 1, N + 1))
                 errs.append(abs(p - q) / q * 100)
+            if not errs: assert bt is None; n += 1; continue   # データが10日未満のときは誤差の目安を出さない
             assert abs(bt['mae'] - sum(errs) / len(errs)) < 1e-6 and bt['n'] == len(errs)
             n += 1
     print(f'      本物のCSVで {n} 通り（部門×店舗×指標）を照合')

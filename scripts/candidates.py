@@ -91,23 +91,23 @@ def _down(c):
     return {'高': '中', '中': '低', '低': '低'}[c]
 
 
-def _rng(d0, d1, wd):
-    L = lambda d: f'10/{d}' if d <= 31 else f'11/{d - 31}'
+def _rng(d0, d1, wd, DTd):
+    L = lambda d: f'{DTd(d).month}/{DTd(d).day}'
     return f'{L(d0)}（{wd(d0)}）〜{L(d1)}（{wd(d1)}）'
 
 
-def build(df, dept, ff, d0, d1, weeks, is_off, clean, year=2026, reclass=None):
+def build(df, dept, ff, d0, d1, weeks, is_off, clean, year=2026, reclass=None, month=10):
     """df: その部門の全データ（year, d, store, cat, 商品名, M）。d0〜d1 が対象期間。
     weeks: 今年の週 [(start,end), ...]（古い順）。is_off(d): 土日祝なら True。
     reclass: {カテゴリー: 説明}。前年から分類が変わったカテゴリーは、前年比の確度を「低」にする。"""
     reclass = reclass or {}
-    DTd = lambda d: datetime.date(year, 10, 1) + datetime.timedelta(days=d - 1)
+    DTd = lambda d: datetime.date(year, month, 1) + datetime.timedelta(days=d - 1)
     wd = lambda d: '月火水木金土日'[DTd(d).weekday()]
     out = []
     y = df[(df.year == year)]
     p = y[y.d.between(d0, d1)]
     nd_period = d1 - d0 + 1
-    per = _rng(d0, d1, wd) + f'・{nd_period}日間'
+    per = _rng(d0, d1, wd, DTd) + f'・{nd_period}日間'
 
     # ---- 店舗×単品の日別 ----
     g = p.groupby(['store', 'cat', '商品名', 'd'])[M].sum()
@@ -191,11 +191,12 @@ def build(df, dept, ff, d0, d1, weeks, is_off, clean, year=2026, reclass=None):
                 check='追加した分が何時ごろ売れたか・売れ残ったか（売れ残りが続けば元に戻す）'))
 
     # ---- 急変：先週比（店舗×カテゴリー、店舗×単品） ----
-    if len(weeks) >= 2:
+    # 先週・今週のどちらかが3日未満（月初の端の週など）のときは、先週比を出さない
+    if len(weeks) >= 2 and min(weeks[-2][1] - weeks[-2][0], weeks[-1][1] - weeks[-1][0]) + 1 >= 3:
         (ps, pe), (cs, ce) = weeks[-2], weeks[-1]
         pdays = list(range(ps, pe + 1)); cdays = list(range(cs, ce + 1))
         offp = sum(is_off(d) for d in pdays); offc = sum(is_off(d) for d in cdays)
-        rng = f'今週 {_rng(cs, ce, wd)}（{len(cdays)}日・土日祝{offc}日） vs 先週 {_rng(ps, pe, wd)}（{len(pdays)}日・土日祝{offp}日）'
+        rng = f'今週 {_rng(cs, ce, wd, DTd)}（{len(cdays)}日・土日祝{offc}日） vs 先週 {_rng(ps, pe, wd, DTd)}（{len(pdays)}日・土日祝{offp}日）'
         yy = y[y.d.between(ps, ce)]
         for level in ['cat', 'sku']:
             keys = ['store', 'cat'] if level == 'cat' else ['store', 'cat', '商品名']

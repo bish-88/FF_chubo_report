@@ -4,69 +4,108 @@ ROOT=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR=os.environ.get('DATA_DIR',os.path.join(ROOT,'data'))
 OUT_FILE=os.environ.get('OUT_FILE',os.path.join(ROOT,'index.html'))
 m=['販売数','販売高','廃棄数','廃棄高','荒利益高']
-SN={'新御堂筋上新田':'上新田','吹田朝日町':'朝日町','豊中服部元町一丁目':'元町一','吹田豊津中学校前':'豊津中','吹田青山台三丁目':'青山台'}
+SN={'新御堂筋上新田':'上新田','吹田朝日町':'朝日町','豊中服部元町一丁目':'元町一','吹田豊津中学校前':'豊津中','吹田青山台三丁目':'青山台','箕面白島二丁目':'白島二','豊中原田南一丁目':'原田南'}
 STORES=list(SN.values())
 COV={}  # 部門ごとの「データがある日」（年・店舗・日）。欠損日と実績ゼロを区別するために使う
-def read(files,catfn,key):
-    dfs=[]
-    for f in files:
-        d=pd.read_csv(f,encoding='cp932',dtype=str)[['年月日','店舗名','CLASS名','SUBCLASS名','商品名']+m]
-        dfs.append(d)
+WXC=['天気','降水量','最高気温','最低気温','湿度']
+import calendar
+Y=int(os.environ.get('REPORT_YEAR','2026')); LY=Y-1
+def _raw(files):
+    dfs=[pd.read_csv(f,encoding='cp932',dtype=str) for f in files]
     df=pd.concat(dfs)
+    for c in WXC:
+        if c not in df.columns: df[c]=None
+    return df[['年月日','店舗名','CLASS名','SUBCLASS名','商品名']+m+WXC]
+RAW={'FF':_raw(sorted(glob.glob(os.path.join(DATA_DIR,'FF','*.csv')))),'厨房':_raw(sorted(glob.glob(os.path.join(DATA_DIR,'厨房','*.csv'))))}
+# 対象の月：今年のCSVの最初の日の月（10月のCSVなら10、11月なら11）
+_d26=pd.to_datetime(pd.concat([RAW[k].年月日 for k in RAW]))
+MO=int(os.environ.get('REPORT_MONTH') or _d26[_d26.dt.year==Y].min().month)
+DIM=calendar.monthrange(Y,MO)[1]   # その月の日数（11月なら30）
+def read(raw,catfn,key):
+    df=raw.copy()
     for c in m: df[c]=pd.to_numeric(df[c].str.replace(',',''),errors='coerce').fillna(0)
     df['date']=pd.to_datetime(df['年月日']); df['year']=df.date.dt.year
-    # 日付は「10月1日からの通し日数」で持つ（10/31＝31、11/1＝32）。11月の日は週別の比較だけに使う
-    df['d']=(df.date-pd.to_datetime(df.year.astype(str)+'-10-01')).dt.days+1
-    df=df[(df.d>=1)&((df.year==2026)|(df.d<=31))]
+    df=df[df.year.isin([Y,LY])]
+    # 日付は「月の1日からの通し日数」で持つ（例：11/30＝30、12/1＝31）。翌月の日は週別の比較だけに使う
+    df['d']=(df.date-pd.to_datetime(df.year.astype(str)+f'-{MO:02d}-01')).dt.days+1
+    df=df[(df.d>=1)&((df.year==Y)|(df.d<=DIM))]
     df['cat']=catfn(df); df['store']=df.店舗名.map(SN)
     COV[key]=set(zip(df.year,df.store,df.d))
     df=df[(df[m]!=0).any(axis=1)&df.cat.notna()]
     return df.drop_duplicates(['年月日','店舗名','SUBCLASS名','商品名']+m)
 catmap={'販売）からあげクン他　ホット':'からあげクン','ホットＦＦ':'ホットFF','常温ＦＦ':'常温FF','販売）サーマル　常温':'サーマル常温','販売）マチカフェ':'マチカフェ','中華まん　什器販売':'中華まん'}
-FF=read(sorted(glob.glob(os.path.join(DATA_DIR,'FF','*.csv'))),lambda d:d.CLASS名.map(catmap),'FF')
-KI=read(sorted(glob.glob(os.path.join(DATA_DIR,'厨房','*.csv'))),lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])),'厨房')
+FF=read(RAW['FF'],lambda d:d.CLASS名.map(catmap),'FF')
+KI=read(RAW['厨房'],lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])),'厨房')
+# 店舗はCSVに出てくる店だけ（SNの順）
+STORES=[s for s in SN.values() if s in set(FF.store)|set(KI.store)]
 F=float
 # 今年のデータが何日まであるか（FF・厨房で共通の日数）
-N=int(min(FF[(FF.year==2026)&(FF.d<=31)].d.max(),KI[(KI.year==2026)&(KI.d<=31)].d.max()))
+N=int(min(FF[(FF.year==Y)&(FF.d<=DIM)].d.max(),KI[(KI.year==Y)&(KI.d<=DIM)].d.max()))
 # 週別の比較で使う最後の日（11月の日を含む。10月の集計・前年比は N まで）
-NX=int(min(FF[FF.year==2026].d.max(),KI[KI.year==2026].d.max()))
-def DT(y,d): return datetime.date(y,10,1)+datetime.timedelta(days=int(d)-1)
-def DLAB(d): x=DT(2026,d); return f'{x.month}/{x.day}'
-def RNG(d0,d1): a,b=DT(2026,d0),DT(2026,d1); return f'{a.month}/{a.day}〜{b.day}' if a.month==b.month else f'{a.month}/{a.day}〜{b.month}/{b.day}'
+NX=int(min(FF[FF.year==Y].d.max(),KI[KI.year==Y].d.max()))
+def DT(y,d): return datetime.date(y,MO,1)+datetime.timedelta(days=int(d)-1)
+def DLAB(d): x=DT(Y,d); return f'{x.month}/{x.day}'
+def RNG(d0,d1): a,b=DT(Y,d0),DT(Y,d1); return f'{a.month}/{a.day}〜{b.day}' if a.month==b.month else f'{a.month}/{a.day}〜{b.month}/{b.day}'
 def is_we(y,d): return DT(y,d).weekday()>=5
 def tot(x): s=x[m].sum(); return {k:F(s[k]) for k in m}
 def clean(n): return ' '.join(n.replace('●','').replace('　',' ').split())
 AL={'常温　カリパン　ＫＹ':'常温　カリパン　Ｙ','常温　ジャイアントポークフランク　１本':'ＨＯＴ　ジャイアントポークフランク','常温　なんこつ入りつくね棒　１本':'ＨＯＴ　なんこつ入りつくね棒　１本'}
-# weather
-rain=[0,0,2.5,13,2.5,0,0,0,0,0,0,5.5,0,0,2,1,0,6.5,11.5,4.5,0,2.5,0,0,12.5,1,0,0,0,0,36]
-tmax=[28.5,28,25.8,22.4,25.1,29.7,31.2,31.8,28.2,25.9,28.5,25.7,29,29.8,27.6,26.4,28.9,26.3,23.1,24,19.5,15.9,23.6,22.7,22.2,21.3,22.5,19.3,19.5,22.3,17.1]
-W=pd.DataFrame({'d':range(1,32),'rain':rain,'tmax':tmax})
-W['wd']=[datetime.date(2025,10,d).weekday() for d in W.d]
-W['type']=np.where((W.wd==6)|(W.d==13),'日祝',np.where(W.wd==5,'土','平日')); W['wet']=W.rain>=2
-# 今年の天気実績（気象庁 大阪 日別値）。日付を追加したら同じ形で足していく
-# 気象庁 大阪の日別値。確認できなかった日は入れない（None＝未確認。0にはしない）
-RAIN26={1:0,2:0,3:0,4:14.0,5:10.0,6:0,7:0,8:0,9:0,10:0,11:0,12:0,13:0,14:0.5,15:0,16:0,17:0,18:0,20:3.5,22:0,23:8.0,27:0}
-TMAX26={1:29.6,2:27.3,3:26.9,4:21.4,5:22.0,6:26.1,7:25.8,8:26.8,9:29.0,10:28.8,11:29.8,12:27.2,13:28.1,14:26.5,15:24.9,16:25.8,17:26.4,18:29.5,19:29.5,20:28.7,21:31.2,22:24.3,23:23.9,24:25.0,25:24.7,26:21.2,27:24.9,28:19.5,29:21.7,30:18.0,31:23.0}
-# 天気予報（吹田市、tenki.jp）。新しい予報に更新するときはここを書き換える
-FC_ISSUED='10/26 11時発表'
-FC=[(26,'雨',21,100),(27,'曇一時雨',25,70),(28,'晴時々曇',19,20),(29,'晴のち曇',20,30),(30,'雨時々曇',20,90),(31,'曇のち晴',23,40)]
-fc={r[0]:r for r in FC}; HOL={12:'スポーツの日'}; EV={31:'ハロウィン'}
+# 祝日（日曜・祝日として扱う）。月をまたいでも使えるように年ごとに持つ
+HOLIDAYS={2025:{(10,13):'スポーツの日',(11,3):'文化の日',(11,23):'勤労感謝の日',(11,24):'振替休日'},
+          2026:{(10,12):'スポーツの日',(11,3):'文化の日',(11,23):'勤労感謝の日'},
+          2027:{(1,1):'元日',(1,11):'成人の日'}}
+def holmap(y):
+    # 月の1日からの通し日数 → 祝日名（翌月の祝日も通し日数で持つ）
+    return {(datetime.date(y,mo,dd)-datetime.date(y,MO,1)).days+1:n for (mo,dd),n in HOLIDAYS.get(y,{}).items() if datetime.date(y,mo,dd)>=datetime.date(y,MO,1)}
+HOL_LY=holmap(LY); HOL={d:n for d,n in holmap(Y).items()}
+EV={}
+# 天気：CSVの「天気・降水量・最高気温・最低気温・湿度」（日ごとに全店同じ値）。値がない日は None（0にしない）
+def wxday(y):
+    z=pd.concat([RAW[k] for k in RAW]); z=z[pd.to_datetime(z.年月日).dt.year==y].copy()
+    z['d']=(pd.to_datetime(z.年月日)-pd.Timestamp(y,MO,1)).dt.days+1
+    out={}
+    for c in WXC[1:]: z[c]=pd.to_numeric(z[c],errors='coerce')
+    z['天気']=z['天気'].astype(str).str.strip("'* ").replace({'':None,'nan':None,'None':None})
+    for d,g in z.groupby('d'):
+        r={}
+        for c,k in [('降水量','rain'),('最高気温','tmax'),('最低気温','tmin'),('湿度','hum')]:
+            v=g[c].dropna(); r[k]=F(v.mode().iloc[0]) if len(v) else None
+        v=g['天気'].dropna(); r['code']=v.mode().iloc[0] if len(v) else None
+        out[int(d)]=r
+    return out
+WX_LY=wxday(LY); WX_Y=wxday(Y)
+_gv=lambda W,d,k:(W.get(d) or {}).get(k)
+rain=[_gv(WX_LY,d,'rain') for d in range(1,DIM+1)]; tmax=[_gv(WX_LY,d,'tmax') for d in range(1,DIM+1)]
+# 欠けている日は前後の平均で埋める（回帰分析用。画面の表には値のある日だけ出す）
+_fill=lambda a:list(pd.Series(a,dtype=float).interpolate(limit_direction='both').fillna(0))
+rain=_fill(rain); tmax=_fill(tmax)
+W=pd.DataFrame({'d':range(1,DIM+1),'rain':rain,'tmax':tmax})
+W['wd']=[DT(LY,d).weekday() for d in W.d]
+W['type']=np.where((W.wd==6)|W.d.isin(list(HOL_LY)),'日祝',np.where(W.wd==5,'土','平日')); W['wet']=W.rain>=2
+RAIN26={d:v['rain'] for d,v in WX_Y.items() if v.get('rain') is not None}
+TMAX26={d:v['tmax'] for d,v in WX_Y.items() if v.get('tmax') is not None}
+# 天気予報（吹田市、tenki.jp）。新しい予報に更新するときは forecast.json を書き換える：{"issued":"11/9 11時発表","days":[[9,"晴",20,10],...]}
+_fcp=os.path.join(DATA_DIR,'forecast.json')
+if os.path.exists(_fcp):
+    _fj=json.load(open(_fcp,encoding='utf-8')); FC_ISSUED=_fj['issued']; FC=[tuple(r) for r in _fj['days']]
+else: FC_ISSUED=''; FC=[]
+fc={r[0]:r for r in FC}
 def fx(series):
     X=pd.DataFrame({'c':1,'sat':(W.type=='土')*1,'sun':(W.type=='日祝')*1,'wet':W.wet*1,'t':W.tmax-25})
     b,*_=np.linalg.lstsq(X.values.astype(float),np.log(np.clip(series.values,0,None)+1),rcond=None)
     return dict(sat=F(np.exp(b[1])-1),sun=F(np.exp(b[2])-1),wet=F(np.exp(b[3])-1),t=F(np.exp(b[4])-1))
 
-HOL26={12}
-def is_off26(d): return DT(2026,d).weekday()>=5 or d in HOL26
+HOL26=set(HOL)
+def is_off26(d): return DT(Y,d).weekday()>=5 or d in HOL26
 def weekly(x,ns,cats):
     # 今年のデータを月曜始まりの週に分け、1店1日あたり（PSA/D）で比べる
-    y=x[x.year==2026]
+    y=x[x.year==Y]
     days=sorted(int(v) for v in y.d.unique())
-    wkof=lambda d:DT(2026,d).isocalendar()[1]
+    wkof=lambda d:DT(Y,d).isocalendar()[1]
     weeks=[]
     for w in sorted({wkof(d) for d in days}):
         ds=[d for d in days if wkof(d)==w]
-        mon=datetime.date.fromisocalendar(2026,w,1)
+        mon=datetime.date.fromisocalendar(DT(Y,ds[0]).isocalendar()[0],w,1)
         def block(sel):
             sd=[d for d in ds if sel(d)]
             z=y[y.d.isin(sd)]
@@ -77,7 +116,7 @@ def weekly(x,ns,cats):
             out['cat']={c:psa(z[z.cat==c],len(sd)) for c in cats}
             return out
         weeks.append(dict(label=f"{mon.month}/{mon.day}週",start=ds[0],end=ds[-1],
-            first='月火水木金土日'[DT(2026,ds[0]).weekday()],last='月火水木金土日'[DT(2026,ds[-1]).weekday()],
+            first='月火水木金土日'[DT(Y,ds[0]).weekday()],last='月火水木金土日'[DT(Y,ds[-1]).weekday()],
             all=block(lambda d:True),wk=block(lambda d:not is_off26(d)),we=block(is_off26)))
     # 曜日別 PSA/D（販売高・荒利益高・廃棄高）
     byd={}
@@ -93,31 +132,31 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
     def bycat(x):
         g=x.groupby('cat')[m].sum().reindex(cats).fillna(0); return {c:{k:F(g.loc[c,k]) for k in m} for c in cats}
     def scope(x,single,stores):
-        y25=x[x.year==2025]; y26all=x[x.year==2026]; y26=y26all[y26all.d.between(d0,d1)]; sp25=y25[y25.d.between(d0,d1)]
+        y25=x[x.year==LY]; y26all=x[x.year==Y]; y26=y26all[y26all.d.between(d0,d1)]; sp25=y25[y25.d.between(d0,d1)]
         o={'kpi':{'p25':tot(sp25),'p26':tot(y26),'m25':tot(y25)}}
         # データがない日は None（グラフでは空白）。データがあって売れなかった日は 0
-        o['daily25']={k:[F(v) if has(2025,stores,d) else None for d,v in y25.groupby('d')[k].sum().reindex(range(1,32),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
-        o['daily26']={k:[F(v) if has(2026,stores,d) else None for d,v in y26all.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
-        o['days']={'p26':sum(has(2026,stores,d) for d in range(d0,d1+1)),'p25':sum(has(2025,stores,d) for d in range(d0,d1+1))}
+        o['daily25']={k:[F(v) if has(LY,stores,d) else None for d,v in y25.groupby('d')[k].sum().reindex(range(1,DIM+1),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
+        o['daily26']={k:[F(v) if has(Y,stores,d) else None for d,v in y26all.groupby('d')[k].sum().reindex(range(1,N+1),fill_value=0).items()] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
+        o['days']={'p26':sum(has(Y,stores,d) for d in range(d0,d1+1)),'p25':sum(has(LY,stores,d) for d in range(d0,d1+1))}
         # 日ごとの「データのある店舗数」。全店の日別は、一部の店舗しかない日を前年比・予測の計算から外すために使う
-        o['cov26']=[sum((2026,s,d) in COV[key] for s in stores) for d in range(1,N+1)]
+        o['cov26']=[sum((Y,s,d) in COV[key] for s in stores) for d in range(1,N+1)]
         # 曜日別の増減を見るための、今年のカテゴリー別の日別値（データがない日は None）
         g=y26all.groupby(['cat','d'])[['販売高','荒利益高','廃棄高']].sum()
-        o['dcat26']={c:{k:[(F(g.loc[(c,d),k]) if (c,d) in g.index else (0.0 if has(2026,stores,d) else None)) for d in range(1,N+1)] for k in ['販売高','荒利益高','廃棄高']} for c in cats}
-        o['cov25']=[sum((2025,s,d) in COV[key] for s in stores) for d in range(1,32)]
+        o['dcat26']={c:{k:[(F(g.loc[(c,d),k]) if (c,d) in g.index else (0.0 if has(Y,stores,d) else None)) for d in range(1,N+1)] for k in ['販売高','荒利益高','廃棄高']} for c in cats}
+        o['cov25']=[sum((LY,s,d) in COV[key] for s in stores) for d in range(1,DIM+1)]
         o['nst']=len(stores)
         # 10月の後の日（週別の比較用）。ext26[指標][i] は N+1+i 日目
         if NX>N:
-            o['ext26']={k:[F(y26all[y26all.d==d][k].sum()) if has(2026,stores,d) else None for d in range(N+1,NX+1)] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
-            o['extcov26']=[sum((2026,s,d) in COV[key] for s in stores) for d in range(N+1,NX+1)]
-            o['extcat26']={c:{k:[(F(y26all[(y26all.d==d)&(y26all.cat==c)][k].sum()) if has(2026,stores,d) else None) for d in range(N+1,NX+1)] for k in ['販売高','荒利益高','廃棄高']} for c in cats}
+            o['ext26']={k:[F(y26all[y26all.d==d][k].sum()) if has(Y,stores,d) else None for d in range(N+1,NX+1)] for k in ['荒利益高','廃棄高','販売数','販売高','廃棄数']}
+            o['extcov26']=[sum((Y,s,d) in COV[key] for s in stores) for d in range(N+1,NX+1)]
+            o['extcat26']={c:{k:[(F(y26all[(y26all.d==d)&(y26all.cat==c)][k].sum()) if has(Y,stores,d) else None) for d in range(N+1,NX+1)] for k in ['販売高','荒利益高','廃棄高']} for c in cats}
         o['cat']={'p25':bycat(sp25),'p26':bycat(y26),'m25':bycat(y25)}
         nc=x[~x.cat.isin(excl)]
-        a=nc[(nc.year==2026)&nc.d.between(d0,d1)]; b=nc[(nc.year==2025)&nc.d.between(d0,d1)]; mm=nc[nc.year==2025]
+        a=nc[(nc.year==Y)&nc.d.between(d0,d1)]; b=nc[(nc.year==LY)&nc.d.between(d0,d1)]; mm=nc[nc.year==LY]
         p=a.groupby(['cat','商品名'])[m].sum()
         sd=a.groupby(['cat','商品名','store','d'])[['販売数','廃棄数']].sum(); sd=sd[sd.販売数+sd.廃棄数>0]
         p['sd']=sd.groupby(['cat','商品名']).size(); p['wsd']=sd.assign(z=sd.廃棄数>0).groupby(['cat','商品名']).z.sum()
-        sdr=sd.reset_index(); sdr['we']=[is_we(2026,int(v)) for v in sdr.d]
+        sdr=sd.reset_index(); sdr['we']=[is_we(Y,int(v)) for v in sdr.d]
         p['wwk']=sdr[~sdr.we].groupby(['cat','商品名']).廃棄数.mean(); p['wwe']=sdr[sdr.we].groupby(['cat','商品名']).廃棄数.mean()
         pb=b.groupby('商品名')[m].sum(); pm=mm.groupby('商品名')[m].sum()
         rows=[]; minsold=3 if single else 10
@@ -140,7 +179,7 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
         sp=a.groupby(['store','cat','商品名'])[['販売数','廃棄数','廃棄高','荒利益高']].sum()
         dd=a.groupby(['store','cat','商品名','d'])[['販売数','廃棄数']].sum(); dd=dd[dd.販売数+dd.廃棄数>0]
         sp['days']=dd.groupby(['store','cat','商品名']).size()
-        ddr=dd.reset_index(); ddr['we']=[is_we(2026,int(v)) for v in ddr.d]
+        ddr=dd.reset_index(); ddr['we']=[is_we(Y,int(v)) for v in ddr.d]
         sp['wwk']=ddr[~ddr.we].groupby(['store','cat','商品名']).廃棄数.mean(); sp['wwe']=ddr[ddr.we].groupby(['store','cat','商品名']).廃棄数.mean()
         sp['wmin']=ddr.groupby(['store','cat','商品名']).廃棄数.min(); sp['zd']=ddr.assign(z=ddr.廃棄数==0).groupby(['store','cat','商品名']).z.sum()
         inc=sp[(sp.廃棄数==0)&(sp.days>=max(min(4,nd),round(nd*0.8)))&(sp.販売数/sp.days>=(4 if ff else 2))]
@@ -151,18 +190,21 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
         o['nc']={'p26':tot(a),'p25':tot(b),'m25':tot(mm)}
         if light: return o
         # weather / daytype
-        yy=x[x.year==2025]; dd2=yy.groupby('d')[m].sum().reindex(range(1,32),fill_value=0)
-        ncd=nc[nc.year==2025].groupby('d')[['販売数','廃棄数']].sum().reindex(range(1,32),fill_value=0)
+        yy=x[x.year==LY]; dd2=yy.groupby('d')[m].sum().reindex(range(1,DIM+1),fill_value=0)
+        ncd=nc[nc.year==LY].groupby('d')[['販売数','廃棄数']].sum().reindex(range(1,DIM+1),fill_value=0)
         dd2['type']=W.type.values; dd2['wet']=W.wet.values
         g=dd2.groupby('type')[['荒利益高','廃棄高','販売高']].mean(); gw=dd2.groupby('wet')[['荒利益高','廃棄高','販売高']].mean()
         ng=ncd.assign(type=W.type.values).groupby('type').sum()
         ST={t:dict(amt=F(g.loc[t,'販売高']),gp=F(g.loc[t,'荒利益高']),idx=F(g.loc[t,'荒利益高']/g.loc['平日','荒利益高']),wy=F(g.loc[t,'廃棄高']),wr=F(ng.loc[t,'廃棄数']/max(1,ng.loc[t,'販売数']+ng.loc[t,'廃棄数']))) for t in ['平日','土','日祝']}
-        ST['wet']=dict(amt=F(gw.loc[True,'販売高']/gw.loc[False,'販売高']-1),gp=F(gw.loc[True,'荒利益高']/gw.loc[False,'荒利益高']-1),wy=F(gw.loc[True,'廃棄高']/max(1,gw.loc[False,'廃棄高'])-1))
+        # 雨の日・雨でない日の両方があるときだけ、雨の影響を出す（天気データがない・雨の日がない月は 0）
+        if True in gw.index and False in gw.index:
+            ST['wet']=dict(amt=F(gw.loc[True,'販売高']/gw.loc[False,'販売高']-1),gp=F(gw.loc[True,'荒利益高']/gw.loc[False,'荒利益高']-1),wy=F(gw.loc[True,'廃棄高']/max(1,gw.loc[False,'廃棄高'])-1))
+        else: ST['wet']=dict(amt=0.0,gp=0.0,wy=0.0)
         o['st']=ST
         yoy=o['kpi']['p26']['荒利益高']/o['kpi']['p25']['荒利益高']; yoys=o['kpi']['p26']['販売高']/o['kpi']['p25']['販売高']
         cal=[]
-        for d in range(N+1,32):
-            dt=DT(2026,d); wd='月火水木金土日'[dt.weekday()]
+        for d in range(N+1,DIM+1):
+            dt=DT(Y,d); wd='月火水木金土日'[dt.weekday()]
             typ='日祝' if dt.weekday()==6 or d in HOL else '土' if dt.weekday()==5 else '平日'
             f=fc.get(d); wet=bool(f and f[3]>=50)
             idx=ST[typ]['idx']*(1+ST['wet']['gp'] if wet else 1)
@@ -174,59 +216,66 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
     out={'cats':cats,'excl':excl,'colors':colors,'ff':ff,'ALL':scope(df,False,STORES)}
     for s in STORES: out[s]=scope(df[df.store==s],True,[s])
     rg=lambda z:z.d.between(d0,d1)
-    out['stores']={s:{'p26':tot(df[(df.store==s)&(df.year==2026)&rg(df)]),'p25':tot(df[(df.store==s)&(df.year==2025)&rg(df)]),
-        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==2026)&rg(wdf)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==2025)&rg(wdf)]),
-        'days26':sum(has(2026,[s],d) for d in range(d0,d1+1)),'days25':sum(has(2025,[s],d) for d in range(d0,d1+1))} for s in STORES}
+    out['stores']={s:{'p26':tot(df[(df.store==s)&(df.year==Y)&rg(df)]),'p25':tot(df[(df.store==s)&(df.year==LY)&rg(df)]),
+        'nc26':tot(wdf[(wdf.store==s)&(wdf.year==Y)&rg(wdf)]),'nc25':tot(wdf[(wdf.store==s)&(wdf.year==LY)&rg(wdf)]),
+        'days26':sum(has(Y,[s],d) for d in range(d0,d1+1)),'days25':sum(has(LY,[s],d) for d in range(d0,d1+1))} for s in STORES}
     if light: return out
-    y=df[df.year==2025]
+    y=df[df.year==LY]
     res={}
     for c in ['ALL']+cats:
         x=y if c=='ALL' else y[y.cat==c]
-        dd=x.groupby('d')[['販売数','荒利益高']].sum().reindex(range(1,32),fill_value=0)
+        dd=x.groupby('d')[['販売数','荒利益高']].sum().reindex(range(1,DIM+1),fill_value=0)
         res[c]={'qty':fx(dd.販売数),'gp':fx(dd.荒利益高)}
-    tq=y.groupby('d').販売数.sum().reindex(range(1,32),fill_value=0)
+    tq=y.groupby('d').販売数.sum().reindex(range(1,DIM+1),fill_value=0)
     wx=dict(W=dict(d=list(W.d),tmax=tmax,rain=rain,wet=[bool(v) for v in W.wet],type=list(W.type),tq=[F(v) for v in tq]),res=res)
     if ff and 'マチカフェ' in cats:
         yy=y[y.cat=='マチカフェ'].copy(); yy['ice']=yy.商品名.str.contains('アイス')
-        mc=yy.groupby(['d','ice']).販売数.sum().unstack().fillna(0).reindex(range(1,32),fill_value=0)
+        mc=yy.groupby(['d','ice']).販売数.sum().unstack().fillna(0).reindex(range(1,DIM+1),fill_value=0)
         wx['W']['ice']=[F(v) for v in mc[True]/(mc[True]+mc[False])]
         wx['corr']=F(np.corrcoef(tmax,wx['W']['ice'])[0,1])
     if ff and '中華まん' in cats:
-        ch=y[y.cat=='中華まん'].groupby('d').販売数.sum().reindex(range(1,32),fill_value=0)
+        ch=y[y.cat=='中華まん'].groupby('d').販売数.sum().reindex(range(1,DIM+1),fill_value=0)
         wx['W']['chuka']=[F(v) for v in ch]
         wx['chukaCorr']=F(np.corrcoef(tmax,ch)[0,1])
-        bands=[(0,22),(22,26),(26,40)]
+        # 気温の区分：10月は 22℃・26℃ で区切る。ほかの月は前年の最高気温を3等分（各区分3日以上）して決める
+        if MO==10: bands=[(0,22),(22,26),(26,40)]
+        else:
+            q1,q2=[int(round(v)) for v in np.quantile(W.tmax,[1/3,2/3])]
+            if q2<=q1: q2=q1+1
+            bands=[(-10,q1),(q1,q2),(q2,45)]
         wx['chukaBand']=[dict(lo=lo,hi=hi,n=int(((W.tmax>=lo)&(W.tmax<hi)).sum()),avg=F(ch[((W.tmax>=lo)&(W.tmax<hi)).values].mean())) for lo,hi in bands]
     if not ff:
         wx['corr']=F(np.corrcoef(tmax,tq)[0,1])
         # by category corr with tmax
-        wx['catcorr']={c:F(np.corrcoef(tmax,y[y.cat==c].groupby('d').販売数.sum().reindex(range(1,32),fill_value=0))[0,1]) for c in cats}
+        wx['catcorr']={c:F(np.corrcoef(tmax,y[y.cat==c].groupby('d').販売数.sum().reindex(range(1,DIM+1),fill_value=0))[0,1]) for c in cats}
     out['wx']=wx
     return out
 def present(df,order):
     have=lambda y:set(df[df.year==y].cat.unique())
-    return [c for c in order if c in have(2025) and c in have(2026)]
+    return [c for c in order if c in have(LY) and c in have(Y)]
 FFC=present(FF,['からあげクン','マチカフェ','ホットFF','常温FF','サーマル常温','中華まん'])
 D={'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True),
    '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False)}
 WD='月火水木金土日'
 def wcount(y): 
-    ds=[datetime.date(y,10,d) for d in range(1,N+1)]
-    hol={2026:{12},2025:{13}}[y]  # 祝日（スポーツの日）も土日祝に含める
-    return dict(we=sum(d.weekday()>=5 or d.day in hol for d in ds),first=WD[ds[0].weekday()],last=WD[ds[-1].weekday()])
-D['meta']=dict(N=N,w26=wcount(2026),w25=wcount(2025),fc=FC_ISSUED,
-  wx26=[dict(d=d,rain=RAIN26.get(d),tmax=TMAX26.get(d)) for d in range(1,N+1)],
+    ds=[DT(y,d) for d in range(1,N+1)]
+    hol=set(HOL if y==Y else HOL_LY)  # 祝日も土日祝に含める
+    return dict(we=sum(d.weekday()>=5 or (d-datetime.date(y,MO,1)).days+1 in hol for d in ds),first=WD[ds[0].weekday()],last=WD[ds[-1].weekday()])
+D['meta']=dict(N=N,w26=wcount(Y),w25=wcount(LY),fc=FC_ISSUED,Y=Y,LY=LY,MO=MO,DIM=DIM,stores=STORES,sfull={v:k for k,v in SN.items() if v in STORES},
+  hol26={str(d):n for d,n in HOL.items()},hol25={str(d):n for d,n in HOL_LY.items()},wxsrc='CSV（天気・降水量・最高／最低気温・湿度）',
+  wx26=[dict(d=d,**{k:(WX_Y.get(d) or {}).get(k) for k in ['rain','tmax','tmin','hum','code']}) for d in range(1,max(N,NX)+1)],
+  wx25=[dict(d=d,**{k:(WX_LY.get(d) or {}).get(k) for k in ['rain','tmax','tmin','hum','code']}) for d in range(1,DIM+1)],
   dropped=[c for c in ['マチカフェ','中華まん'] if c not in FFC])
 # 期間（累計・週ごと）。週は月曜始まり。新しい週から順に並べる
-def wd_of(d): return '月火水木金土日'[DT(2026,d).weekday()]
+def wd_of(d): return '月火水木金土日'[DT(Y,d).weekday()]
 PERIODS=[dict(k='all',label='累計',d0=1,d1=N)]
 for w in reversed(D['FF']['ALL']['wk']['weeks']):
     PERIODS.append(dict(k=f"w{w['start']}",label=w['label'],d0=w['start'],d1=min(w['end'],N)))   # 期間ボタンは10月の日だけ（前年比のため）
-for i,pp in enumerate(PERIODS[1:]): pp['tag']='今週' if i==0 else '先週' if i==1 else ''
+for i,pp in enumerate(PERIODS[1:]): pp['tag']='今週' if i==0 else '先週' if i==1 and pp['d1']-pp['d0']+1>=3 else ''   # 3日未満の端の週は「先週」と呼ばない
 for pp in PERIODS:
     pp['n']=pp['d1']-pp['d0']+1; pp['range']=RNG(pp['d0'],pp['d1'])
     pp['first']=wd_of(pp['d0']); pp['last']=wd_of(pp['d1'])
-    pp['we26']=sum(is_off26(d) for d in range(pp['d0'],pp['d1']+1)); pp['we25']=sum(datetime.date(2025,10,d).weekday()>=5 or d==13 for d in range(pp['d0'],pp['d1']+1))
+    pp['we26']=sum(is_off26(d) for d in range(pp['d0'],pp['d1']+1)); pp['we25']=sum(DT(LY,d).weekday()>=5 or d in HOL_LY for d in range(pp['d0'],pp['d1']+1))
 D['meta']['periods']=PERIODS
 # 週別の比較（先週比・曜日別・週別グラフ）で使う週。11月の日まで含めた丸ごとの週
 D['meta']['NX']=NX
@@ -237,11 +286,12 @@ D['PW']={w['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[
 D['meta']['built']=datetime.date.today().isoformat()   # ページを作った日（予測の更新日として表示）
 # 改善候補（実績からの自動抽出。式は scripts/candidates.py）
 # 2026年はジャイアントポークフランク・なんこつつくね棒がホットFF→常温FFへ移ったため、この2カテゴリーの前年比は確度を下げる
-RECLASS={'ホットFF':'2026年に一部商品が常温FFへ分類変更された','常温FF':'2026年に一部商品がホットFFから分類変更された'}
+RECLASS={'ホットFF':'2026年に一部商品が常温FFへ分類変更された','常温FF':'2026年に一部商品がホットFFから分類変更された'} if (Y,MO)==(2026,10) else {}
+D['meta']['reclass']=bool(RECLASS)   # 11月は前年（2025年11月）の時点で既に常温FFへ移っていたため、確度は下げない
 from candidates import build as cand_build
 WKS=[(w['start'],w['end']) for w in D['FF']['ALL']['wk']['weeks']]
-D['cand']={pp['k']:{'FF':cand_build(FF[FF.cat.isin(FFC)],'FF',True,pp['d0'],pp['d1'],WKS,is_off26,clean,reclass=RECLASS),
-                    '厨房':cand_build(KI,'厨房',False,pp['d0'],pp['d1'],WKS,is_off26,clean)} for pp in PERIODS}
+D['cand']={pp['k']:{'FF':cand_build(FF[FF.cat.isin(FFC)],'FF',True,pp['d0'],pp['d1'],WKS,is_off26,clean,year=Y,reclass=RECLASS,month=MO),
+                    '厨房':cand_build(KI,'厨房',False,pp['d0'],pp['d1'],WKS,is_off26,clean,year=Y,month=MO)} for pp in PERIODS}
 # ===== 実施管理 =====
 # 共有版：管理者が手元の data/actions.json に置いた実施記録を、ページに（暗号化して）同梱する。
 # data/ は GitHub に上げないので、このファイルも公開されない。ページ側では読み取り専用。
@@ -264,7 +314,7 @@ def dkey(store,name,cat): return store+'|'+('cat:'+cat if str(name).endswith('�
 def daily_table(df,dept):
     ks={dkey(c['store'],c['name'],c['cat']) for per in D['cand'].values() for c in per[dept]}
     ks|={dkey(r['store'],r['name'],r['cat']) for r in (D['actions_shared'] or {}).get('items',[]) if r['dept']==dept}
-    y=df[df.year==2026].copy(); y['nm']=y.商品名.map(clean); out={}
+    y=df[df.year==Y].copy(); y['nm']=y.商品名.map(clean); out={}
     cols=['販売数','廃棄数','廃棄高','荒利益高','販売高']
     for keys,mk in [(['store','nm','d'],lambda st,x:st+'|'+x),(['store','cat','d'],lambda st,x:st+'|cat:'+x)]:
         for (st,x,d),r in y.groupby(keys)[cols].sum().iterrows():

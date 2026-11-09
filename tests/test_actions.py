@@ -1,3 +1,4 @@
+import datetime
 """実施管理（共有版の読み込み・日別データ・実施前後の比較）を確かめる。
 
 python3 tests/test_actions.py で実行（node が必要）。
@@ -8,6 +9,7 @@ python3 tests/test_actions.py で実行（node が必要）。
 """
 import csv, glob, json, os, re, subprocess, sys, tempfile, collections
 
+MO_ = 10
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tests'))
 from test_build import make_fixture, build, load, M, SHORT
@@ -15,13 +17,17 @@ from test_build import make_fixture, build, load, M, SHORT
 SRC = open(os.path.join(ROOT, 'scripts', 'template.html'), encoding='utf-8').read()
 
 
+META = {}   # 本物のCSVの照合では meta（年・月・祝日）を入れる
+
+
 def js_eval(records, daily, N):
     """template.html の dKey と actEval をそのまま取り出して node で動かす。"""
     grab = lambda pat: re.search(pat, SRC, re.S).group(0)
     code = grab(r"const dKey=r=>[^\n]*\n") + grab(r"function actEval\(r,daily,N\)\{.*?\n\}\n")
     tmp = tempfile.mkdtemp(); f = os.path.join(tmp, 'in.json')
-    json.dump({'records': records, 'daily': daily, 'N': N}, open(f, 'w', encoding='utf-8'), ensure_ascii=False)
-    js = code + "const I=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));" \
+    json.dump({'records': records, 'daily': daily, 'N': N, 'meta': META}, open(f, 'w', encoding='utf-8'), ensure_ascii=False)
+    js = "let Y=2026,MO=10,MI=9,DIM=31,HOL26={12:'スポーツの日'};" + code + "const I=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));" \
+         "if(I.meta&&I.meta.MO){Y=I.meta.Y;MO=I.meta.MO;MI=MO-1;DIM=I.meta.DIM;HOL26=I.meta.hol26;}" \
          "console.log(JSON.stringify(I.records.map(r=>actEval(r,I.daily,I.N))));"
     out = subprocess.run(['node', '-e', js, f], capture_output=True, text=True, check=True).stdout
     return json.loads(out)
@@ -102,13 +108,14 @@ def test_real_data_eval():
     out = os.path.join(tempfile.mkdtemp(), 'p.html'); env = dict(os.environ, OUT_FILE=out); env.pop('REPORT_PASSWORD', None)
     subprocess.run([sys.executable, os.path.join(ROOT, 'scripts', 'build.py')], env=env, check=True, capture_output=True)
     D = load(open(out, encoding='utf-8').read()); N = D['meta']['N']
-    SN = {v: k for k, v in SHORT.items()}
+    global MO_; MO_ = D['meta'].get('MO', 10); META.update(D['meta']); DD = (N + 1) // 2 + 1   # 実施日＝データの中ほどの日
+    SN = D['meta'].get('sfull') or {v: k for k, v in SHORT.items()}
     cl = lambda n: ' '.join(n.replace('●', '').replace('　', ' ').split())
     num = lambda v: 0.0 if v in ('*', '') else float(v.replace(',', ''))
-    CM = {'販売）からあげクン他　ホット': 1, 'ホットＦＦ': 1, '常温ＦＦ': 1, '販売）サーマル　常温': 1, '中華まん　什器販売': 1}
+    CM = {'販売）からあげクン他　ホット': 1, 'ホットＦＦ': 1, '常温ＦＦ': 1, '販売）サーマル　常温': 1, '中華まん　什器販売': 1, '販売）マチカフェ': 1}
     n = 0
     for dept in ['FF', '厨房']:
-        recs = [dict(store=c['store'], cat=c['cat'], name=c['name'], dept=dept, done_date='2026-10-12')
+        recs = [dict(store=c['store'], cat=c['cat'], name=c['name'], dept=dept, done_date=f"{D['meta'].get('Y', 2026)}-{MO_:02d}-{DD:02d}")
                 for c in D['cand']['all'][dept] if c['type'] in ('廃棄削減', '増産')][:25]
         res = js_eval(recs, D['daily'][dept], N)
         day = collections.defaultdict(lambda: collections.defaultdict(float)); seen = set()
@@ -117,10 +124,10 @@ def test_real_data_eval():
                 ok = r['CLASS名'] in CM if dept == 'FF' else r['SUBCLASS名'] in ('弁当', '調理パン', '惣菜')
                 k = tuple(r[c] for c in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
                 if not ok or k in seen or all(num(r[c]) == 0 for c in M): continue
-                seen.add(k); _y, d = (lambda s: (lambda y, mo, dd: (y, dd if mo == 10 else 31 + dd if mo == 11 else -99))(*map(int, s.split('/'))))(r['年月日'])
+                seen.add(k); _y, d = (lambda s: (lambda y, mo, dd: (y, (datetime.date(y, mo, dd) - datetime.date(y, MO_, 1)).days + 1))(*map(int, s.split('/'))))(r['年月日'])
                 day[(r['店舗名'], cl(r['商品名']), d)]['q'] += num(r['販売数']); day[(r['店舗名'], cl(r['商品名']), d)]['gp'] += num(r['荒利益高'])
         for rec, e in zip(recs, res):
-            L = e['len']; aft = range(12, 12 + L); bef = range(12 - L, 12)
+            L = e['len']; aft = range(DD, DD + L); bef = range(DD - L, DD)
             for ds, side in [(aft, 'a'), (bef, 'b')]:
                 v = [day[(SN[rec['store']], rec['name'], d)] for d in ds if (SN[rec['store']], rec['name'], d) in day]
                 assert e[side]['n'] == len(v), (rec['name'], side)

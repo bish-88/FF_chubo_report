@@ -25,7 +25,7 @@ async def main():
                 await pg.click(f'#dept button[data-d="{dept}"]')
                 for per in pers:
                     await pg.click(f'.pb[data-k="{per}"]')
-                    for s in ['ALL', '上新田', '朝日町', '元町一', '豊津中', '青山台']:
+                    for s in ['ALL'] + await pg.evaluate("ALLD.meta.stores||['上新田','朝日町','元町一','豊津中','青山台']"):
                         await pg.click(f'.sw[data-s="{s}"]')
                         for t in TABS:
                             await pg.click(f'.tab[data-t="{t}"]'); checked += 1
@@ -44,7 +44,7 @@ async def main():
                                     await pg.click(f'[data-cf="{cf}"]')
                                 await pg.click('#cfLow'); await pg.click('#cfLow')
                             r = await pg.evaluate(r"""()=>{const t=document.body.innerText,bad=[];
-                              for(const pat of ['{{','NaN','undefined','Infinity','[object','=>','None']){const i=t.indexOf(pat);if(i>=0)bad.push(pat+': '+t.slice(Math.max(0,i-40),i+30).replace(/\n/g,' '))}
+                              for(const pat of ['{{','${','NaN','undefined','Infinity','[object','=>','None']){const i=t.indexOf(pat);if(i>=0)bad.push(pat+': '+t.slice(Math.max(0,i-40),i+30).replace(/\n/g,' '))}
                               if(/\bnull\b/.test(t))bad.push('null');
                               return {bad,ov:document.documentElement.scrollWidth>innerWidth+1,vis:[...document.querySelectorAll('section[data-tab]')].filter(e=>!e.hidden).length}}""")
                             if r['bad'] or r['ov'] or not r['vis']: problems.append((w, dept, per, s, t, r))

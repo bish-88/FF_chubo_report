@@ -11,7 +11,8 @@ sys.path.insert(0, os.path.join(ROOT, 'scripts'))
 import candidates as C
 
 M = C.M
-off = lambda d: (datetime.date(2026, 10, 1) + datetime.timedelta(days=d - 1)).weekday() >= 5
+MO_ = 10   # テスト用データは10月。本物のCSVの照合では meta の月に置き換える
+off = lambda d: (datetime.date(2026, MO_, 1) + datetime.timedelta(days=d - 1)).weekday() >= 5
 clean = lambda n: n
 
 
@@ -133,8 +134,9 @@ def test_real_data_reproduces():
     out = os.path.join(tempfile.mkdtemp(), 'p.html'); env = dict(os.environ, OUT_FILE=out); env.pop('REPORT_PASSWORD', None)
     subprocess.run([sys.executable, os.path.join(ROOT, 'scripts', 'build.py')], env=env, check=True, capture_output=True)
     D = json.loads(re.search(r'let ALLD=(\{.*?\});\n', open(out, encoding='utf-8').read()).group(1))
-    SN = {'新御堂筋上新田': '上新田', '吹田朝日町': '朝日町', '豊中服部元町一丁目': '元町一', '吹田豊津中学校前': '豊津中', '吹田青山台三丁目': '青山台'}
-    CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん'}
+    global MO_; MO_ = D['meta'].get('MO', 10)
+    SN = {'新御堂筋上新田': '上新田', '吹田朝日町': '朝日町', '豊中服部元町一丁目': '元町一', '吹田豊津中学校前': '豊津中', '吹田青山台三丁目': '青山台', '箕面白島二丁目': '白島二', '豊中原田南一丁目': '原田南'}
+    CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん', '販売）マチカフェ': 'マチカフェ'}
     num = lambda v: 0.0 if v in ('*', '') else float(v.replace(',', ''))
     cl = lambda n: ' '.join(n.replace('●', '').replace('　', ' ').split())
     checked = 0
@@ -146,7 +148,7 @@ def test_real_data_reproduces():
                 if not cat: continue
                 k = tuple(r[c] for c in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
                 if k in seen or all(num(r[c]) == 0 for c in M): continue
-                seen.add(k); y, d = (lambda s: (lambda y, mo, dd: (y, dd if mo == 10 else 31 + dd if mo == 11 else -99))(*map(int, s.split('/'))))(r['年月日'])
+                seen.add(k); y, d = (lambda s: (lambda y, mo, dd: (y, (datetime.date(y, mo, dd) - datetime.date(y, MO_, 1)).days + 1))(*map(int, s.split('/'))))(r['年月日'])
                 if y != 2026: continue
                 for c in M: day[(SN[r['店舗名']], cl(r['商品名']), d)][c] += num(r[c])
         for pk, per in D['cand'].items():

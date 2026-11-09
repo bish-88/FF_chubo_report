@@ -13,14 +13,15 @@ out = os.path.join(tempfile.mkdtemp(), 'plain.html')
 env = dict(os.environ, OUT_FILE=out); env.pop('REPORT_PASSWORD', None)
 subprocess.run([sys.executable, os.path.join(ROOT, 'scripts', 'build.py')], env=env, check=True, capture_output=True)
 D = json.loads(re.search(r'let ALLD=(\{.*?\});\n', open(out, encoding='utf-8').read()).group(1))
+MO_ = D['meta'].get('MO', 10); HOL_ = {int(k) for k in D['meta'].get('hol26', {'12': ''})}
 
-SN = {'新御堂筋上新田': '上新田', '吹田朝日町': '朝日町', '豊中服部元町一丁目': '元町一', '吹田豊津中学校前': '豊津中', '吹田青山台三丁目': '青山台'}
+SN = {'新御堂筋上新田': '上新田', '吹田朝日町': '朝日町', '豊中服部元町一丁目': '元町一', '吹田豊津中学校前': '豊津中', '吹田青山台三丁目': '青山台', '箕面白島二丁目': '白島二', '豊中原田南一丁目': '原田南'}
 ST = list(SN.values())
-CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん'}
+CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん', '販売）マチカフェ': 'マチカフェ'}
 M = ['販売数', '販売高', '廃棄数', '廃棄高', '荒利益高']
 num = lambda v: 0.0 if v in ('*', '') else float(v.replace(',', ''))
 clean = lambda n: ' '.join(n.replace('●', '').replace('　', ' ').split())
-off26 = lambda d: (datetime.date(2026, 10, 1) + datetime.timedelta(days=d - 1)).weekday() >= 5 or d == 12
+off26 = lambda d: (datetime.date(2026, MO_, 1) + datetime.timedelta(days=d - 1)).weekday() >= 5 or d in HOL_
 res = collections.Counter(); bad = []
 
 def cmp(lbl, a, b, tol=0.5):
@@ -36,7 +37,7 @@ for dp in ['FF', '厨房']:
             if not c: continue
             key = tuple(r[k] for k in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
             if key in seen: continue
-            seen.add(key); y, d = (lambda s: (lambda y, mo, dd: (y, dd if mo == 10 else 31 + dd if mo == 11 else -99))(*map(int, s.split('/'))))(r['年月日'])
+            seen.add(key); y, d = (lambda s: (lambda y, mo, dd: (y, (datetime.date(y, mo, dd) - datetime.date(y, MO_, 1)).days + 1))(*map(int, s.split('/'))))(r['年月日'])
             R.append(dict(y=y, d=d, s=SN[r['店舗名']], c=c, n=clean(r['商品名']), **{k: num(r[k]) for k in M}))
     for p in D['meta']['periods']:
         X = D[dp] if p['k'] == 'all' else D['P'][p['k']][dp]
@@ -51,7 +52,7 @@ for dp in ['FF', '厨房']:
                 z = [r for r in rr if r['y'] == 2026 and r['n'] == pr['name']]
                 for k, kk in [('販売数', 'sold'), ('販売高', 'amt'), ('廃棄数', 'w'), ('荒利益高', 'gp')]: cmp(f'単品 {dp}{p["k"]}{sc}{pr["name"]}{k}', sum(r[k] for r in z), pr[kk])
     for sc in ['ALL'] + ST:
-        rr = [r for r in R if sc == 'ALL' or r['s'] == sc]; ns = 5 if sc == 'ALL' else 1
+        rr = [r for r in R if sc == 'ALL' or r['s'] == sc]; ns = len(ST) if sc == 'ALL' else 1
         for y, key in [(2026, 'daily26'), (2025, 'daily25')]:
             for k, arr in D[dp][sc][key].items():
                 for i, v in enumerate(arr): cmp(f'日別 {dp}{sc}{y}/{i+1}{k}', sum(r[k] for r in rr if r['y'] == y and r['d'] == i + 1), v)
