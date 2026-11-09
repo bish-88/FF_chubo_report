@@ -461,7 +461,7 @@ tbody tr:hover td{background:var(--accent-soft)}
     <div class="summary"><div><h3>わかったこと</h3><ul id="wxFacts"></ul></div><div><h3>今後2週間の要注意日</h3><ul id="wxDays"></ul></div></div>
     <div class="g g-2">
       <div class="panel"><div class="ph"><h3>要因別 販売数への影響（前年{{M}}月）</h3><div class="legend"><span><i style="background:var(--f-sat)"></i>土曜</span><span><i style="background:var(--f-sun)"></i>日曜・祝日</span><span><i style="background:var(--f-rain)"></i>雨の日</span></div></div>
-        <p class="sub">平日・晴れの日を基準にした増減（％）。曜日・雨・気温を同時に考慮した回帰分析。相関であり、原因と断定するものではありません。</p>
+        <p class="sub">平日・晴れの日を100%とした比率（棒は100%からの差）。曜日・雨・気温を同時に考慮した回帰分析。相関であり、原因と断定するものではありません。</p>
         <div class="cv"><canvas id="cFx" role="img" aria-label="要因別の販売数への影響"></canvas></div></div>
       <div class="panel"><div class="ph"><h3 id="iceTitle">最高気温と販売数</h3><span class="sub">前年{{M}}月の日別</span></div>
         <div class="cv"><canvas id="cIce" role="img" aria-label="最高気温と販売数"></canvas></div>
@@ -534,9 +534,10 @@ const yen=v=>(v<0?'-':'')+'¥'+Math.abs(Math.round(v)).toLocaleString('ja-JP');
 const n0=v=>Math.round(v).toLocaleString('ja-JP');
 // 比較の基準が0・欠損のときは null（画面では「—」）。0%と区別する
 const pct=(a,b)=>(b&&a!=null&&isFinite(a/b))?((a/b-1)*100):null;
-const pf=(v,d=1)=>v==null?'—':(v>=0?'+':'-')+Math.abs(v).toFixed(d)+'%';
+const pf=(v,d=1)=>v==null||!isFinite(v)?'—':(100+v).toFixed(d)+'%';
+const ppt=(v,d=1)=>v==null||!isFinite(v)?'—':(v>=0?'+':'-')+Math.abs(v).toFixed(d)+'pt';
 const wrOf=o=>(o.販売数+o.廃棄数)?o.廃棄数/(o.販売数+o.廃棄数)*100:0;
-const chip=(d,inv)=>{if(d==null)return '<span class="chip flat">—</span>';const g=inv?d<0:d>0;const c=Math.abs(d)<1?'flat':(g?'up':'down');return `<span class="chip ${c}">${d>=0?'+':'-'}${Math.abs(d).toFixed(1)}%</span>`};
+const chip=(d,inv)=>{if(d==null)return '<span class="chip flat">—</span>';const g=inv?d<0:d>0;const c=Math.abs(d)<1?'flat':(g?'up':'down');return `<span class="chip ${c}">${pf(d)}</span>`};
 const ptchip=(d,inv)=>{if(d==null||!isFinite(d))return '<span class="chip flat">—</span>';const g=inv?d<0:d>0;return `<span class="chip ${Math.abs(d)<.3?'flat':(g?'up':'down')}">${d>=0?'+':'-'}${Math.abs(d).toFixed(1)}pt</span>`};
 const yTick=v=>Math.abs(v)>=10000?(v/10000).toFixed(v%10000?1:0)+'万':n0(v);
 const VL={increase:['t-inc','増産','--good'],keep:['t-keep','維持','--accent'],watch:['t-watch','注意','--warn'],reduce:['t-red','減産','--bad'],hold:['t-hold','判定保留','--ink-3']};
@@ -618,13 +619,13 @@ function renderSalesTop(){
   const fcN=cM.fc==null?'前年比が出せないため、予測は出していません。':
    `<b>着地予測 ${yen(cM.fc)}</b> ＝ 実績 ${yen(cM.act)}（${MO}/1〜${N}${cM.missAct?`・データのない日${cM.missAct}日は含まず`:''}）＋ 残り${cM.restOk.length}日の予測 ${yen(cM.restFc)}。<br>
     残りの予測 ＝ 前年の同じ日（${MO}/${N+1}〜${DIM}）の合計 ${yen(cM.base25)} × 前年比 ${cM.r.toFixed(3)}（${p.range}の同じ日付 ${cM.used.length}日：今年 ${yen(cM.s26)} ÷ 前年 ${yen(cM.s25)}）。${cM.restNg?`前年データのない${cM.restNg}日は予測に含めていません。`:''}<br>
-    前年${MO}月の実績 ${yen(m25[MK])} との差 <b>${cM.fc>=m25[MK]?'+':'-'}${yen(Math.abs(cM.fc-m25[MK])).replace('-','')}</b>（${pf(pct(cM.fc,m25[MK]))}）。<br>
+    前年${MO}月の実績 ${yen(m25[MK])} との差 <b>${cM.fc>=m25[MK]?'+':'-'}${yen(Math.abs(cM.fc-m25[MK])).replace('-','')}</b>（前年比 ${pf(pct(cM.fc,m25[MK]))}）。<br>
     誤差の目安：${bt?`±${bt.mae.toFixed(1)}%（今年${MO}/1〜${N}のデータで、途中の日までの${win?'直近'+win+'日の':'累計の'}前年比から残りを予測し、実績と比べた誤差の平均。${bt.n}回）。残りの予測部分にかかる幅で、範囲はおよそ ${yen(cM.act+cM.restFc*(1-bt.mae/100))}〜${yen(cM.act+cM.restFc*(1+bt.mae/100))}`:'データが少なく、まだ出せません'}。<br>
     参考：今年の曜日区分（平日・土・日祝）の1日平均で残りを埋めると ${alt==null?'—':yen(alt)}。方法によって差が出るため、簡易予測として見てください。予測の更新：データ ${MO}/${N} まで・ページ作成 ${ALLD.meta.built||'—'}。`;
   document.getElementById('fSub').textContent=N>=DIM?'月が締まったので実績を表示。途中の予測は答え合わせ用':'簡易予測：実績＋残りの日（前年の同じ日×前年比）';
   if(N>=DIM){const cps=fcCheckpoints(S,MK,N);
-    document.getElementById('fcstNote').innerHTML=`<b>${MO}月の実績 ${yen(cM.act)}</b>（全日のデータがそろいました。前年${MO}月 ${yen(m25[MK])}、差 <b>${cM.act>=m25[MK]?'+':'-'}${yen(Math.abs(cM.act-m25[MK])).replace('-','')}</b>・${pf(pct(cM.act,m25[MK]))}）。<br>
-      このページの予測方法（実績＋残りの日＝前年の同じ日×前年比）で、月の途中に予測していた場合：`+cps.map(c=>`${MO}/${c.k}時点 ${yen(c.fc)}（実績との差 ${pf(pct(c.fc,cM.act))}）`).join('、')+`。<br>予測は月の途中の目安で、実績と分けて見てください。`;}
+    document.getElementById('fcstNote').innerHTML=`<b>${MO}月の実績 ${yen(cM.act)}</b>（全日のデータがそろいました。前年${MO}月 ${yen(m25[MK])}、差 <b>${cM.act>=m25[MK]?'+':'-'}${yen(Math.abs(cM.act-m25[MK])).replace('-','')}</b>・前年比 ${pf(pct(cM.act,m25[MK]))}）。<br>
+      このページの予測方法（実績＋残りの日＝前年の同じ日×前年比）で、月の途中に予測していた場合：`+cps.map(c=>`${MO}/${c.k}時点 ${yen(c.fc)}（実績比 ${pf(pct(c.fc,cM.act))}）`).join('、')+`。<br>予測は月の途中の目安で、実績と分けて見てください。`;}
   else document.getElementById('fcstNote').innerHTML=fcN;
   S._sales={cS,cG,cM,bt};
 }
@@ -634,12 +635,12 @@ function renderContrib(){
   const up=rows.filter(r=>r.diff>0).sort((p,q)=>q.diff-p.diff)[0],dn=rows.filter(r=>r.diff<0).sort((p,q)=>p.diff-q.diff)[0];
   const sg=v=>(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
   document.getElementById('catNote').innerHTML=`${lb}の前年差 <b>${sg(X.diff)}</b>（${X.yoy==null?'—':pf(X.yoy)}・${PER()}）のうち、`+
-    (up?`最も押し上げたのは <b>${up.c}</b>（${sg(up.diff)}・寄与 ${pf(up.contrib).replace('%','pt')}）`:'押し上げたカテゴリーはなし')+'、'+
-    (dn?`最も押し下げたのは <b>${dn.c}</b>（${sg(dn.diff)}・寄与 ${pf(dn.contrib).replace('%','pt')}）`:'押し下げたカテゴリーはなし')+'。'+
+    (up?`最も押し上げたのは <b>${up.c}</b>（${sg(up.diff)}・寄与 ${ppt(up.contrib)}）`:'押し上げたカテゴリーはなし')+'、'+
+    (dn?`最も押し下げたのは <b>${dn.c}</b>（${sg(dn.diff)}・寄与 ${ppt(dn.contrib)}）`:'押し下げたカテゴリーはなし')+'。'+
     (A.ff&&ALLD.meta.reclass?'<br>ホットFF・常温FFは、2026年に一部商品が分類変更されたため、この2つの差には分類変更の分が含まれます（集計方法を参照）。':'');
   document.getElementById('tContrib').innerHTML=`<thead><tr><th class="l">カテゴリー（${lb}）</th><th>2025</th><th>2026</th><th>前年差</th><th>前年比</th><th>構成比 2025</th><th>構成比 2026</th><th>寄与度</th></tr></thead><tbody>`+
-    rows.map(r=>`<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[r.c]});margin-right:8px"></i><b>${r.c}</b></td><td class="num">${yen(r.a)}</td><td class="num">${yen(r.b)}</td><td class="num"><span class="dif ${Math.abs(r.diff)<0.5?'flat':r.diff>0?'up':'down'}">${sg(r.diff)}</span></td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td class="num">${r.sh25==null?'—':r.sh25.toFixed(1)+'%'}</td><td class="num">${r.sh26==null?'—':r.sh26.toFixed(1)+'%'}</td><td class="num">${r.contrib==null?'—':pf(r.contrib).replace('%','pt')}</td></tr>`).join('')+
-    `<tr style="font-weight:700"><td class="l">合計</td><td class="num">${yen(X.t25)}</td><td class="num">${yen(X.t26)}</td><td class="num">${sg(X.diff)}</td><td>${X.yoy==null?'—':chip(X.yoy)}</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">${X.yoy==null?'—':pf(X.yoy).replace('%','pt')}</td></tr></tbody>`;
+    rows.map(r=>`<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[r.c]});margin-right:8px"></i><b>${r.c}</b></td><td class="num">${yen(r.a)}</td><td class="num">${yen(r.b)}</td><td class="num"><span class="dif ${Math.abs(r.diff)<0.5?'flat':r.diff>0?'up':'down'}">${sg(r.diff)}</span></td><td>${r.yoy==null?'—':chip(r.yoy)}</td><td class="num">${r.sh25==null?'—':r.sh25.toFixed(1)+'%'}</td><td class="num">${r.sh26==null?'—':r.sh26.toFixed(1)+'%'}</td><td class="num">${r.contrib==null?'—':ppt(r.contrib)}</td></tr>`).join('')+
+    `<tr style="font-weight:700"><td class="l">合計</td><td class="num">${yen(X.t25)}</td><td class="num">${yen(X.t26)}</td><td class="num">${sg(X.diff)}</td><td>${X.yoy==null?'—':chip(X.yoy)}</td><td class="num">100.0%</td><td class="num">100.0%</td><td class="num">${X.yoy==null?'—':ppt(X.yoy)}</td></tr></tbody>`;
   labelTables();
 }
 // 週別：今年の週（月曜始まり）ごとに、今年と前年の同じ日付を合計して比べる。最後に、残りの日の予測を1本足す
@@ -1078,7 +1079,7 @@ function render(){
 // ===== 曜日・祝日・天気 =====
 function catLines(typ,R){
   const k=typ==='土'?'sat':'sun',out=[];
-  A.cats.forEach(c=>{const v=R[c].qty[k];if(Math.abs(v)>=0.08) out.push(`${c} ${v>0?'+':''}${Math.round(v*100)}%`)});
+  A.cats.forEach(c=>{const v=R[c].qty[k];if(Math.abs(v)>=0.08) out.push(`${c} ${Math.round(100+v*100)}%`)});
   return out;
 }
 
@@ -1103,7 +1104,7 @@ function renderDow(){
   msg+=`<br>天気（CSVの降水量・最高気温）も表に並べています。原因の特定はできないので、確認の手がかりとして使ってください。`;
   document.getElementById('dowNote').innerHTML=msg;
   document.getElementById('dowTitle').textContent=`曜日別の差（今週−先週・${lb}）`;document.getElementById('dowTitle2').textContent=`曜日別 先週と今週（${lb}）`;
-  document.getElementById('tDow').innerHTML=`<thead><tr><th class="l">曜日</th><th class="l">先週の日</th><th class="l">今週の日</th><th>先週</th><th>今週</th><th>差</th><th>増減率</th><th class="l">天気 先週→今週</th><th class="l">一番${inv?'増えた':'減った'}カテゴリー</th></tr></thead><tbody>`+
+  document.getElementById('tDow').innerHTML=`<thead><tr><th class="l">曜日</th><th class="l">先週の日</th><th class="l">今週の日</th><th>先週</th><th>今週</th><th>差</th><th>先週比</th><th class="l">天気 先週→今週</th><th class="l">一番${inv?'増えた':'減った'}カテゴリー</th></tr></thead><tbody>`+
     X.rows.map(r=>{const tc=topCat(r);return `<tr${bad(r)&&worst.indexOf(r)<2?' style="background:var(--bad-bg)"':''}><td class="l"><b>${r.w}</b></td><td class="l">${dt(r.dp)}</td><td class="l">${dt(r.dc)}</td><td class="num" style="color:var(--ink-2)">${r.p==null?'—':yen(r.p)}</td><td class="num"><b>${r.c==null?'—':yen(r.c)}</b></td><td class="num"><span class="dif ${r.diff==null||Math.abs(r.diff)<0.5?'flat':bad(r)?'down':'up'}">${sg(r.diff)}</span></td><td>${r.p?chip(pct(r.c,r.p),inv):'—'}</td><td class="l" style="font-size:11.5px">${wx(r.dp)||'—'} → ${wx(r.dc)||'—'}</td><td class="l">${tc?`${tc[0]} ${sg(tc[1])}`:'—'}</td></tr>`;}).join('')+
     `<tr style="font-weight:700"><td class="l" colspan="3">合計（${X.n}日分）</td><td class="num">${yen(X.pTot)}</td><td class="num">${yen(X.cTot)}</td><td class="num">${sg(X.tot)}</td><td>${X.pTot?chip(pct(X.cTot,X.pTot),inv):'—'}</td><td></td><td></td></tr></tbody>`;
   const mx=Math.max(1,...X.rows.flatMap(r=>CATS.map(c=>Math.abs(r.cat[c]??0))));
@@ -1127,7 +1128,7 @@ function renderWk(){
     MET.map(([lb,k,inv])=>`<tr><td class="l"><b>${lb}</b></td>`+G.map(([g])=>{const a=P[g].tot[k],b=C[g].tot[k],ok=P[g].n&&C[g].n;return `<td class="num" style="color:var(--ink-2)">${P[g].n?fmt(k,a):'—'}</td><td class="num"><b>${C[g].n?fmt(k,b):'—'}</b></td><td>${ok?dl(k,a,b,inv):'—'}</td>`}).join('')+'</tr>').join('')+'</tbody>';
   renderVs();
   renderDow();
-  const f=(g,k)=>(P[g].n&&C[g].n&&P[g].tot[k])?pct(C[g].tot[k],P[g].tot[k]):null,sp=v=>(v>=0?'+':'')+v.toFixed(1)+'%';
+  const f=(g,k)=>(P[g].n&&C[g].n&&P[g].tot[k])?pct(C[g].tot[k],P[g].tot[k]):null,sp=v=>pf(v);
   const sa=f('all','販売高'),sw=f('wk','販売高'),se=f('we','販売高'),wa=f('all','廃棄高'),wwe=f('we','廃棄高'),msg=[];
   if(sa!=null&&sw!=null&&se!=null&&Math.abs(sa-sw)>=5) msg.push(`全体の売上は${sp(sa)}ですが、平日は${sp(sw)}・土日祝は${sp(se)}。曜日の構成の違いが大きいので、平日・土日祝で判断します。`);
   else if(sw!=null&&se!=null) msg.push(`売上は平日${sp(sw)}、土日祝${sp(se)}。`);
@@ -1157,7 +1158,7 @@ function renderVs(){
   document.getElementById('vsUp').innerHTML=[...names].filter(r=>r.d>0).sort((a,b)=>b.d-a.d).slice(0,5).map(li).join('')||'<li>なし</li>';
   document.getElementById('vsDown').innerHTML=[...names].filter(r=>r.d<0).sort((a,b)=>a.d-b.d).slice(0,5).map(li).join('')||'<li>なし</li>';
   // 店舗別
-  const H=(f)=>`<thead><tr><th class="l">${f}</th><th>売上 先週</th><th>売上 今週</th><th>売上の差</th><th>増減率</th><th>荒利 先週</th><th>荒利 今週</th><th>荒利の差</th><th>増減率</th><th>販売数の差</th><th>廃棄高の差</th></tr></thead>`;
+  const H=(f)=>`<thead><tr><th class="l">${f}</th><th>売上 先週</th><th>売上 今週</th><th>売上の差</th><th>先週比</th><th>荒利 先週</th><th>荒利 今週</th><th>荒利の差</th><th>先週比</th><th>販売数の差</th><th>廃棄高の差</th></tr></thead>`;
   const R=(name,a,b)=>`<td class="num" style="color:var(--ink-2)">${yen(b.販売高)}</td><td class="num"><b>${yen(a.販売高)}</b></td><td class="num">${dY(a.販売高-adj(b.販売高))}</td><td>${rt(a.販売高,adj(b.販売高))}</td><td class="num" style="color:var(--ink-2)">${yen(b.荒利益高)}</td><td class="num"><b>${yen(a.荒利益高)}</b></td><td class="num">${dY(a.荒利益高-adj(b.荒利益高))}</td><td>${rt(a.荒利益高,adj(b.荒利益高))}</td><td class="num">${dN(a.販売数-adj(b.販売数))}</td><td class="num">${dY(a.廃棄高-adj(b.廃棄高),true)}</td>`;
   if(isAll()){
     const rows=STORES.map(s=>({s,a:DC.stores[s].p26,b:DP.stores[s].p26})).sort((x,y)=>(y.a.販売高-adj(y.b.販売高))-(x.a.販売高-adj(x.b.販売高)));
@@ -1166,12 +1167,12 @@ function renderVs(){
     document.querySelectorAll('#tVsStore [data-go]').forEach(b=>b.onclick=()=>go(b.dataset.go));
   }
   document.getElementById('tVsCat').innerHTML=H('カテゴリー')+'<tbody>'+CATS.map(c=>`<tr><td class="l"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(${CC[c]});margin-right:8px"></i><b>${c}</b></td>${R(c,DC[scope].cat.p26[c],DP[scope].cat.p26[c])}</tr>`).join('')+'</tbody>';
-  if(!same) document.getElementById('wkSub').textContent+=`　※日数が違うため、差と増減率は先週を${nC}日分に換算`;
+  if(!same) document.getElementById('wkSub').textContent+=`　※日数が違うため、差と先週比は先週を${nC}日分に換算`;
 }
 function renderWx(){
   const S=A[scope],X=A.wx,ST=S.st,R=X.res,cal=S.cal,FFm=A.ff,WN=ALLD.meta.wxN;
   document.getElementById('wxCaution').innerHTML=WN?`<b>注意：</b>曜日・天気の影響は前年${MO}月（${WN.days}日分）から推定しています。雨の日は${WN.wet}日、土曜${WN.sat}日、日曜・祝日${WN.sun}日と少ないため、数字は目安です。天気・気温との関係は相関で、原因とは限りません。予報は${ALLD.meta.fc}のもので、予報がない日は「予報なし」と表示し、推測で埋めません。`:'';
-  const p=v=>(v>=0?'+':'')+(v*100).toFixed(0)+'%';
+  const p=v=>pf(v*100,0);
   const facts=[];
   facts.push(`<b>雨の日</b>は${isAll()?'全店':'この店'}の荒利益高が <b>${p(ST.wet.gp)}</b>、廃棄高が <b>${p(ST.wet.wy)}</b>。${ST.wet.wy>0.05?'売れないのに廃棄が増えるため、雨予報の日は仕込みを先に減らします。':ST.wet.gp<-0.05?'売上が落ちる分、雨予報の日は仕込みを減らします。':'雨の影響は小さい'+(isAll()?'です。':'店です。')}`);
   facts.push(`<b>土曜</b>の荒利益高は平日の <b>${(ST['土'].idx*100).toFixed(0)}%</b>、<b>日曜・祝日</b>は <b>${(ST['日祝'].idx*100).toFixed(0)}%</b>（廃棄率 ${(ST['日祝'].wr*100).toFixed(1)}%、平日 ${(ST['平日'].wr*100).toFixed(1)}%）。`);
@@ -1197,14 +1198,14 @@ function renderWx(){
 const ITEM=()=>A.ff?'揚げ物':'弁当・惣菜';
 function shortAdv(r){
   const ST=A[scope].st;
-  if(r.wet) return `${ITEM()}の仕込みを控えめに（雨の日 廃棄 ${ST.wet.wy>=0?'+':''}${(ST.wet.wy*100).toFixed(0)}%）。`;
+  if(r.wet) return `${ITEM()}の仕込みを控えめに（雨の日 廃棄 ${pf(ST.wet.wy*100,0)}）。`;
   if(r.sig==='chance') return `平日の${(r.idx*100).toFixed(0)}%の売上。ピーク前に補充。`;
   if(r.sig==='risk') return `平日の${(r.idx*100).toFixed(0)}%。仕込みを約${Math.round((1-r.idx)*100)}%減。`;
   return '';
 }
 function advice(r){
   const ST=A[scope].st,R=A.wx.res,a=[];
-  if(r.wet) a.push(`<b>雨</b>：${ITEM()}を控えめに。前年の雨の日は荒利 ${(ST.wet.gp*100).toFixed(0)}%、廃棄 ${ST.wet.wy>=0?'+':''}${(ST.wet.wy*100).toFixed(0)}%`);
+  if(r.wet) a.push(`<b>雨</b>：${ITEM()}を控えめに。前年の雨の日は荒利 ${pf(ST.wet.gp*100,0)}、廃棄 ${pf(ST.wet.wy*100,0)}`);
   if(r.idx<=0.88) a.push(`仕込み全体を約${Math.round((1-r.idx)*100)}%減、夕方以降の追加調理なし`);
   else if(r.idx>=1.08) a.push(`平日より約${Math.round((r.idx-1)*100)}%多く売れる日。ピーク前に補充して売り切れを防ぐ`);
   if(r.typ!=='平日'){const cl=catLines(r.typ,R).filter(x=>r.idx>=0.95||x.includes('-'));if(cl.length) a.push(`カテゴリー別：${cl.join('・')}（前年${r.typ==='土'?'土曜':'日祝'}）`);}
@@ -1223,8 +1224,8 @@ function drawWx(){
     {label:'土曜',data:C.map(c=>R[c].qty.sat*100),backgroundColor:css('--f-sat'),borderRadius:2},
     {label:'日曜・祝日',data:C.map(c=>R[c].qty.sun*100),backgroundColor:css('--f-sun'),borderRadius:2},
     {label:'雨の日',data:C.map(c=>R[c].qty.wet*100),backgroundColor:css('--f-rain'),borderRadius:2}]},
-    options:{indexAxis:'y',scales:{x:{ticks:{callback:v=>(v>0?'+':'')+v+'%'},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},y:{grid:{display:false}}},
-      plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${x.raw>=0?'+':''}${x.raw.toFixed(1)}%`}}}}}));
+    options:{indexAxis:'y',scales:{x:{ticks:{callback:v=>(100+v)+'%'},grid:{color:c=>c.tick.value===0?css('--ink-3'):css('--rule')},border:{display:false}},y:{grid:{display:false}}},
+      plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${(100+x.raw).toFixed(1)}%`}}}}}));
   const ff=A.ff;
   const CH=ff&&W.chuka,pts=W.d.map((d,i)=>({x:W.tmax[i],y:CH?W.chuka[i]:ff?W.ice[i]*100:W.tq[i],d,wet:W.wet[i],sun:W.type[i]==='日祝'}));
   const ds=ff&&!CH?[{label:'晴れ・くもり',data:pts.filter(p=>!p.wet)},{label:'雨',data:pts.filter(p=>p.wet),tri:1}]
