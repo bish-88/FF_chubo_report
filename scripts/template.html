@@ -464,6 +464,12 @@ tr.hotw td{background:color-mix(in srgb,var(--warn-bg) 60%,transparent)}
     <div class="tw" id="dowTrendWrap" hidden><table id="tDowTrend" style="min-width:860px"></table></div><p class="note" id="dowTrendNote" hidden></p>
     <div class="tw" id="wkTrendWrap" hidden><table id="tWkTrend" style="min-width:860px"></table></div><p class="note" id="wkTrendNote" hidden></p>
   </section>
+  <section class="sec" data-tab="sales" id="ytSec">
+    <div class="sh"><span class="lbl">YOY TREND</span><h2>販売前年比と荒利前年比の推移（週別）</h2><p id="ytSub">2本の線の間が開くほど、売上の伸びと利益の伸びがずれています。点線＝前年と同じ（100%）</p></div>
+    <div class="panel"><div class="ph"><h3 id="ytTitle">週別 前年比</h3><div class="legend" id="ytLegend"></div></div>
+      <div class="cv"><canvas id="cYt" role="img" aria-label="週別の販売前年比と荒利前年比"></canvas></div><p class="note" id="ytNote"></p></div>
+    <div class="tw"><table id="tYt" style="min-width:940px"></table></div>
+  </section>
   <section class="sec" data-tab="sales" id="gmSec">
     <div class="sh"><span class="lbl">MARGIN</span><h2>荒利益高の前年比・荒利益率の推移</h2><p id="gmSub">荒利益高は廃棄控除後。荒利益率＝荒利益高 ÷ 販売高</p></div>
     <div class="g g-2">
@@ -1621,6 +1627,38 @@ function pie(id,obj,keys,lg){
     options:{cutout:'62%',plugins:{tooltip:{callbacks:{label:x=>` ${x.label}  ${yen(x.raw)}（${(x.raw/tot*100).toFixed(1)}%）`}}}},
     plugins:[{id:'c',afterDraw(ch){const{ctx,chartArea:a}=ch;ctx.save();ctx.textAlign='center';ctx.fillStyle=css('--ink-3');const fs=Math.min(44,Math.max(15,Math.min(a.right-a.left,a.bottom-a.top)*0.075));ctx.font=Math.round(fs*0.7)+'px '+css('--f-ui');ctx.fillText('合計',(a.left+a.right)/2,(a.top+a.bottom)/2-fs*0.55);ctx.fillStyle=css('--ink');ctx.font='600 '+Math.round(fs)+'px '+css('--f-num');ctx.fillText(yen(tot),(a.left+a.right)/2,(a.top+a.bottom)/2+fs*0.75);ctx.restore()}}]});
 }
+// 週別の前年比トレンド（月をまたぐ。ALLD.WTR は build.py の wtrend）。期間の切り替えには連動しない
+function drawYt(){
+  const sec=document.getElementById('ytSec'),R=((ALLD.WTR||{})[DEPT]||{})[scope]||[];
+  sec.hidden=!R.length;if(!R.length)return;
+  const rs=R.map(r=>r.s25>0?r.s26/r.s25*100:null),rg=R.map(r=>r.g25>0?r.g26/r.g25*100:null),last=R.length-1;
+  const cS=css('--ink-3'),cG=css('--accent'),full=r=>r.n>=7,small=window.innerWidth<640;
+  document.getElementById('ytTitle').textContent=`週別 前年比（${DEPT}・${isAll()?'全店':scope}）`;
+  document.getElementById('ytLegend').innerHTML=LT(0,`<i style="background:${cS};height:3px"></i>販売前年比（販売高）`)+LT(1,`<i style="background:${cG};height:3px"></i>荒利前年比（荒利益高）`)+'<span><i style="background:transparent;border:1.5px solid var(--ink-3);border-radius:50%;width:8px;height:8px"></i>7日未満の週</span>';
+  const ref={id:'ref100',beforeDatasetsDraw(ch){const {ctx,chartArea:a,scales:{y}}=ch,py=y.getPixelForValue(100);if(py<a.top||py>a.bottom)return;
+    ctx.save();ctx.strokeStyle=css('--ink-3');ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(a.left,py);ctx.lineTo(a.right,py);ctx.stroke();ctx.restore();}};
+  // 線の右端に、最新週の値を書く（重なるときは少しずらす）
+  const endLab={id:'endLab',afterDatasetsDraw(ch){const {ctx}=ch;ctx.save();ctx.font=(small?'11px ':'12px ')+css('--f-ui');ctx.textAlign='left';ctx.textBaseline='middle';
+    const P=ch.data.datasets.map((ds,i)=>{const mt=ch.getDatasetMeta(i),el=mt.data[last],v=ds.data[last];return mt.hidden||!el||v==null?null:{x:el.x+10,y:el.y,t:`${small?ds.label.replace('前年比',''):ds.label} ${Math.round(v)}%`,c:ds.borderColor};}).filter(Boolean).sort((a,b)=>a.y-b.y);
+    for(let i=1;i<P.length;i++)if(P[i].y-P[i-1].y<15)P[i].y=P[i-1].y+15;
+    P.forEach(p=>{ctx.fillStyle=p.c;ctx.fillText(p.t,p.x,p.y);});ctx.restore();}};
+  const vals=[...rs,...rg].filter(v=>v!=null),pr=v=>R.map(r=>full(r)?v:css('--panel'));
+  const ds=(label,data,c,w)=>({label,data,borderColor:c,backgroundColor:c,borderWidth:w,pointRadius:4,pointHoverRadius:6,pointBorderColor:c,pointBorderWidth:1.75,pointBackgroundColor:pr(c),tension:0,spanGaps:true});
+  const ch=new Chart(cYt,{type:'line',data:{labels:R.map(r=>r.label),datasets:[ds('販売前年比',rs,cS,2),ds('荒利前年比',rg,cG,2.75)]},plugins:[ref,endLab,crossLine],
+    options:{layout:{padding:{right:small?78:120}},interaction:{mode:'index',intersect:false},
+      scales:{y:{suggestedMin:Math.min(95,...vals),suggestedMax:Math.max(105,...vals),grace:'5%',ticks:{callback:v=>v+'%'},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:small?5:12}}},
+      plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{title:it=>{const r=R[it[0].dataIndex];return `${r.label}（${r.n}日・${r.ns}店）`;},
+        label:x=>{const r=R[x.dataIndex],g=x.datasetIndex===1;return ` ${x.dataset.label}  ${x.raw.toFixed(1)}%（今年 ${yen(g?r.g26:r.s26)}／前年 ${yen(g?r.g25:r.s25)}）`;},
+        afterBody:it=>{const i=it[0].dataIndex,r=R[i],o=[];if(rs[i]!=null&&rg[i]!=null)o.push(`荒利 − 販売  ${ppt(rg[i]-rs[i])}`);if(r.miss.length)o.push(`この週は ${r.miss.join('・')} を除く（今年か前年のデータがない）`);return o;}}}}}});
+  charts.push(ch);wireLegend(ch,'ytLegend');
+  const sg=v=>(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
+  document.getElementById('tYt').innerHTML=`<thead><tr><th class="l">週</th><th>日数</th><th>店舗数</th><th>販売高 今年</th><th>販売高 前年</th><th>販売前年比</th><th>荒利益高 今年</th><th>荒利益高 前年</th><th>荒利前年比</th><th>荒利 − 販売</th></tr></thead><tbody>`+
+    R.map((r,i)=>{const d=rs[i]!=null&&rg[i]!=null?rg[i]-rs[i]:null;return `<tr${i===last?' style="font-weight:700"':''}><td class="l">${r.label}${r.miss.length?`<span style="color:var(--ink-3);font-size:10.5px">（${r.miss.join('・')}を除く）</span>`:''}</td><td class="num">${r.n}日</td><td class="num">${r.ns}店</td><td class="num">${yen(r.s26)}</td><td class="num" style="color:var(--ink-2)">${yen(r.s25)}</td><td>${chip(pct(r.s26,r.s25))}</td><td class="num">${yen(r.g26)}</td><td class="num" style="color:var(--ink-2)">${yen(r.g25)}</td><td>${chip(pct(r.g26,r.g25))}</td><td class="num" style="color:${d==null?'inherit':d<-1?'var(--bad)':d>1?'var(--good)':'var(--ink-2)'}">${d==null?'—':ppt(d)}</td></tr>`;}).join('')+'</tbody>';
+  const L=R[last],dl=rg[last]-rs[last],below=R.filter((_,i)=>rs[i]!=null&&rg[i]!=null&&rg[i]<rs[i]).length,wks=R.filter(r=>r.ns<Math.max(...R.map(x=>x.ns))).length;
+  document.getElementById('ytNote').innerHTML=`最新の週（${L.label}・${L.n}日）は、販売前年比 <b>${rs[last].toFixed(0)}%</b>・荒利前年比 <b>${rg[last].toFixed(0)}%</b>（荒利が販売より ${ppt(dl)}）。表示している${R.length}週のうち、荒利前年比が販売前年比を下回った週は <b>${below}週</b>です。<br>
+    前年は<b>同じ日付</b>（曜日の並びは違います）。今年・前年の両方にデータがある店舗・日だけで計算し、3日未満の週は出していません。週は月曜始まりで、上の「期間」の切り替えには連動しません。${wks?'店舗数が少ない週は、まだその店のデータがない週です。':''}前の月のCSVも data/ に残しておくと、その週まで線が伸びます。`;
+  labelTables();
+}
 function draw(){
   charts.forEach(c=>c.destroy());charts=[];base();
   // 表示中のタブのグラフだけ描く（タブを切り替えたときに draw が呼ばれる）。隠れたタブのグラフは作らない
@@ -1628,6 +1666,7 @@ function draw(){
   if(on('demand'))drawWx();else{wxCharts.forEach(c=>c.destroy());wxCharts=[];}
   const S=A[scope],ly=css('--ly'),ty=css('--ty'),bad=css('--bad');
   if(on('sales')){
+  drawYt();
   {const pr=wkPair();if(pr){const [P,C]=pr,S0=A[scope].wk.byday,rng=w=>{const a=[];for(let d=w.start;d<=w.end;d++)a.push(d);return a},pd=rng(P),cd=rng(C),common=pd.map(WDN).filter(w=>cd.map(WDN).includes(w)),val=(ds,w)=>S0[ds.find(d=>WDN(d)===w)].販売高;
    charts.push(new Chart(cWk,{type:'bar',data:{labels:common,datasets:[{label:'先週',data:common.map(w=>val(pd,w)),backgroundColor:css('--ly'),borderRadius:2},{label:'今週',data:common.map(w=>val(cd,w)),backgroundColor:css('--ty'),borderRadius:2}]},
      options:{scales:{y:{beginAtZero:true,ticks:{callback:yTick},grid:grid(),border:{display:false}},x:{grid:{display:false}}},plugins:{tooltip:{callbacks:{label:x=>` ${x.dataset.label}  ${yen(x.raw)}`}}}}}));}}

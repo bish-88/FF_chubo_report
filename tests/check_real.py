@@ -16,7 +16,7 @@ D = json.loads(re.search(r'let ALLD=(\{.*?\});\n', open(out, encoding='utf-8').r
 MO_ = D['meta'].get('MO', 10); HOL_ = {int(k) for k in D['meta'].get('hol26', {'12': ''})}
 
 SN = {'新御堂筋上新田': '上新田', '吹田朝日町': '朝日町', '豊中服部元町一丁目': '元町一', '吹田豊津中学校前': '豊津中', '吹田青山台三丁目': '青山台', '箕面白島二丁目': '白島二', '豊中原田南一丁目': '原田南'}
-ST = list(SN.values())
+ST = [s for s in SN.values() if s in D['meta']['stores']]   # CSVに出てくる店だけ
 CM = {'販売）からあげクン他　ホット': 'からあげクン', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん', '販売）マチカフェ': 'マチカフェ'}
 M = ['販売数', '販売高', '廃棄数', '廃棄高', '荒利益高']
 num = lambda v: 0.0 if v in ('*', '') else float(v.replace(',', ''))
@@ -38,6 +38,7 @@ for dp in ['FF', '厨房']:
             key = tuple(r[k] for k in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
             if key in seen: continue
             seen.add(key); y, d = (lambda s: (lambda y, mo, dd: (y, (datetime.date(y, mo, dd) - datetime.date(y, MO_, 1)).days + 1))(*map(int, s.split('/'))))(r['年月日'])
+            if d < 1: continue   # 前の月の行（週別トレンド用）は月の集計に入らない
             R.append(dict(y=y, d=d, s=SN[r['店舗名']], c=c, n=clean(r['商品名']), **{k: num(r[k]) for k in M}))
     for p in D['meta']['periods']:
         X = D[dp] if p['k'] == 'all' else D['P'][p['k']][dp]

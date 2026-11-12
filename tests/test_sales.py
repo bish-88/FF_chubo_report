@@ -163,6 +163,7 @@ def test_real_data():
                 k = tuple(r[x] for x in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
                 if not c or k in seen or all(num(r[x]) == 0 for x in M): continue
                 seen.add(k); y, d = (lambda s: (lambda y, mo, dd: (y, (datetime.date(y, mo, dd) - datetime.date(y, MO_, 1)).days + 1))(*map(int, s.split('/'))))(r['年月日'])
+                if d < 1: continue   # 前の月の行は月の集計に入らない
                 for met in ['販売高', '荒利益高']:
                     v = num(r[met])
                     for sc in ['ALL', SN[r['店舗名']]]:
@@ -191,7 +192,7 @@ def test_real_data():
             ds = [d for d in range(1, D['meta'].get('DIM', 31) + 1) if datetime.date(2025, MO_, d).weekday() == i]
             assert abs(r['a25'] - sum(day[('ALL', '販売高', 2025, d)] for d in ds) / len(ds)) < 1e-6
         calls = []; keys = []
-        for sc in ['ALL'] + list(SN.values()):
+        for sc in ['ALL'] + [s for s in SN.values() if s in D['meta']['stores']]:
             for met in ['販売高', '荒利益高']:
                 calls += [('salesCalc', [D[dept][sc], met, 1, N, N]), ('catContrib', [D[dept][sc], met, D[dept]['cats']]), ('fcBacktest', [D[dept][sc], met, N, None])]
                 keys.append((sc, met))

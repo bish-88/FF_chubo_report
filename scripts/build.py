@@ -17,9 +17,12 @@ def _raw(files):
         if c not in df.columns: df[c]=None
     return df[['年月日','店舗名','CLASS名','SUBCLASS名','商品名']+m+WXC]
 RAW={'FF':_raw(sorted(glob.glob(os.path.join(DATA_DIR,'FF','*.csv')))),'厨房':_raw(sorted(glob.glob(os.path.join(DATA_DIR,'厨房','*.csv'))))}
-# 対象の月：今年のCSVの最初の日の月（10月のCSVなら10、11月なら11）
+# 対象の月：今年のCSVのうち、3日以上データがある一番新しい月（10月と11月のCSVが両方あれば11月）。
+# 前の月のCSVは data/ に残しておいてよい（週別の前年比トレンドに使う。月の集計には入らない）。
+# 新しい月がまだ1〜2日分しかないときは、前の月のまま（例：10/1〜31＋11/1 なら10月）。REPORT_MONTH で指定もできる
 _d26=pd.to_datetime(pd.concat([RAW[k].年月日 for k in RAW]))
-MO=int(os.environ.get('REPORT_MONTH') or _d26[_d26.dt.year==Y].min().month)
+_dy=_d26[_d26.dt.year==Y].dt.normalize().drop_duplicates(); _bym=_dy.groupby(_dy.dt.month).size()
+MO=int(os.environ.get('REPORT_MONTH') or max([mo for mo,n in _bym.items() if n>=3] or [_bym.index.max()]))
 DIM=calendar.monthrange(Y,MO)[1]   # その月の日数（11月なら30）
 def read(raw,catfn,key):
     df=raw.copy()
@@ -63,6 +66,7 @@ EV={}
 def wxday(y):
     z=pd.concat([RAW[k] for k in RAW]); z=z[pd.to_datetime(z.年月日).dt.year==y].copy()
     z['d']=(pd.to_datetime(z.年月日)-pd.Timestamp(y,MO,1)).dt.days+1
+    z=z[z.d>=1]   # 前の月の日は使わない
     out={}
     for c in WXC[1:]: z[c]=pd.to_numeric(z[c],errors='coerce')
     z['天気']=z['天気'].astype(str).str.strip("'* ").replace({'':None,'nan':None,'None':None})
@@ -161,7 +165,7 @@ def dept(df,cats,excl,colors,ff,d0=1,d1=None,light=False,key=None):
         pb=b.groupby('商品名')[m].sum(); pm=mm.groupby('商品名')[m].sum()
         rows=[]; minsold=3 if single else 10
         for (c,n),r in p.iterrows():
-            if r.販売数+r.廃棄数<minsold: continue
+            if r.販売数+r.廃棄数<minsold or not r.sd>0: continue   # 販売・廃棄のある日がない（返品などで合計だけ残った）商品は出さない
             nl=AL.get(n,n) if ff else n
             wr=r.廃棄数/(r.販売数+r.廃棄数); so=1-r.wsd/r.sd; per=r.販売数/r.sd; wpd=r.廃棄数/r.sd
             if r.sd<3: v='hold'  # 販売日が少なく判断できない
@@ -283,6 +287,41 @@ D['meta']['weeks']=[dict(k=f"w{w['start']}",label=w['label'],d0=w['start'],d1=w[
 # 10月をはみ出す週は、先週比の計算用に丸ごとの週でも集計しておく（前年比には使わない）
 D['PW']={w['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[],True,w['d0'],w['d1'],True),
                  '厨房':dept(KI,['弁当','調理パン','惣菜'],[],['--c2','--c1','--c4'],False,w['d0'],w['d1'],True)} for w in D['meta']['weeks'] if w['d1']>N}
+# ===== 週別の前年比トレンド（月をまたいで、data/ にあるすべての週） =====
+# 前年は「同じ日付」（2025/11/3 ↔ 2026/11/3）。今年・前年の両方にデータがある 店舗×日 だけで比べる。
+# カテゴリーは、その週に今年・前年の両方で売上があるものだけ（片方のCSVがない週に前年比が大きくぶれないように）。
+# 3日未満の週（月初の端など）は出さない。週は月曜始まり。
+def wtrend(raw,catfn,cats):
+    df=raw[['年月日','店舗名','CLASS名','SUBCLASS名','商品名']+m].copy()
+    for c in m: df[c]=pd.to_numeric(df[c].astype(str).str.replace(',',''),errors='coerce').fillna(0)
+    df['date']=pd.to_datetime(df['年月日']); df['year']=df.date.dt.year
+    df['store']=df.店舗名.map(SN); df=df[df.year.isin([Y,LY])&df.store.isin(STORES)].copy()
+    df['dd']=df.date.where(df.year==Y,df.date+pd.DateOffset(years=1))   # 前年の行は今年の同じ日付に合わせる
+    cov={y:set(zip(g.store,g.dd)) for y,g in df.groupby('year')}
+    both=cov.get(Y,set())&cov.get(LY,set())
+    df['cat']=catfn(df)
+    df=df[df.cat.isin(cats)&(df[m]!=0).any(axis=1)].drop_duplicates(['年月日','店舗名','SUBCLASS名','商品名']+m)
+    df=df[[k in both for k in zip(df.store,df.dd)]].copy()
+    df['wk']=df.dd-pd.to_timedelta(df.dd.dt.weekday,unit='D')
+    out={}
+    for sc in ['ALL']+STORES:
+        bc=sorted((d,s) for s,d in both if sc=='ALL' or s==sc)
+        x=df if sc=='ALL' else df[df.store==sc]
+        rows=[]
+        for wk in sorted({d-pd.Timedelta(days=d.weekday()) for d,_ in bc}):
+            days=sorted({d for d,_ in bc if wk<=d<wk+pd.Timedelta(days=7)})
+            if len(days)<3: continue
+            g=x[x.wk==wk]
+            cs=[c for c in cats if ((g.cat==c)&(g.year==Y)).any() and ((g.cat==c)&(g.year==LY)).any()]
+            g=g[g.cat.isin(cs)]; a,b=days[0],days[-1]
+            t=lambda y,k:F(g[g.year==y][k].sum())
+            rows.append(dict(k=wk.strftime('%Y-%m-%d'),label=f'{a.month}/{a.day}〜{b.month}/{b.day}',n=len(days),
+                             ns=len({s for d,s in bc if a<=d<=b}),s26=t(Y,'販売高'),s25=t(LY,'販売高'),g26=t(Y,'荒利益高'),g25=t(LY,'荒利益高'),
+                             miss=[c for c in cats if c not in cs]))
+        out[sc]=rows
+    return out
+D['WTR']={'FF':wtrend(RAW['FF'],lambda d:d.CLASS名.map(catmap),FFC),
+          '厨房':wtrend(RAW['厨房'],lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])),['弁当','調理パン','惣菜'])}
 D['meta']['built']=datetime.date.today().isoformat()   # ページを作った日（予測の更新日として表示）
 # 改善候補（実績からの自動抽出。式は scripts/candidates.py）
 # 2026年はジャイアントポークフランク・なんこつつくね棒がホットFF→常温FFへ移ったため、この2カテゴリーの前年比は確度を下げる

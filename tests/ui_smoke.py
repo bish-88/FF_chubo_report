@@ -31,6 +31,7 @@ async def main():
                             await pg.click(f'.tab[data-t="{t}"]'); checked += 1
                             if t == 'sales':
                                 await pg.click('#segMet button[data-k="荒利益高"]'); await pg.click('#segMet button[data-k="販売高"]')
+                                if not await pg.evaluate("(()=>{const R=((ALLD.WTR||{})[DEPT]||{})[scope]||[];if(!R.length)return document.getElementById('ytSec').hidden;const c=Chart.getChart('cYt');return !!c&&c.data.datasets.length===2&&c.data.labels.length===R.length&&document.querySelectorAll('#tYt tbody tr').length===R.length;})()"): problems.append((w, dept, per, s, t, 'weekly yoy trend'))
                                 await pg.click('#segGrain button[data-k="week"]')
                                 if not await pg.evaluate("Chart.getChart('cDaily').config.type==='bar'&&document.querySelectorAll('#tWkTrend tbody tr').length>=3"): problems.append((w, dept, per, s, t, 'weekly view'))
                                 await pg.click('#segGrain button[data-k="dow"]')

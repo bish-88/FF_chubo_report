@@ -154,6 +154,56 @@ def test_encrypted_build_decrypts():
     assert dec == data()['D']
 
 
+
+def _wk_expect(rows, y, days):
+    """週別トレンドの答え：今年・前年の両方にデータがある 店舗×日 だけを足す（10/3 の上新田は今年データなし → 前年も入れない）。"""
+    seen, t = set(), collections.defaultdict(float)
+    for r in rows:
+        k = tuple(r[c] for c in ['年月日', '店舗名', 'SUBCLASS名', '商品名'] + M)
+        yy, mo, d = map(int, r['年月日'].split('/'))
+        if k in seen or yy != y or (mo, d) not in days or (r['店舗名'] == '新御堂筋上新田' and (mo, d) == (10, 3)): continue
+        seen.add(k)
+        for c in M: t[c] += 0.0 if r[c] == '*' else float(r[c].replace(',', ''))
+    return t
+
+
+def test_weekly_yoy_trend_matches_raw():
+    c = data(); W = c['D']['WTR']['FF']['ALL']
+    assert [(r['label'], r['n'], r['ns']) for r in W] == [('10/1〜10/4', 4, 5), ('10/5〜10/11', 7, 5)]
+    for r, days in zip(W, [{(10, d) for d in range(1, 5)}, {(10, d) for d in range(5, 12)}]):
+        a, b = _wk_expect(c['ff'], 2026, days), _wk_expect(c['ff'], 2025, days)
+        assert abs(r['s26'] - a['販売高']) < 0.5 and abs(r['s25'] - b['販売高']) < 0.5, r
+        assert abs(r['g26'] - a['荒利益高']) < 0.5 and abs(r['g25'] - b['荒利益高']) < 0.5, r
+    # 店舗ごと：上新田は 10/3 が欠損 → 前年の 10/3 も入れない
+    U = c['D']['WTR']['FF']['上新田'][0]
+    assert U['n'] == 3
+    assert set(c['D']['WTR']) == {'FF', '厨房'} and len(c['D']['WTR']['厨房']['ALL']) == 2
+
+
+def test_trend_uses_previous_month_and_keeps_report_month():
+    """前の月（9月）のCSVが混ざっていても、月の集計は10月のまま。9月の週はトレンドにだけ出る。
+    （9月と10月のCSVが両方あれば、新しい方の10月が対象の月になる）"""
+    tmp = tempfile.mkdtemp(); ff, ki = make_fixture(tmp)
+    extra_ff, extra_ki = [], []
+    for rows, extra in [(ff, extra_ff), (ki, extra_ki)]:
+        for r in rows:
+            y, mo, d = map(int, r['年月日'].split('/'))
+            if 1 <= d <= 9 and not (r['店舗名'] == '新御堂筋上新田' and d == 3):
+                for yy in (2025, 2026):
+                    if y == yy: extra.append(dict(r, **{'年月日': f'{yy}/9/{21 + d}'}))   # 9/22〜9/30
+    for sub, rows in [('FF', ff + extra_ff), ('厨房', ki + extra_ki)]:
+        with open(os.path.join(tmp, sub, 'x.csv'), 'w', encoding='cp932', newline='') as f:
+            wr = csv.DictWriter(f, COLS); wr.writeheader(); wr.writerows(rows)
+    D = load(build(tmp, os.path.join(tmp, 'o.html')))
+    assert D['meta']['MO'] == 10 and D['meta']['N'] == N26
+    assert D['FF']['ALL']['kpi'] == data()['D']['FF']['ALL']['kpi']          # 月の集計は9月・11月の行の影響を受けない
+    W = D['WTR']['FF']['ALL']
+    assert [(r['label'], r['n']) for r in W] == [('9/22〜9/27', 6), ('9/28〜10/4', 7), ('10/5〜10/11', 7)]
+    days = {(9, d) for d in range(28, 31)} | {(10, d) for d in range(1, 5)}
+    exp = _wk_expect(ff + extra_ff, 2026, days)
+    assert abs(W[1]['s26'] - exp['販売高']) < 0.5
+
+
 if __name__ == '__main__':
     fails = 0
     for name, fn in list(globals().items()):
