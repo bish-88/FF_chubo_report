@@ -290,7 +290,7 @@ D['PW']={w['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[
 # ===== 週別の前年比トレンド（月をまたいで、data/ にあるすべての週） =====
 # 前年は「同じ日付」（2025/11/3 ↔ 2026/11/3）。今年・前年の両方にデータがある 店舗×日 だけで比べる。
 # カテゴリーは、その週に今年・前年の両方で売上があるものだけ（片方のCSVがない週に前年比が大きくぶれないように）。
-# 3日未満の週（月初の端など）は出さない。週は月曜始まり。
+# 3日未満の週（月初の端など）は出さない。週は月曜始まり。ns／ns0＝1日あたりの店舗数（最多／最少）
 def wtrend(raw,catfn,cats):
     df=raw[['年月日','店舗名','CLASS名','SUBCLASS名','商品名']+m].copy()
     for c in m: df[c]=pd.to_numeric(df[c].astype(str).str.replace(',',''),errors='coerce').fillna(0)
@@ -316,7 +316,7 @@ def wtrend(raw,catfn,cats):
             g=g[g.cat.isin(cs)]; a,b=days[0],days[-1]
             t=lambda y,k:F(g[g.year==y][k].sum())
             rows.append(dict(k=wk.strftime('%Y-%m-%d'),label=f'{a.month}/{a.day}〜{b.month}/{b.day}',n=len(days),
-                             ns=len({s for d,s in bc if a<=d<=b}),s26=t(Y,'販売高'),s25=t(LY,'販売高'),g26=t(Y,'荒利益高'),g25=t(LY,'荒利益高'),
+                             ns=max(sum(1 for d,_ in bc if d==x) for x in days),ns0=min(sum(1 for d,_ in bc if d==x) for x in days),s26=t(Y,'販売高'),s25=t(LY,'販売高'),g26=t(Y,'荒利益高'),g25=t(LY,'荒利益高'),
                              miss=[c for c in cats if c not in cs]))
         out[sc]=rows
     return out

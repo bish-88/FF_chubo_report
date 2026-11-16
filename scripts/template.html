@@ -1560,7 +1560,7 @@ function renderWx(){
   {const rd=ALLD.meta.wx26.filter(w=>w.rain>=2);if(rd.length) facts.push(`今年の雨の日：${rd.map(w=>`${MO}/${w.d}（${'日月火水木金土'[new Date(Y,MI,w.d).getDay()]}・${w.rain}mm）`).join('、')}。この日の落ち込みの一部は天気の影響の可能性があります（CSVの天気データ）。`);}
   document.getElementById('wxFacts').innerHTML=facts.map(f=>`<li>${f}</li>`).join('');
   const key=cal.filter(r=>r.d<=ALLD.meta.N+14&&(r.sig!=='normal'||r.hol)).slice(0,6);
-  document.getElementById('wxDays').innerHTML=key.length?key.map(r=>`<li><b>${MO}/${r.d}（${r.wd}）</b> <span class="sig s-${r.sig}">${r.sig==='chance'?'チャンス':r.sig==='risk'?'リスク':'通常'}</span> ${r.hol?'<b>'+r.hol+'</b>・':''}${r.wx}・最高${r.tmax}℃・降水${r.pop}%。${shortAdv(r)}</li>`).join(''):cal.length?'<li>大きな変動が予想される日はありません。</li>':`<li>${MO}月のデータはすべてそろいました（${MO}/1〜${ALLD.meta.N}）。この先の日の予測には、前年${MO%12+1}月の実績データが必要です。</li>`;
+  document.getElementById('wxDays').innerHTML=key.length?key.map(r=>`<li><b>${MO}/${r.d}（${r.wd}）</b> <span class="sig s-${r.sig}">${r.sig==='chance'?'チャンス':r.sig==='risk'?'リスク':'通常'}</span> ${r.hol?'<b>'+r.hol+'</b>・':''}${[r.wx,r.tmax!=null?`最高${r.tmax}℃`:null,r.pop!=null?`降水${r.pop}%`:null].filter(v=>v!=null&&v!=='').join('・')||'天気はまだありません'}。${shortAdv(r)}</li>`).join(''):cal.length?'<li>大きな変動が予想される日はありません。</li>':`<li>${MO}月のデータはすべてそろいました（${MO}/1〜${ALLD.meta.N}）。この先の日の予測には、前年${MO%12+1}月の実績データが必要です。</li>`;
   document.getElementById('iceTitle').textContent=FFm?(X.W.chuka?`最高気温と中華まんの販売数（${NS}店合計）`:'最高気温とマチカフェのアイス比率'):'最高気温と厨房の販売数';
   {const CB=(X.chukaBand&&X.chukaBand[0].hi)||22,cold=cal.find(r=>r.tmax!=null&&r.tmax<CB),cw=(ALLD.meta.wx26||[]).filter(w=>w.tmax!=null&&w.tmax<CB);
    if(!cal.length&&FFm&&X.chukaBand){document.getElementById('iceNote').innerHTML=`前年${MO}月は最高${CB}℃未満の日が${X.chukaBand[0].n}日あり、その日の中華まんは1日平均 ${Math.round(X.chukaBand[0].avg)}個（${NS}店合計）でした。今年（CSVの天気）は${cw.length?cw.map(w=>`${MO}/${w.d}（${w.tmax}℃）`).join('、')+' が最高'+CB+'℃未満でした':'最高'+CB+'℃未満の日はありませんでした'}。気温が下がる日は、中華まんの陳列と仕込みを増やします。`;} else
@@ -1628,6 +1628,7 @@ function pie(id,obj,keys,lg){
     plugins:[{id:'c',afterDraw(ch){const{ctx,chartArea:a}=ch;ctx.save();ctx.textAlign='center';ctx.fillStyle=css('--ink-3');const fs=Math.min(44,Math.max(15,Math.min(a.right-a.left,a.bottom-a.top)*0.075));ctx.font=Math.round(fs*0.7)+'px '+css('--f-ui');ctx.fillText('合計',(a.left+a.right)/2,(a.top+a.bottom)/2-fs*0.55);ctx.fillStyle=css('--ink');ctx.font='600 '+Math.round(fs)+'px '+css('--f-num');ctx.fillText(yen(tot),(a.left+a.right)/2,(a.top+a.bottom)/2+fs*0.75);ctx.restore()}}]});
 }
 // 週別の前年比トレンド（月をまたぐ。ALLD.WTR は build.py の wtrend）。期間の切り替えには連動しない
+const nsTxt=r=>(r.ns0!=null&&r.ns0<r.ns?`${r.ns0}〜`:'')+r.ns+'店';
 function drawYt(){
   const sec=document.getElementById('ytSec'),R=((ALLD.WTR||{})[DEPT]||{})[scope]||[];
   sec.hidden=!R.length;if(!R.length)return;
@@ -1647,16 +1648,16 @@ function drawYt(){
   const ch=new Chart(cYt,{type:'line',data:{labels:R.map(r=>r.label),datasets:[ds('販売前年比',rs,cS,2),ds('荒利前年比',rg,cG,2.75)]},plugins:[ref,endLab,crossLine],
     options:{layout:{padding:{right:small?78:120}},interaction:{mode:'index',intersect:false},
       scales:{y:{suggestedMin:Math.min(95,...vals),suggestedMax:Math.max(105,...vals),grace:'5%',ticks:{callback:v=>v+'%'},grid:grid(),border:{display:false}},x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,maxTicksLimit:small?5:12}}},
-      plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{title:it=>{const r=R[it[0].dataIndex];return `${r.label}（${r.n}日・${r.ns}店）`;},
+      plugins:{tooltip:{filter:x=>x.raw!=null,callbacks:{title:it=>{const r=R[it[0].dataIndex];return `${r.label}（${r.n}日・${nsTxt(r)}）`;},
         label:x=>{const r=R[x.dataIndex],g=x.datasetIndex===1;return ` ${x.dataset.label}  ${x.raw.toFixed(1)}%（今年 ${yen(g?r.g26:r.s26)}／前年 ${yen(g?r.g25:r.s25)}）`;},
         afterBody:it=>{const i=it[0].dataIndex,r=R[i],o=[];if(rs[i]!=null&&rg[i]!=null)o.push(`荒利 − 販売  ${ppt(rg[i]-rs[i])}`);if(r.miss.length)o.push(`この週は ${r.miss.join('・')} を除く（今年か前年のデータがない）`);return o;}}}}}});
   charts.push(ch);wireLegend(ch,'ytLegend');
   const sg=v=>(v>=0?'+':'-')+yen(Math.abs(v)).replace('-','');
   document.getElementById('tYt').innerHTML=`<thead><tr><th class="l">週</th><th>日数</th><th>店舗数</th><th>販売高 今年</th><th>販売高 前年</th><th>販売前年比</th><th>荒利益高 今年</th><th>荒利益高 前年</th><th>荒利前年比</th><th>荒利 − 販売</th></tr></thead><tbody>`+
-    R.map((r,i)=>{const d=rs[i]!=null&&rg[i]!=null?rg[i]-rs[i]:null;return `<tr${i===last?' style="font-weight:700"':''}><td class="l">${r.label}${r.miss.length?`<span style="color:var(--ink-3);font-size:10.5px">（${r.miss.join('・')}を除く）</span>`:''}</td><td class="num">${r.n}日</td><td class="num">${r.ns}店</td><td class="num">${yen(r.s26)}</td><td class="num" style="color:var(--ink-2)">${yen(r.s25)}</td><td>${chip(pct(r.s26,r.s25))}</td><td class="num">${yen(r.g26)}</td><td class="num" style="color:var(--ink-2)">${yen(r.g25)}</td><td>${chip(pct(r.g26,r.g25))}</td><td class="num" style="color:${d==null?'inherit':d<-1?'var(--bad)':d>1?'var(--good)':'var(--ink-2)'}">${d==null?'—':ppt(d)}</td></tr>`;}).join('')+'</tbody>';
-  const L=R[last],dl=rg[last]-rs[last],below=R.filter((_,i)=>rs[i]!=null&&rg[i]!=null&&rg[i]<rs[i]).length,wks=R.filter(r=>r.ns<Math.max(...R.map(x=>x.ns))).length;
+    R.map((r,i)=>{const d=rs[i]!=null&&rg[i]!=null?rg[i]-rs[i]:null;return `<tr${i===last?' style="font-weight:700"':''}><td class="l">${r.label}${r.miss.length?`<span style="color:var(--ink-3);font-size:10.5px">（${r.miss.join('・')}を除く）</span>`:''}</td><td class="num">${r.n}日</td><td class="num">${nsTxt(r)}</td><td class="num">${yen(r.s26)}</td><td class="num" style="color:var(--ink-2)">${yen(r.s25)}</td><td>${chip(pct(r.s26,r.s25))}</td><td class="num">${yen(r.g26)}</td><td class="num" style="color:var(--ink-2)">${yen(r.g25)}</td><td>${chip(pct(r.g26,r.g25))}</td><td class="num" style="color:${d==null?'inherit':d<-1?'var(--bad)':d>1?'var(--good)':'var(--ink-2)'}">${d==null?'—':ppt(d)}</td></tr>`;}).join('')+'</tbody>';
+  const L=R[last],dl=rg[last]-rs[last],below=R.filter((_,i)=>rs[i]!=null&&rg[i]!=null&&rg[i]<rs[i]).length,wks=R.filter(r=>(r.ns0??r.ns)<Math.max(...R.map(x=>x.ns))).length;
   document.getElementById('ytNote').innerHTML=`最新の週（${L.label}・${L.n}日）は、販売前年比 <b>${rs[last].toFixed(0)}%</b>・荒利前年比 <b>${rg[last].toFixed(0)}%</b>（荒利が販売より ${ppt(dl)}）。表示している${R.length}週のうち、荒利前年比が販売前年比を下回った週は <b>${below}週</b>です。<br>
-    前年は<b>同じ日付</b>（曜日の並びは違います）。今年・前年の両方にデータがある店舗・日だけで計算し、3日未満の週は出していません。週は月曜始まりで、上の「期間」の切り替えには連動しません。${wks?'店舗数が少ない週は、まだその店のデータがない週です。':''}前の月のCSVも data/ に残しておくと、その週まで線が伸びます。`;
+    前年は<b>同じ日付</b>（曜日の並びは違います）。今年・前年の両方にデータがある店舗・日だけで計算し、3日未満の週は出していません。週は月曜始まりで、上の「期間」の切り替えには連動しません。${wks?'店舗数が少ない週は、一部の店の今年か前年のデータがない週です（その店は、その日だけ比べていません）。':''}前の月のCSVも data/ に残しておくと、その週まで線が伸びます。`;
   labelTables();
 }
 function draw(){

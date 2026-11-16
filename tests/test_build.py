@@ -170,6 +170,7 @@ def _wk_expect(rows, y, days):
 def test_weekly_yoy_trend_matches_raw():
     c = data(); W = c['D']['WTR']['FF']['ALL']
     assert [(r['label'], r['n'], r['ns']) for r in W] == [('10/1〜10/4', 4, 5), ('10/5〜10/11', 7, 5)]
+    assert W[0]['ns0'] == 4 and W[1]['ns0'] == 5            # 10/3 は上新田のデータがない → その日は4店
     for r, days in zip(W, [{(10, d) for d in range(1, 5)}, {(10, d) for d in range(5, 12)}]):
         a, b = _wk_expect(c['ff'], 2026, days), _wk_expect(c['ff'], 2025, days)
         assert abs(r['s26'] - a['販売高']) < 0.5 and abs(r['s25'] - b['販売高']) < 0.5, r
