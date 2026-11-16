@@ -277,24 +277,37 @@ function build(scope) {
     s.addText(`増産：期間中（${N}日間）廃棄ゼロで、毎日安定して売れている単品。減産：廃棄率20%以上。減らす数は廃棄の約8割まで（売り切れ防止）。`, { x: 0.5, y: 6.55, w: 12.33, h: 0.35, fontSize: 10.5, color: HEX.ink3, margin: 0, isTextBox: true });
 
     // ===== 12 曜日・天気 =====
-    s = add(T(`曜日・祝日・天気の影響（前年${MO}月）`));
-    const wt = [[H('店舗', { align: 'left' }), H('平日 売上/日'), H('土曜'), H('日曜・祝日'), H('雨の日 荒利'), H('雨の日 廃棄')]];
-    const ix = (v, o = {}) => Tc((v * 100).toFixed(0), Object.assign({ bold: true, color: v >= 1.05 ? HEX.good : v <= 0.9 ? HEX.bad : HEX.warn }, o));
-    ['ALL', ...STORES].forEach(x => { const o = A[x].st, f = x === scope && !isAll ? { fill: { color: HEX.star } } : {};
-      wt.push([Tc((x === scope && !isAll ? '★ ' : '') + (x === 'ALL' ? '全店' : x), Object.assign({ align: 'left', bold: true }, f)), Tc(yen(o['平日'].amt), f), ix(o['土'].idx, f), ix(o['日祝'].idx, f), RC(100 + o.wet.gp * 100, false, f), RC(100 + o.wet.wy * 100, true, f)]); });
-    s.addTable(wt, tblOpts(0.5, 1.15, 6.6, [1.1, 1.3, 0.9, 1.1, 1.1, 1.1], 0.34));
-    const yW = 1.15 + 0.34 * (NS + 2) + 0.08;
-    s.addText('土曜・日祝は平日を100とした荒利益高の指数。雨の日は雨でない日＝100%', { x: 0.5, y: yW, w: 6.6, h: 0.28, fontSize: 10, color: HEX.ink3, margin: 0, isTextBox: true });
+    // 1日あたりの売上（販売高）を 平日・土曜・日曜祝日 で、前年（前年同月の全日）と今年（今月1日〜N日）の両方で出す。全店の行は全店合計の1日あたり
+    s = add(T(`曜日・祝日・天気の影響（1日あたりの売上）`));
+    sub(s, `前年＝${LY}年${MO}月の全日、今年＝${Y}年${MO}/1〜${N}。全店は${NS}店合計の1日あたり、店舗は1店の1日あたり。平日比＝平日を100%とした売上`, 0.98);
+    const offT = d => M.hol26[d] || DT(d).getDay() === 0 ? '日祝' : DT(d).getDay() === 6 ? '土' : '平日';
+    const ty26 = (x, typ) => { const Q = A[x], st = x === 'ALL'; let a = 0, n = 0, nd = 0;
+      for (let d = 1; d <= N; d++) { if (!Q.cov26[d - 1] || offT(d) !== typ) continue; a += Q.daily26.販売高[d - 1]; n += Q.cov26[d - 1]; nd++; }
+      return n ? (st ? a / nd : a / n) : null; };
+    const PR = (v, o = {}) => v == null ? Tc('—', o) : Tc(v.toFixed(0) + '%', Object.assign({ bold: true, color: v >= 105 ? HEX.good : v <= 90 ? HEX.bad : HEX.warn }, o));
+    const wt = [[H('店舗', { align: 'left' }), H(`平日 ${LY}`), H(`平日 ${Y}`), H(`土曜 ${LY}`), H(`土曜 ${Y}`), H('土曜 平日比'), H(`日祝 ${LY}`), H(`日祝 ${Y}`), H('日祝 平日比'), H('雨の日 荒利'), H('雨の日 廃棄')]];
+    ['ALL', ...STORES].forEach(x => { const o = A[x].st, me = x === scope && !isAll, f = me ? { fill: { color: HEX.star } } : {}, g = { color: HEX.ink2 };
+      const w6 = ty26(x, '平日'), sa6 = ty26(x, '土'), su6 = ty26(x, '日祝');
+      wt.push([Tc((me ? '★ ' : '') + (x === 'ALL' ? '全店' : x), Object.assign({ align: 'left', bold: true }, f)),
+        Tc(yen(o['平日'].amt), Object.assign({}, g, f)), Tc(w6 == null ? '—' : yen(w6), Object.assign({ bold: true }, f)),
+        Tc(yen(o['土'].amt), Object.assign({}, g, f)), Tc(sa6 == null ? '—' : yen(sa6), Object.assign({ bold: true }, f)), PR(sa6 != null && w6 ? sa6 / w6 * 100 : null, f),
+        Tc(yen(o['日祝'].amt), Object.assign({}, g, f)), Tc(su6 == null ? '—' : yen(su6), Object.assign({ bold: true }, f)), PR(su6 != null && w6 ? su6 / w6 * 100 : null, f),
+        RC(100 + o.wet.gp * 100, false, f), RC(100 + o.wet.wy * 100, true, f)]); });
+    s.addTable(wt, tblOpts(0.5, 1.35, 12.33, [1.05, 1.13, 1.13, 1.13, 1.13, 1.0, 1.13, 1.13, 1.0, 1.06, 1.24], 0.31));
+    const yW = 1.35 + 0.31 * (NS + 2) + 0.06;
+    s.addText(`薄い数字＝前年、太い数字＝今年。雨の日は前年${MO}月の雨でない日＝100%（荒利益高・廃棄高）`, { x: 0.5, y: yW, w: 12.33, h: 0.26, fontSize: 10, color: HEX.ink3, margin: 0, isTextBox: true });
     const R = A.wx.res;
     s.addChart(pres.charts.BAR, [{ name: '土曜', labels: cats, values: cats.map(c => +((R[c] || R.ALL).qty.sat * 100).toFixed(1)) }, { name: '日曜・祝日', labels: cats, values: cats.map(c => +((R[c] || R.ALL).qty.sun * 100).toFixed(1)) }, { name: '雨の日', labels: cats, values: cats.map(c => +((R[c] || R.ALL).qty.wet * 100).toFixed(1)) }],
-      Object.assign(chartBase(), { x: 7.4, y: 1.1, w: 5.43, h: 5.75, barDir: 'bar', barGrouping: 'clustered', chartColors: ['1F5FA6', 'D9822B', '8E6BB8'], showLegend: true, legendPos: 't', showTitle: true, title: 'カテゴリー別 販売数への影響（%・全店）', valAxisLabelFormatCode: '0', barGapWidthPct: 40, catAxisLabelPos: 'low' }));
+      Object.assign(chartBase(), { x: 0.5, y: yW + 0.32, w: 7.6, h: 6.9 - yW - 0.32, barDir: 'bar', barGrouping: 'clustered', chartColors: ['1F5FA6', 'D9822B', '8E6BB8'], showLegend: true, legendPos: 'r', showTitle: true, title: `カテゴリー別 販売数への影響（%・全店・前年${MO}月）`, valAxisLabelFormatCode: '0', barGapWidthPct: 40, catAxisLabelPos: 'low' }));
     const cb = A.wx.chukaBand;
     const ftx = A.ff && cb ? `気温が下がると中華まんが売れます。前年は最高${cb[0].hi}℃未満の日に1日平均 ${Math.round(cb[0].avg)}個、${cb[2].lo}℃以上の日は ${Math.round(cb[2].avg)}個（${NS}店合計）。` : '厨房は気温より曜日の影響が大きい（日曜・祝日は弁当が大きく減少）。';
-    note(s, ftx, 0.5, yW + 0.45, 6.6, 1.3, 12);
+    const me12 = A[scope], w6s = ty26(scope, '平日'), su6s = ty26(scope, '日祝');
+    const ext = !isAll && w6s && su6s && Math.abs(su6s / w6s - me12.st['日祝'].amt / me12.st['平日'].amt) >= 0.3 ? `\n${scope}の日曜・祝日は、前年は平日の${(me12.st['日祝'].amt / me12.st['平日'].amt * 100).toFixed(0)}%でしたが、今年は${(su6s / w6s * 100).toFixed(0)}%。今年の売れ方を目安にします。` : '';
+    note(s, ftx + ext, 8.4, yW + 0.45, 4.43, 6.9 - yW - 0.6, 11.5);
 
     // ===== 13 仕込みカレンダー =====
     s = add(T(`今後2週間の仕込みカレンダー（${SNAME}）`));
-    const ctab = [[H('日付', { align: 'left' }), H('区分', { align: 'left' }), H('天気予報', { align: 'left' }), H('最高'), H('降水'), H('予想 販売高'), H('平日比'), H('判定', { align: 'center' })]];
+    const ctab = [[H('日付', { align: 'left' }), H('区分', { align: 'left' }), H('天気予報', { align: 'left' }), H('最高'), H('降水'), H('予想 販売高'), H('平日比（荒利）'), H('判定', { align: 'center' })]];
     const cal = S.cal.slice(0, 14);
     cal.forEach(r => { const sg = r.sig === 'chance' ? ['チャンス', HEX.good, HEX.goodBg] : r.sig === 'risk' ? ['リスク', HEX.bad, HEX.badBg] : ['通常', HEX.ink3, 'FFFFFF'];
       const we = r.typ !== '平日' ? { fill: { color: HEX.accSoft } } : {};
@@ -306,9 +319,9 @@ function build(scope) {
     // 今年の実績（1店1日）で、土曜・日祝が平日の何%か。前年の傾向と大きく違えば注意を書く
     const avg26 = f => { let a = 0, n = 0; for (let d = 1; d <= N; d++) if (S.cov26[d - 1] && f(d)) { a += S.daily26.販売高[d - 1]; n += S.cov26[d - 1]; } return n ? a / n : null; };
     const wkA = avg26(d => !isOff(d)), satA = avg26(d => DT(d).getDay() === 6 && !M.hol26[d]), sunA = avg26(d => DT(d).getDay() === 0 || !!M.hol26[d]);
-    const warn = [['土曜', satA, ST['土'].idx], ['日曜・祝日', sunA, ST['日祝'].idx]].filter(([, a, ix]) => a != null && wkA && Math.abs(a / wkA - ix) >= 0.4)
-      .map(([lb, a, ix]) => `注意：${lb}は前年が平日の${(ix * 100).toFixed(0)}%でしたが、今年（${MO}/1〜${N}）は平日の${(a / wkA * 100).toFixed(0)}%売れています。予想販売高より今年の実績（1日 ${yen(a)}）を目安にしてください。`);
-    note(s, `雨の日：荒利 ${rtxt(100 + ST.wet.gp * 100)}・廃棄 ${rtxt(100 + ST.wet.wy * 100)}（雨でない日＝100%）\n\n土曜：平日の${(ST['土'].idx * 100).toFixed(0)}%\n日曜・祝日：平日の${(ST['日祝'].idx * 100).toFixed(0)}%（前年${MO}月）\n\n予想販売高は前年${MO}月の曜日の傾向と、今年の前年比から試算。天気は前日の予報で見直します。` + (warn.length ? '\n\n' + warn.join('\n') : ''), 11.0, 1.1, 1.83, 5.75, warn.length ? 9 : 10);
+    const warn = [['土曜', satA, ST['土'].amt / ST['平日'].amt], ['日曜・祝日', sunA, ST['日祝'].amt / ST['平日'].amt]].filter(([, a, ix]) => a != null && wkA && Math.abs(a / wkA - ix) >= 0.25)
+      .map(([lb, a, ix]) => `注意：${lb}の売上は前年が平日の${(ix * 100).toFixed(0)}%でしたが、今年（${MO}/1〜${N}）は平日の${(a / wkA * 100).toFixed(0)}%売れています。予想販売高より今年の実績（1日 ${yen(a)}）を目安にしてください。`);
+    note(s, `雨の日：荒利 ${rtxt(100 + ST.wet.gp * 100)}・廃棄 ${rtxt(100 + ST.wet.wy * 100)}（雨でない日＝100%）\n\n荒利益高（前年${MO}月）\n土曜：平日の${(ST['土'].idx * 100).toFixed(0)}%\n日曜・祝日：平日の${(ST['日祝'].idx * 100).toFixed(0)}%\n\n予想販売高は前年${MO}月の曜日の傾向と、今年の前年比から試算。天気は前日の予報で見直します。` + (warn.length ? '\n\n' + warn.join('\n') : ''), 11.0, 1.1, 1.83, 5.75, warn.length ? 9 : 10);
   }
   return pres;
 }
