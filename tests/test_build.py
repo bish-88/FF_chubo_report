@@ -171,10 +171,12 @@ def test_weekly_yoy_trend_matches_raw():
     c = data(); W = c['D']['WTR']['FF']['ALL']
     assert [(r['label'], r['n'], r['ns']) for r in W] == [('10/1〜10/4', 4, 5), ('10/5〜10/11', 7, 5)]
     assert W[0]['ns0'] == 4 and W[1]['ns0'] == 5            # 10/3 は上新田のデータがない → その日は4店
+    assert W[0]['sd'] == 4 * 5 - 1 and W[1]['sd'] == 7 * 5      # 比べた 店舗×日 の数
     for r, days in zip(W, [{(10, d) for d in range(1, 5)}, {(10, d) for d in range(5, 12)}]):
         a, b = _wk_expect(c['ff'], 2026, days), _wk_expect(c['ff'], 2025, days)
         assert abs(r['s26'] - a['販売高']) < 0.5 and abs(r['s25'] - b['販売高']) < 0.5, r
         assert abs(r['g26'] - a['荒利益高']) < 0.5 and abs(r['g25'] - b['荒利益高']) < 0.5, r
+        assert abs(r['w26'] - a['廃棄高']) < 0.5 and abs(r['w25'] - b['廃棄高']) < 0.5, r   # フィクスチャーにマチカフェはない
     # 店舗ごと：上新田は 10/3 が欠損 → 前年の 10/3 も入れない
     U = c['D']['WTR']['FF']['上新田'][0]
     assert U['n'] == 3

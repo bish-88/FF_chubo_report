@@ -290,8 +290,9 @@ D['PW']={w['k']:{'FF':dept(FF,FFC,[c for c in ['マチカフェ'] if c in FFC],[
 # ===== 週別の前年比トレンド（月をまたいで、data/ にあるすべての週） =====
 # 前年は「同じ日付」（2025/11/3 ↔ 2026/11/3）。今年・前年の両方にデータがある 店舗×日 だけで比べる。
 # カテゴリーは、その週に今年・前年の両方で売上があるものだけ（片方のCSVがない週に前年比が大きくぶれないように）。
-# 3日未満の週（月初の端など）は出さない。週は月曜始まり。ns／ns0＝1日あたりの店舗数（最多／最少）
-def wtrend(raw,catfn,cats):
+# 3日未満の週（月初の端など）は出さない。週は月曜始まり。ns／ns0＝1日あたりの店舗数（最多／最少）、sd＝比べた 店舗×日 の数。
+# 廃棄高（w26/w25）は、廃棄が出ないカテゴリー（マチカフェ）を除く
+def wtrend(raw,catfn,cats,excl=()):
     df=raw[['年月日','店舗名','CLASS名','SUBCLASS名','商品名']+m].copy()
     for c in m: df[c]=pd.to_numeric(df[c].astype(str).str.replace(',',''),errors='coerce').fillna(0)
     df['date']=pd.to_datetime(df['年月日']); df['year']=df.date.dt.year
@@ -314,13 +315,13 @@ def wtrend(raw,catfn,cats):
             g=x[x.wk==wk]
             cs=[c for c in cats if ((g.cat==c)&(g.year==Y)).any() and ((g.cat==c)&(g.year==LY)).any()]
             g=g[g.cat.isin(cs)]; a,b=days[0],days[-1]
-            t=lambda y,k:F(g[g.year==y][k].sum())
+            t=lambda y,k:F(g[g.year==y][k].sum()); gw=g[~g.cat.isin(excl)]; tw=lambda y:F(gw[gw.year==y]['廃棄高'].sum())
             rows.append(dict(k=wk.strftime('%Y-%m-%d'),label=f'{a.month}/{a.day}〜{b.month}/{b.day}',n=len(days),
-                             ns=max(sum(1 for d,_ in bc if d==x) for x in days),ns0=min(sum(1 for d,_ in bc if d==x) for x in days),s26=t(Y,'販売高'),s25=t(LY,'販売高'),g26=t(Y,'荒利益高'),g25=t(LY,'荒利益高'),
+                             ns=max(sum(1 for d,_ in bc if d==x) for x in days),ns0=min(sum(1 for d,_ in bc if d==x) for x in days),s26=t(Y,'販売高'),s25=t(LY,'販売高'),g26=t(Y,'荒利益高'),g25=t(LY,'荒利益高'),w26=tw(Y),w25=tw(LY),sd=sum(1 for d,_ in bc if a<=d<=b),
                              miss=[c for c in cats if c not in cs]))
         out[sc]=rows
     return out
-D['WTR']={'FF':wtrend(RAW['FF'],lambda d:d.CLASS名.map(catmap),FFC),
+D['WTR']={'FF':wtrend(RAW['FF'],lambda d:d.CLASS名.map(catmap),FFC,['マチカフェ']),
           '厨房':wtrend(RAW['厨房'],lambda d:d.SUBCLASS名.where(d.SUBCLASS名.isin(['弁当','惣菜','調理パン'])),['弁当','調理パン','惣菜'])}
 D['meta']['built']=datetime.date.today().isoformat()   # ページを作った日（予測の更新日として表示）
 # 改善候補（実績からの自動抽出。式は scripts/candidates.py）

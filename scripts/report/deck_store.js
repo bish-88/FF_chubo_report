@@ -167,6 +167,25 @@ function build(scope) {
       note(s, `先週から一番上がったのは ${up.st}（売上 ${syen(up.a.販売高 - up.b.販売高)}）、一番下がったのは ${dn.st}（売上 ${syen(dn.a.販売高 - dn.b.販売高)}）。\n今週の売上が前年の同じ日付を下回った店舗：${yl.length ? yl.join('、') : 'なし'}。`, 0.5, 1.4 + 0.38 * (NS + 2) + 0.35, 12.33, 1.05, 12);
     }
 
+    // ===== 週別の推移（前年比と 1日あたりの金額）。ダッシュボードの「販売高・荒利益高・廃棄高の推移（週別）」と同じデータ =====
+    const WR = ((D.WTR || {})[dp] || {})[scope] || [];
+    if (WR.length) {
+      s = add(T('週別の推移　販売高・荒利益高・廃棄高（前年と比べて）'));
+      const per = isAll ? '1店1日あたり' : '1日あたり', wl = WR.map(r => r.label);
+      sub(s, `前年＝同じ日付（両方の年にデータがある${isAll ? '店舗・' : ''}日だけ）。金額は${per}。廃棄高は${dp === 'FF' ? 'マチカフェを除く' : '弁当・調理パン・惣菜'}。週は月曜始まり`, 0.98);
+      const q = (a, b) => b > 0 ? +(a / b * 100).toFixed(1) : null, pdv = (r, k) => r.sd ? Math.round(r[k] / r.sd) : null;
+      const lo = (x, y, t, colors, fmt, extra = {}) => Object.assign(chartBase(), { x, y, w: 6.05, h: 2.72, chartColors: colors, lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 5, showLegend: true, legendPos: 't', showTitle: true, title: t,
+        valAxisLabelFormatCode: fmt, catAxisLabelFontSize: 9, showValue: false }, extra);
+      s.addChart(pres.charts.LINE, [{ name: '販売前年比', labels: wl, values: WR.map(r => q(r.s26, r.s25)) }, { name: '荒利前年比', labels: wl, values: WR.map(r => q(r.g26, r.g25)) },
+        { name: '廃棄前年比', labels: wl, values: WR.map(r => q(r.w26, r.w25)) }, { name: '前年＝100%', labels: wl, values: WR.map(() => 100) }],
+        lo(0.5, 1.33, '前年比（%）　廃棄は低いほど良い', ['8290A1', '1F5FA6', HEX.bad, 'C3CCD6'], '0"%"', { lineDataSymbolSize: 5 }));
+      const am = (x, y, k, ttl, col) => s.addChart(pres.charts.LINE, [{ name: `${LY}年（同じ日付）`, labels: wl, values: WR.map(r => pdv(r, k + '25')) }, { name: String(Y), labels: wl, values: WR.map(r => pdv(r, k + '26')) }],
+        lo(x, y, `${ttl}（${per}）`, [HEX.ly, col], '#,##0'));
+      am(6.78, 1.33, 's', '販売高', HEX.ty); am(0.5, 4.17, 'g', '荒利益高', '1F5FA6'); am(6.78, 4.17, 'w', '廃棄高', HEX.bad);
+      const L = WR[WR.length - 1];
+      s.addNotes(`最新の週 ${L.label}：販売前年比 ${rtxt(ratio(L.s26, L.s25))}、荒利前年比 ${rtxt(ratio(L.g26, L.g25))}、廃棄前年比 ${rtxt(ratio(L.w26, L.w25))}。` + (WR.some(r => r.miss.length) ? '（〇〇を除く）の週は、そのカテゴリーのデータが片方の年にしかないため除いています。' : ''));
+    }
+
     // ===== 6 PSA/D =====
     s = add(T('先週比（1店1日あたり PSA/D）'));
     const cov = S.cov26, NCD = D.ncd[dp][scope];

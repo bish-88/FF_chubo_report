@@ -31,7 +31,7 @@ async def main():
                             await pg.click(f'.tab[data-t="{t}"]'); checked += 1
                             if t == 'sales':
                                 await pg.click('#segMet button[data-k="荒利益高"]'); await pg.click('#segMet button[data-k="販売高"]')
-                                if not await pg.evaluate("(()=>{const R=((ALLD.WTR||{})[DEPT]||{})[scope]||[];if(!R.length)return document.getElementById('ytSec').hidden;const c=Chart.getChart('cYt');return !!c&&c.data.datasets.length===2&&c.data.labels.length===R.length&&document.querySelectorAll('#tYt tbody tr').length===R.length;})()"): problems.append((w, dept, per, s, t, 'weekly yoy trend'))
+                                if not await pg.evaluate("(()=>{const R=((ALLD.WTR||{})[DEPT]||{})[scope]||[];if(!R.length)return document.getElementById('ytSec').hidden;const c=Chart.getChart('cYt');return !!c&&c.data.datasets.length===(YTM==='amt'?2:3)&&c.data.labels.length===R.length&&document.querySelectorAll('#tYt tbody tr').length===R.length;})()"): problems.append((w, dept, per, s, t, 'weekly yoy trend'))
                                 await pg.click('#segGrain button[data-k="week"]')
                                 if not await pg.evaluate("Chart.getChart('cDaily').config.type==='bar'&&document.querySelectorAll('#tWkTrend tbody tr').length>=3"): problems.append((w, dept, per, s, t, 'weekly view'))
                                 await pg.click('#segGrain button[data-k="dow"]')
@@ -60,6 +60,7 @@ async def main():
             problems += [(w, 'JS error', e) for e in errs]
         await b.close()
         print(f'{checked} 画面を確認、問題 {len(problems)} 件')
+        import collections; print(collections.Counter(str(x[-1])[:40] for x in problems))
         for x in problems[:20]: print(x)
         sys.exit(1 if problems else 0)
 asyncio.run(main())
