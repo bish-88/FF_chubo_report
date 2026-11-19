@@ -1097,16 +1097,20 @@ function renderStoreRank(){
 let CI=null;
 function catImage(dp,sc,c,pk){
   // 単品を廃棄率の高い順に並べた表だけの1枚。廃棄率4%以上は赤字（廃棄率・廃棄高）
-  pk=pk||'all';const S=dataOf(pk,dp)[sc];
+  pk=pk||'all';const S=dataOf(pk,dp)[sc],m=ALLD.meta,P=(m.periods||[]).find(q=>q.k===pk)||{d0:1,d1:m.N};
   const prods=S.prod.filter(r=>r.cat===c).sort((x,y)=>y.wr-x.wr||y.wy-x.wy||y.sold-x.sold),rows=prods.slice(0,30),RED=0.04;
   const C={ty:'#163F6E',ink:'#0E1A2B',ink2:'#465467',ink3:'#8290A1',rule:'#E2E7EE',bg:'#F3F5F8',good:'#16704A',goodBg:'#E7F4ED',bad:'#B0302A',badBg:'#FBECEB',warn:'#94650A',warnBg:'#FBF2DC',acc:'#EAF1FA'};
-  const W=1080,pad=24,rowH=46,H=pad+44+Math.max(rows.length,1)*rowH+(prods.length>rows.length?40:0)+pad;
+  const W=1080,pad=24,rowH=46,top=78,H=top+44+Math.max(rows.length,1)*rowH+(prods.length>rows.length?40:0)+pad;
   const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;const x=cv.getContext('2d');x.scale(2,2);
   const F=(sz,b)=>`${b?'700 ':''}${sz}px "Noto Sans JP","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif`;
   const T=(t,X,Y,sz,col,o={})=>{x.font=F(sz,o.b);x.fillStyle=col;x.textAlign=o.al||'left';x.textBaseline='middle';let s=String(t);if(o.max){while(s.length>1&&x.measureText(s).width>o.max)s=s.slice(0,-2)+'…';}x.fillText(s,X,Y);};
   const R=(X,Y,w,h,col,r=10)=>{x.fillStyle=col;x.beginPath();x.roundRect?x.roundRect(X,Y,w,h,r):x.rect(X,Y,w,h);x.fill();};
   x.fillStyle='#fff';x.fillRect(0,0,W,H);
-  let y=pad;
+  // 見出し：店舗名・カテゴリー・期間（例：青山台　からあげクン　9日〜15日）
+  const CC={'からあげクン':'#D9822B','ホットFF':'#8E6BB8','常温FF':'#2A9D8F','サーマル常温':'#A08420','中華まん':'#1F5FA6','弁当':'#1F5FA6','調理パン':'#D9822B','惣菜':'#2A9D8F'};
+  const nm0=`${sc==='ALL'?'全店':sc}　`;T(nm0,pad,40,32,C.ink,{b:1});x.font=F(32,1);let hx=pad+x.measureText(nm0).width;
+  T(c,hx,40,32,CC[c]||C.ty,{b:1});x.font=F(32,1);hx+=x.measureText(c).width;T(`　${P.d0}日〜${P.d1}日`,hx,40,32,C.ink,{b:1});
+  let y=top;
   const cols=[['順位',70,'c'],['商品名',436],['廃棄率',112],['廃棄高',118],['廃棄数',100],['販売数',100],['判定',96,'c']];let cx=pad;const cxs=cols.map(([,w])=>{const v=cx;cx+=w;return v;});
   R(pad,y,W-pad*2,44,C.bg,8);cols.forEach(([h,w,al],i)=>T(h,i===1?cxs[i]+10:al==='c'?cxs[i]+w/2:cxs[i]+w-10,y+22,18,i===2?C.ink:C.ink2,{b:1,al:i===1?'left':al==='c'?'center':'right'}));y+=44;
   const VC={increase:['増産',C.good,C.goodBg],keep:['維持',C.ty,C.acc],watch:['注意',C.warn,C.warnBg],reduce:['減産',C.bad,C.badBg],hold:['保留',C.ink3,C.bg]};
@@ -1130,7 +1134,7 @@ function renderCatImg(){
   el.querySelectorAll('button').forEach(b=>b.onclick=()=>{CI=b.dataset.k;renderCatImg();});
   const cv=catImage(DEPT,scope,CI,PK);document.getElementById('ciImg').src=cv.toDataURL('image/png');
   document.getElementById('ciSave').onclick=()=>cv.toBlob(async blob=>{
-    const name=`${scope==='ALL'?'全店':scope}_${DEPT}_${CI}_${PER().replace(/[\/〜]/g,'-')}.png`;
+    const pp=(ALLD.meta.periods||[]).find(q=>q.k===PK)||{d0:1,d1:ALLD.meta.N},name=`${scope==='ALL'?'全店':scope}${CI}${pp.d0}日〜${pp.d1}日.png`;
     // スマホ（GitHub Pages）では共有シートを開く →「画像を保存」で写真に入る
     if(!(window.claude&&window.claude.use)&&navigator.canShare){try{const f=new File([blob],name,{type:'image/png'});if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return;}}catch(e){if(e&&e.name==='AbortError')return;}}
     saveBlob(blob,name,'画像を');},'image/png');
