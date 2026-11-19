@@ -1101,7 +1101,7 @@ function catImage(dp,sc,c,pk){
   const prods=S.prod.filter(r=>r.cat===c).sort((x,y)=>y.wr-x.wr||y.wy-x.wy||y.sold-x.sold),rows=prods.slice(0,30),RED=0.04;
   const C={ty:'#163F6E',ink:'#0E1A2B',ink2:'#465467',ink3:'#8290A1',rule:'#E2E7EE',bg:'#F3F5F8',good:'#16704A',goodBg:'#E7F4ED',bad:'#B0302A',badBg:'#FBECEB',warn:'#94650A',warnBg:'#FBF2DC',acc:'#EAF1FA'};
   const CC={'からあげクン':'#D9822B','ホットFF':'#8E6BB8','常温FF':'#2A9D8F','サーマル常温':'#A08420','中華まん':'#1F5FA6','弁当':'#1F5FA6','調理パン':'#D9822B','惣菜':'#2A9D8F'};
-  const W=1080,pad=44,rowH=46,tblY=150,H=tblY+44+Math.max(rows.length,1)*rowH+(prods.length>rows.length?40:0)+100;
+  const W=1080,pad=44,rowH=46,tblY=150,H=tblY+44+Math.max(rows.length,1)*rowH+(prods.length>rows.length?40:0)+52;
   const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;const x=cv.getContext('2d');x.scale(2,2);
   const F=(sz,b)=>`${b?'700 ':''}${sz}px "Noto Sans JP","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif`;
   const T=(t,X,Y,sz,col,o={})=>{x.font=F(sz,o.b);x.fillStyle=col;x.textAlign=o.al||'left';x.textBaseline='middle';let s=String(t);if(o.max){while(s.length>1&&x.measureText(s).width>o.max)s=s.slice(0,-2)+'…';}x.fillText(s,X,Y);};
@@ -1124,8 +1124,7 @@ function catImage(dp,sc,c,pk){
     R(cxs[6]+8,cy-15,cols[6][1]-16,30,vb,6);T(vl,cxs[6]+cols[6][1]/2,cy,17,vc,{al:'center',b:1});T(adv,cxs[7]+10,cy,adv.length>8?14:16,C.ink2,{max:cols[7][1]-12});
     x.fillStyle=C.rule;x.fillRect(pad,y+rowH-1,W-pad*2,1);y+=rowH;});
   if(prods.length>rows.length){T(`ほか ${prods.length-rows.length}品`,pad+10,y+20,18,C.ink3);y+=40;}
-  T(`廃棄率＝廃棄数 ÷（販売数＋廃棄数）。赤字＝廃棄率4%以上、黄色の行＝${CONFIG.skuWasteLine}%以上。判定は「単品別 生産判断」と同じ基準。`,pad,y+32,16,C.ink3);
-  T('Made by Biswash',W-pad,y+66,16,C.ink3,{al:'right'});
+  T('Made by Biswash',W-pad,y+28,15,C.ink3,{al:'right'});
   return cv;
 }
 function renderCatImg(){
