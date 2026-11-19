@@ -536,9 +536,9 @@ tr.hotw td{background:color-mix(in srgb,var(--warn-bg) 60%,transparent)}
     <h3 class="subh">単品別 廃棄高ランキング（<span class="pR"></span>）</h3>
     <div class="tw"><table id="tWsku" style="min-width:900px"></table></div>
     <p class="datanote" id="wskuNote"></p>
-    <h3 class="subh" id="ciHead">カテゴリー別の画像（写真で保存）<span style="font-weight:400;color:var(--ink-3);font-size:12px">　<span class="pR"></span></span></h3>
+    <h3 class="subh" id="ciHead">カテゴリー別 廃棄率ランキングの画像（写真で保存）<span style="font-weight:400;color:var(--ink-3);font-size:12px">　<span class="pR"></span></span></h3>
     <div class="panel" id="ciPanel"><div class="ph"><div class="seg" id="segCi" role="group" aria-label="画像にするカテゴリー"></div><button class="cp" id="ciSave" style="margin-left:auto">画像を保存</button></div>
-      <div style="text-align:center"><img id="ciImg" alt="カテゴリー別の廃棄高・単品の画像" style="width:100%;max-width:560px;border:1px solid var(--rule);border-radius:8px;background:#fff"></div>
+      <div style="text-align:center"><img id="ciImg" alt="カテゴリー別 単品の廃棄率ランキングの画像" style="width:100%;max-width:560px;border:1px solid var(--rule);border-radius:8px;background:#fff"></div>
       <p class="datanote" id="ciNote">スマホでは「画像を保存」→「画像を保存」で写真に入ります（画像を長押ししても保存できます）。表示中の店舗・期間で作ります。マチカフェは廃棄が出ないため除いています。</p></div>
   </section>
 
@@ -1096,50 +1096,36 @@ function renderStoreRank(){
 // ===== カテゴリー別の画像（廃棄高・単品）。写真に保存して共有する用。テーマに関係なく白地で作る =====
 let CI=null;
 function catImage(dp,sc,c,pk){
+  // 単品を廃棄率の高い順に並べた1枚（KPIなどは入れない）。廃棄率4%以上は赤字、15%以上は黄色の行
   pk=pk||'all';const Ad=dataOf(pk,dp),S=Ad[sc],m=ALLD.meta,P=(m.periods||[]).find(x=>x.k===pk)||{range:`${m.MO}/1〜${m.N}`,n:m.N};
-  const a=S.cat.p26[c]||{},b=S.cat.p25[c]||{},prods=S.prod.filter(r=>r.cat===c).sort((x,y)=>y.wy-x.wy||y.wr-x.wr||y.amt-x.amt),RED=0.04,rows=prods.slice(0,15);
+  const prods=S.prod.filter(r=>r.cat===c).sort((x,y)=>y.wr-x.wr||y.wy-x.wy||y.sold-x.sold),rows=prods.slice(0,30),RED=0.04;
   const C={ty:'#163F6E',ink:'#0E1A2B',ink2:'#465467',ink3:'#8290A1',rule:'#E2E7EE',bg:'#F3F5F8',good:'#16704A',goodBg:'#E7F4ED',bad:'#B0302A',badBg:'#FBECEB',warn:'#94650A',warnBg:'#FBF2DC',acc:'#EAF1FA'};
   const CC={'からあげクン':'#D9822B','ホットFF':'#8E6BB8','常温FF':'#2A9D8F','サーマル常温':'#A08420','中華まん':'#1F5FA6','弁当':'#1F5FA6','調理パン':'#D9822B','惣菜':'#2A9D8F'};
-  const W=1080,pad=44,rowH=46,tblY=600,H=tblY+60+Math.max(rows.length,1)*rowH+(prods.length>rows.length?40:0)+110;
+  const W=1080,pad=44,rowH=46,tblY=150,H=tblY+44+Math.max(rows.length,1)*rowH+(prods.length>rows.length?40:0)+100;
   const cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;const x=cv.getContext('2d');x.scale(2,2);
   const F=(sz,b)=>`${b?'700 ':''}${sz}px "Noto Sans JP","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif`;
   const T=(t,X,Y,sz,col,o={})=>{x.font=F(sz,o.b);x.fillStyle=col;x.textAlign=o.al||'left';x.textBaseline='middle';let s=String(t);if(o.max){while(s.length>1&&x.measureText(s).width>o.max)s=s.slice(0,-2)+'…';}x.fillText(s,X,Y);};
   const R=(X,Y,w,h,col,r=10)=>{x.fillStyle=col;x.beginPath();x.roundRect?x.roundRect(X,Y,w,h,r):x.rect(X,Y,w,h);x.fill();};
   x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle=CC[c]||C.ty;x.fillRect(0,0,W,10);
-  T(`${sc==='ALL'?'全店':sc}｜${dp}｜`,pad,62,38,C.ink,{b:1});const w0=x.measureText(`${sc==='ALL'?'全店':sc}｜${dp}｜`).width;T(c,pad+w0,62,38,CC[c]||C.ty,{b:1});
-  T(`${m.Y}年${P.range}（${P.n}日間）vs ${m.LY}年の同じ日付　データ ${m.MO}/${m.N}締め`,pad,108,21,C.ink2);
-  const r_=(u,v)=>v>0?u/v*100:null,wr=o=>(o.販売数+o.廃棄数)?o.廃棄数/(o.販売数+o.廃棄数)*100:0;
-  const K=[['販売高（売上）',yen(a.販売高||0),r_(a.販売高,b.販売高),0,'前年 '+yen(b.販売高||0)],['荒利益高',yen(a.荒利益高||0),r_(a.荒利益高,b.荒利益高),0,'前年 '+yen(b.荒利益高||0)],
-    ['廃棄高',yen(a.廃棄高||0),r_(a.廃棄高,b.廃棄高),1,'前年 '+yen(b.廃棄高||0)],['廃棄率',wr(a).toFixed(1)+'%',wr(a)-wr(b),2,'前年 '+wr(b).toFixed(1)+'%']];
-  const bw=(W-pad*2-24)/2;
-  K.forEach(([lb,v,d,inv,ly],i)=>{const X=pad+(i%2)*(bw+24),Y=140+Math.floor(i/2)*170;R(X,Y,bw,150,C.bg,14);
-    T(lb,X+24,Y+30,21,C.ink3,{b:1});T(v,X+24,Y+78,40,inv===2&&wr(a)>=RED*100?C.bad:C.ink,{b:1,max:bw-48});
-    if(d!=null){const good=inv===2?d<0:inv?d<100:d>100,flat=inv===2?Math.abs(d)<0.1:Math.abs(d-100)<1,txt=inv===2?(d>=0?'+':'')+d.toFixed(1)+'pt':'前年比 '+d.toFixed(1)+'%';
-      x.font=F(19,1);const tw=x.measureText(txt).width+24;R(X+24,Y+106,tw,32,flat?C.warnBg:good?C.goodBg:C.badBg,8);T(txt,X+36,Y+122,19,flat?C.warn:good?C.good:C.bad,{b:1});
-      T(ly,X+36+tw,Y+122,19,C.ink3);}else T(ly,X+24,Y+122,19,C.ink3);});
-  // 今週 vs 先週
-  const tg=t=>(m.periods||[]).find(p=>p.tag===t),cw=tg('今週'),pw=tg('先週');let y=500;
-  if(cw&&pw&&ALLD.P[cw.k]&&ALLD.P[pw.k]){const A1=ALLD.P[cw.k][dp][sc].cat.p26[c]||{},A0=ALLD.P[pw.k][dp][sc].cat.p26[c]||{};R(pad,y,W-pad*2,70,C.acc,12);
-    T(`今週 ${cw.range} vs 先週 ${pw.range}`,pad+20,y+22,19,C.ink2,{b:1});
-    const it=(lb,k,inv,X)=>{const d=(A1[k]||0)-(A0[k]||0),good=inv?d<0:d>0;T(`${lb} ${yen(A0[k]||0)} → ${yen(A1[k]||0)}`,X,y+50,20,C.ink);x.font=F(20);const w1=x.measureText(`${lb} ${yen(A0[k]||0)} → ${yen(A1[k]||0)}`).width;
-      T(`（${d>=0?'+':'-'}¥${Math.abs(Math.round(d)).toLocaleString('ja-JP')}）`,X+w1+4,y+50,20,Math.abs(d)<1?C.ink2:good?C.good:C.bad,{b:1});};
-    it('販売高',  '販売高',0,pad+20);it('廃棄高','廃棄高',1,pad+(W-pad*2)/2+10);}
-  // 単品の表（廃棄高の多い順）
-  y=tblY;T(`単品（廃棄高→廃棄率の多い順・${prods.length}品${prods.length>rows.length?'のうち上位'+rows.length:''}）`,pad,y,24,C.ink,{b:1});y+=30;
-  const cols=[['商品名',300,'l'],['販売数',96],['廃棄数',96],['廃棄高',118],['廃棄率',96],['判定',86,'c'],['生産の目安',200,'l']];let cx=pad;const cxs=cols.map(([,w])=>{const v=cx;cx+=w;return v;});
-  R(pad,y,W-pad*2,40,C.bg,8);cols.forEach(([h,w,al],i)=>T(h,al==='l'?cxs[i]+10:al==='c'?cxs[i]+w/2:cxs[i]+w-10,y+20,18,C.ink2,{b:1,al:al==='l'?'left':al==='c'?'center':'right'}));y+=40;
+  const h1=`${sc==='ALL'?'全店':sc}｜${dp}｜`;T(h1,pad,58,36,C.ink,{b:1});x.font=F(36,1);const w0=x.measureText(h1).width;T(c,pad+w0,58,36,CC[c]||C.ty,{b:1});
+  x.font=F(36,1);const w1=x.measureText(c).width;T('　廃棄率の高い順',pad+w0+w1,60,24,C.ink2,{b:1});
+  T(`${m.Y}年${P.range}（${P.n}日間）・${prods.length}品${prods.length>rows.length?`（上位${rows.length}品を表示）`:''}　データ ${m.MO}/${m.N}締め`,pad,104,20,C.ink2);
+  let y=tblY;
+  const cols=[['順位',58,'c'],['商品名',284],['廃棄率',100],['廃棄高',106],['廃棄数',80],['販売数',82],['判定',78,'c'],['生産の目安',204]];let cx=pad;const cxs=cols.map(([,w])=>{const v=cx;cx+=w;return v;});
+  R(pad,y,W-pad*2,44,C.bg,8);cols.forEach(([h,w,al],i)=>T(h,i===1||i===7?cxs[i]+10:al==='c'?cxs[i]+w/2:cxs[i]+w-10,y+22,18,i===2?C.ink:C.ink2,{b:1,al:i===1||i===7?'left':al==='c'?'center':'right'}));y+=44;
   const VC={increase:['増産',C.good,C.goodBg],keep:['維持',C.ty,C.acc],watch:['注意',C.warn,C.warnBg],reduce:['減産',C.bad,C.badBg],hold:['保留',C.ink3,C.bg]};
   if(!rows.length){T('この期間の単品データはありません。',pad+10,y+rowH/2,20,C.ink3);y+=rowH;}
-  rows.forEach((r,i)=>{const cy=y+rowH/2,hot=r.wr>=CONFIG.skuWasteLine/100;if(hot)R(pad,y+2,W-pad*2,rowH-4,'#FFF6DB',6);
+  rows.forEach((r,i)=>{const cy=y+rowH/2,red=r.wr>=RED;if(r.wr>=CONFIG.skuWasteLine/100)R(pad,y+2,W-pad*2,rowH-4,'#FFF6DB',6);
     const nm=r.name.replace(/^(ＦＦ|ＨＯＴ)\s*/,'').replace(/^からあげクン\s*/,'からあげクン '),[vl,vc,vb]=VC[r.v]||VC.keep;
     const adv=r.v==='hold'?'データ不足':r.v==='reduce'?cutAdv(r,sc==='ALL'?'1店1日':'1日'):r.v==='increase'?'売切れ時 +1〜2個':r.v==='watch'?'ピーク後の追加を控える':'現状維持';
-    T(nm,cxs[0]+10,cy,19,C.ink,{max:cols[0][1]-16});T(n0(r.sold)+'個',cxs[1]+cols[1][1]-10,cy,19,C.ink,{al:'right'});T(n0(r.w)+'個',cxs[2]+cols[2][1]-10,cy,19,C.ink,{al:'right'});
-    T(yen(r.wy),cxs[3]+cols[3][1]-10,cy,19,r.wy>0?C.ink:C.ink3,{al:'right',b:1});T((r.wr*100).toFixed(1)+'%',cxs[4]+cols[4][1]-10,cy,19,r.wr>=RED?C.bad:C.ink,{al:'right',b:r.wr>=RED});
-    R(cxs[5]+10,cy-15,cols[5][1]-20,30,vb,6);T(vl,cxs[5]+cols[5][1]/2,cy,17,vc,{al:'center',b:1});T(adv,cxs[6]+10,cy,adv.length>10?15:17,C.ink2,{max:cols[6][1]-12});
+    T(i+1,cxs[0]+cols[0][1]/2,cy,18,C.ink3,{al:'center',b:1});T(nm,cxs[1]+10,cy,19,C.ink,{max:cols[1][1]-16});
+    T((r.wr*100).toFixed(1)+'%',cxs[2]+cols[2][1]-10,cy,21,red?C.bad:C.ink,{al:'right',b:1});
+    T(yen(r.wy),cxs[3]+cols[3][1]-10,cy,19,red?C.bad:r.wy>0?C.ink:C.ink3,{al:'right',b:red});T(n0(r.w)+'個',cxs[4]+cols[4][1]-10,cy,19,C.ink,{al:'right'});T(n0(r.sold)+'個',cxs[5]+cols[5][1]-10,cy,19,C.ink2,{al:'right'});
+    R(cxs[6]+8,cy-15,cols[6][1]-16,30,vb,6);T(vl,cxs[6]+cols[6][1]/2,cy,17,vc,{al:'center',b:1});T(adv,cxs[7]+10,cy,adv.length>8?14:16,C.ink2,{max:cols[7][1]-12});
     x.fillStyle=C.rule;x.fillRect(pad,y+rowH-1,W-pad*2,1);y+=rowH;});
-  if(prods.length>rows.length){T(`ほか ${prods.length-rows.length}品（廃棄高 合計 ${yen(prods.slice(rows.length).reduce((t,r)=>t+r.wy,0))}）`,pad+10,y+20,18,C.ink3);y+=40;}
-  T(`廃棄率＝廃棄数 ÷（販売数＋廃棄数）。赤字＝廃棄率4%以上、黄色の行＝${CONFIG.skuWasteLine}%以上。判定は「単品別 生産判断」と同じ基準。`,pad,y+34,16,C.ink3);
-  T('Made by Biswash',W-pad,y+70,16,C.ink3,{al:'right'});
+  if(prods.length>rows.length){T(`ほか ${prods.length-rows.length}品`,pad+10,y+20,18,C.ink3);y+=40;}
+  T(`廃棄率＝廃棄数 ÷（販売数＋廃棄数）。赤字＝廃棄率4%以上、黄色の行＝${CONFIG.skuWasteLine}%以上。判定は「単品別 生産判断」と同じ基準。`,pad,y+32,16,C.ink3);
+  T('Made by Biswash',W-pad,y+66,16,C.ink3,{al:'right'});
   return cv;
 }
 function renderCatImg(){
