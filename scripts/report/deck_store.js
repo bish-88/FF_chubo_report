@@ -170,15 +170,25 @@ function build(scope) {
     // ===== 週別の推移（前年比と 1日あたりの金額）。ダッシュボードの「販売高・荒利益高・廃棄高の推移（週別）」と同じデータ =====
     const WR = ((D.WTR || {})[dp] || {})[scope] || [];
     if (WR.length) {
-      s = add(T('週別の推移　販売高・荒利益高・廃棄高（前年と比べて）'));
+      s = add(T(`${MO}月 天気別の売上と、週別の推移`));
       const per = isAll ? '1店1日あたり' : '1日あたり', wl = WR.map(r => r.label);
-      sub(s, `前年＝同じ日付（両方の年にデータがある${isAll ? '店舗・' : ''}日だけ）。金額は${per}。廃棄高は${dp === 'FF' ? 'マチカフェを除く' : '弁当・調理パン・惣菜'}。週は月曜始まり`, 0.98);
+      sub(s, `天気はCSVの天気コード（雨・雪が入る日＝雨・雪あり、晴で始まる日＝晴れ、それ以外＝曇り）。週別の金額は${per}・前年は同じ日付。廃棄高は${dp === 'FF' ? 'マチカフェを除く' : '弁当・調理パン・惣菜'}`, 0.98);
       const q = (a, b) => b > 0 ? +(a / b * 100).toFixed(1) : null, pdv = (r, k) => r.sd ? Math.round(r[k] / r.sd) : null;
       const lo = (x, y, t, colors, fmt, extra = {}) => Object.assign(chartBase(), { x, y, w: 6.05, h: 2.72, chartColors: colors, lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 5, showLegend: true, legendPos: 't', showTitle: true, title: t,
         valAxisLabelFormatCode: fmt, catAxisLabelFontSize: 9, showValue: false }, extra);
-      s.addChart(pres.charts.LINE, [{ name: '販売前年比', labels: wl, values: WR.map(r => q(r.s26, r.s25)) }, { name: '荒利前年比', labels: wl, values: WR.map(r => q(r.g26, r.g25)) },
-        { name: '廃棄前年比', labels: wl, values: WR.map(r => q(r.w26, r.w25)) }, { name: '前年＝100%', labels: wl, values: WR.map(() => 100) }],
-        lo(0.5, 1.33, '前年比（%）　廃棄は低いほど良い', ['8290A1', '1F5FA6', HEX.bad, 'C3CCD6'], '0"%"', { lineDataSymbolSize: 5 }));
+      // 左上：11月の天気別 1日あたり販売高（今年＝1日〜N日、前年＝前年11月の全日）。天気はCSVの天気コード
+      const WXN = { '001': '晴れ', '002': '晴/曇', '003': '晴→曇', '004': '曇/晴', '005': '曇→晴', '006': '晴/雨', '007': '晴→雨', '008': '雨/晴', '009': '雨→晴', '010': '晴/雪', '011': '晴→雪', '012': '雪→晴れ', '013': '雪→晴', '014': '曇',
+        '015': '曇/雨', '016': '曇→雨', '017': '雨→曇', '018': '曇/雪', '019': '曇→雪', '020': '雪→曇', '021': '雨', '022': '雨/雪', '023': '雨→雪', '024': '雪/雨', '025': '雪→雨', '026': '雪', '027': '雨/曇', '028': '雪/曇' };
+      const wg = c => { const n = WXN[c]; if (!n) return null; return /雨|雪/.test(n) ? '雨・雪あり' : n[0] === '晴' ? '晴れ' : '曇り'; };
+      const WG = ['晴れ', '曇り', '雨・雪あり'];
+      const wavg = (yr) => { const wx = yr === Y ? M.wx26 : M.wx25, cov = yr === Y ? S.cov26 : S.cov25, ser = yr === Y ? S.daily26.販売高 : S.daily25.販売高, last = yr === Y ? N : DIM;
+        const o = Object.fromEntries(WG.map(g => [g, { a: 0, n: 0, d: 0 }]));
+        wx.forEach(w => { if (w.d > last || !cov || !cov[w.d - 1]) return; const g = wg(w.code); if (!g) return; o[g].a += ser[w.d - 1] || 0; o[g].n += isAll ? 1 : cov[w.d - 1]; o[g].d++; });
+        return o; };
+      const W6 = wavg(Y), W5 = wavg(LY), wlab = WG.map(g => `${g}（今年${W6[g].d}日・前年${W5[g].d}日）`);
+      s.addChart(pres.charts.BAR, [{ name: `${LY}年${MO}月（全日）`, labels: wlab, values: WG.map(g => W5[g].n ? Math.round(W5[g].a / W5[g].n) : 0) }, { name: `${Y}年${MO}/1〜${N}`, labels: wlab, values: WG.map(g => W6[g].n ? Math.round(W6[g].a / W6[g].n) : 0) }],
+        Object.assign(chartBase(), { x: 0.5, y: 1.33, w: 6.05, h: 2.72, barDir: 'col', barGrouping: 'clustered', chartColors: [HEX.ly, HEX.ty], showLegend: true, legendPos: 't', showTitle: true,
+          title: `${MO}月 天気別 ${isAll ? '1日あたり販売高（全店合計）' : '1日あたり販売高'}`, valAxisLabelFormatCode: '#,##0', catAxisLabelFontSize: 9, showValue: true, dataLabelFormatCode: '#,##0', dataLabelPosition: 'outEnd', dataLabelFontSize: 9, barGapWidthPct: 60 }));
       const am = (x, y, k, ttl, col) => s.addChart(pres.charts.LINE, [{ name: `${LY}年（同じ日付）`, labels: wl, values: WR.map(r => pdv(r, k + '25')) }, { name: String(Y), labels: wl, values: WR.map(r => pdv(r, k + '26')) }],
         lo(x, y, `${ttl}（${per}）`, [HEX.ly, col], '#,##0'));
       am(6.78, 1.33, 's', '販売高', HEX.ty); am(0.5, 4.17, 'g', '荒利益高', '1F5FA6'); am(6.78, 4.17, 'w', '廃棄高', HEX.bad);
