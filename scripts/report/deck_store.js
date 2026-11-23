@@ -306,10 +306,10 @@ function build(scope) {
     note(s, ftx + ext, 8.4, yW + 0.45, 4.43, 6.9 - yW - 0.6, 11.5);
 
     // ===== 13 仕込みカレンダー =====
-    s = add(T(`今後2週間の仕込みカレンダー（${SNAME}）`));
+    const cal = S.cal.filter(r => r.d <= N + 7);   // 来週＝データ最終日の翌日から7日間（月末まで）
+    s = add(T(`来週の仕込みカレンダー（${SNAME}${cal.length ? `・${md(cal[0].d)}〜${cal[cal.length - 1].d}` : ''}）`));
     if (M.fc) s.addText(`天気予報：${M.fc}`, { x: 0.5, y: 0.92, w: 10.3, h: 0.22, fontSize: 10, color: HEX.ink3, margin: 0, isTextBox: true });
     const ctab = [[H('日付', { align: 'left' }), H('区分', { align: 'left' }), H('天気予報', { align: 'left' }), H('最高'), H('降水'), H('予想 販売高'), H('平日比（荒利）'), H('判定', { align: 'center' })]];
-    const cal = S.cal.slice(0, 14);
     cal.forEach(r => { const sg = r.sig === 'chance' ? ['チャンス', HEX.good, HEX.goodBg] : r.sig === 'risk' ? ['リスク', HEX.bad, HEX.badBg] : ['通常', HEX.ink3, 'FFFFFF'];
       const we = r.typ !== '平日' ? { fill: { color: HEX.accSoft } } : {};
       ctab.push([Tc(`${md(r.d)}（${r.wd}）`, Object.assign({ align: 'left', bold: true }, we)), Tc(r.typ + (r.hol ? '・' + r.hol : ''), Object.assign({ align: 'left', fontSize: 10.5 }, we)), Tc(r.wx || '未確定', Object.assign({ align: 'left', fontSize: 10.5, color: r.wx ? HEX.ink : HEX.ink3 }, we)),

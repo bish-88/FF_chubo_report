@@ -578,7 +578,7 @@ tr.hotw td{background:color-mix(in srgb,var(--warn-bg) 60%,transparent)}
   <section class="sec" data-tab="demand">
     <div class="sh"><span class="lbl">CALENDAR</span><h2>曜日・祝日・天気と需要予測</h2><p>前年{{M}}月の実績 × CSVの天気（降水量・気温）／予報は吹田市 <span class="pFC"></span>（tenki.jp）</p></div>
     <p class="note caution" id="wxCaution"></p>
-    <div class="summary"><div><h3>わかったこと</h3><ul id="wxFacts"></ul></div><div><h3>今後2週間の要注意日</h3><ul id="wxDays"></ul></div></div>
+    <div class="summary"><div><h3>わかったこと</h3><ul id="wxFacts"></ul></div><div><h3 id="wxDaysH">来週の要注意日</h3><ul id="wxDays"></ul></div></div>
     <div class="g g-2">
       <div class="panel"><div class="ph"><h3>要因別 販売数への影響（前年{{M}}月）</h3><div class="legend"><span><i style="background:var(--f-sat)"></i>土曜</span><span><i style="background:var(--f-sun)"></i>日曜・祝日</span><span><i style="background:var(--f-rain)"></i>雨の日</span></div></div>
         <p class="sub">平日・晴れの日を100%とした比率（棒は100%からの差）。曜日・雨・気温を同時に考慮した回帰分析。相関であり、原因と断定するものではありません。</p>
@@ -1609,7 +1609,9 @@ function renderWx(){
   {const un=ALLD.meta.wx26.filter(w=>w.rain==null);if(un.length) facts.push(`今年の降水量が未確認の日：${un.map(w=>MO+'/'+w.d).join('・')}（雨の日かどうかは判定していません）。`);}
   {const rd=ALLD.meta.wx26.filter(w=>w.rain>=2);if(rd.length) facts.push(`今年の雨の日：${rd.map(w=>`${MO}/${w.d}（${'日月火水木金土'[new Date(Y,MI,w.d).getDay()]}・${w.rain}mm）`).join('、')}。この日の落ち込みの一部は天気の影響の可能性があります（CSVの天気データ）。`);}
   document.getElementById('wxFacts').innerHTML=facts.map(f=>`<li>${f}</li>`).join('');
-  const key=cal.filter(r=>r.d<=ALLD.meta.N+14&&(r.sig!=='normal'||r.hol)).slice(0,6);
+  // 来週＝データ最終日の翌日から7日間（月末まで）
+  const nwk=cal.filter(r=>r.d<=ALLD.meta.N+7),key=nwk.filter(r=>r.sig!=='normal'||r.hol);
+  document.getElementById('wxDaysH').textContent=nwk.length?`来週の要注意日（${MO}/${nwk[0].d}〜${nwk[nwk.length-1].d}）`:'来週の要注意日';
   document.getElementById('wxDays').innerHTML=key.length?key.map(r=>`<li><b>${MO}/${r.d}（${r.wd}）</b> <span class="sig s-${r.sig}">${r.sig==='chance'?'チャンス':r.sig==='risk'?'リスク':'通常'}</span> ${r.hol?'<b>'+r.hol+'</b>・':''}${[r.wx,r.tmax!=null?`最高${r.tmax}℃`:null,r.pop!=null?`降水${r.pop}%`:null].filter(v=>v!=null&&v!=='').join('・')||'天気はまだありません'}。${shortAdv(r)}</li>`).join(''):cal.length?'<li>大きな変動が予想される日はありません。</li>':`<li>${MO}月のデータはすべてそろいました（${MO}/1〜${ALLD.meta.N}）。この先の日の予測には、前年${MO%12+1}月の実績データが必要です。</li>`;
   document.getElementById('iceTitle').textContent=FFm?(X.W.chuka?`最高気温と中華まんの販売数（${NS}店合計）`:'最高気温とマチカフェのアイス比率'):'最高気温と厨房の販売数';
   {const CB=(X.chukaBand&&X.chukaBand[0].hi)||22,cold=cal.find(r=>r.tmax!=null&&r.tmax<CB),cw=(ALLD.meta.wx26||[]).filter(w=>w.tmax!=null&&w.tmax<CB);
@@ -1619,7 +1621,7 @@ function renderWx(){
    ['ALL',...STORES].map(s=>{const o=A[s].st,ix=v=>`<span class="chip ${v>=1.05?'up':v<=0.9?'down':'flat'}">${(v*100).toFixed(0)}</span>`,wr=v=>`<span style="color:var(${v>=0.15?'--bad':'--ink'})">${(v*100).toFixed(1)}%</span>`;
     return `<tr class="${s===scope?'cur':''}"><td class="l"><b>${s==='ALL'?'全店':s}</b></td><td class="num">${yen(o['平日'].amt)}</td><td class="num">${yen(o['平日'].gp)}</td><td class="cell">${ix(o['土'].idx)}</td><td class="cell">${ix(o['日祝'].idx)}</td><td class="num">${wr(o['平日'].wr)}</td><td class="num">${wr(o['土'].wr)}</td><td class="num">${wr(o['日祝'].wr)}</td><td>${chip(o.wet.gp*100)}</td><td>${chip(o.wet.wy*100,true)}</td></tr>`}).join('')+'</tbody>';
   document.getElementById('tCal').innerHTML=`<thead><tr><th class="l">日付</th><th class="l">区分</th><th class="l">天気（予報）</th><th>最高</th><th>降水</th><th>予想 販売高</th><th>予想 荒利益高</th><th class="l">平日比</th><th class="l">判定</th><th class="l">仕込みの指示</th></tr></thead><tbody>`+
-   (cal.length?'':`<tr><td class="l" colspan="10" style="color:var(--ink-3)">${MO}月の残りの日はありません（${MO}/${ALLD.meta.N}までのデータで月が締まりました）。</td></tr>`)+cal.map(r=>{const w=Math.min(50,Math.abs(r.idx-1)*125);
+   (cal.length?'':`<tr><td class="l" colspan="10" style="color:var(--ink-3)">${MO}月の残りの日はありません（${MO}/${ALLD.meta.N}までのデータで月が締まりました）。</td></tr>`)+nwk.map(r=>{const w=Math.min(50,Math.abs(r.idx-1)*125);
     return `<tr class="${r.typ!=='平日'?'we':''}"><td class="l num"><b>${MO}/${r.d}</b>（${r.wd}）</td><td class="l">${r.typ}${r.hol?`<span class="c" style="display:block;color:var(--accent);font-size:11px;font-weight:700">${r.hol}</span>`:''}</td><td class="l">${r.wx||'<span style="color:var(--ink-3)">予報なし</span>'}</td><td class="num">${r.tmax!=null?r.tmax+'℃':'—'}</td><td class="num">${r.pop!=null?r.pop+'%':'—'}</td><td class="num">${yen(r.exps)}</td><td class="num">${yen(r.exp)}</td><td class="l num">${(r.idx*100).toFixed(0)}%<span class="ibar"><span style="${r.idx>=1?'left:50%':'right:50%'};width:${w}%;background:var(${r.idx>=1?'--good':'--bad'})"></span></span></td><td class="l"><span class="sig s-${r.sig}">${r.sig==='chance'?'チャンス':r.sig==='risk'?'リスク':'通常'}</span></td><td class="adv">${advice(r)}</td></tr>`}).join('')+'</tbody>';
 }
 const ITEM=()=>A.ff?'揚げ物':'弁当・惣菜';
