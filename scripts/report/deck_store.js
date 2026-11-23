@@ -184,7 +184,6 @@ function build(scope) {
       s.addChart(pres.charts.LINE, cats.map((c, ci) => ({ name: c, labels: WDL, values: wq[ci] })),
         Object.assign(chartBase(), { x: 0.5, y: 1.33, w: 6.05, h: 2.72, chartColors: cats.map(c => CATCOL[c]), lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 6, showLegend: true, legendPos: 'r', showTitle: true,
           title: `曜日別 カテゴリー別の販売数（${isAll ? '全店合計・' : ''}1日あたり）`, valAxisLabelFormatCode: '#,##0', catAxisLabelFontSize: 9, legendFontSize: 9 }));
-      sub(s, `左上：${Y}年${MO}/1〜${N}の曜日ごとの1日あたり販売数（日数：${WDL.map((w, k) => w + ndays[k]).join('・')}日。祝日は「日・祝」）。他の3つ：週別、${per}、前年は同じ日付`, 0.98);
       const am = (x, y, k, ttl, col) => s.addChart(pres.charts.LINE, [{ name: `${LY}年（同じ日付）`, labels: wl, values: WR.map(r => pdv(r, k + '25')) }, { name: String(Y), labels: wl, values: WR.map(r => pdv(r, k + '26')) }],
         lo(x, y, `${ttl}（${per}）`, [HEX.ly, col], '#,##0'));
       am(6.78, 1.33, 's', '販売高', HEX.ty); am(0.5, 4.17, 'g', '荒利益高', '1F5FA6'); am(6.78, 4.17, 'w', '廃棄高', HEX.bad);
