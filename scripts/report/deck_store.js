@@ -170,25 +170,25 @@ function build(scope) {
     // ===== 週別の推移（前年比と 1日あたりの金額）。ダッシュボードの「販売高・荒利益高・廃棄高の推移（週別）」と同じデータ =====
     const WR = ((D.WTR || {})[dp] || {})[scope] || [];
     if (WR.length) {
-      s = add(T(`${MO}月 天気別の売上と、週別の推移`));
+      s = add(T(`気温と売上（カテゴリー別）・週別の推移`));
       const per = isAll ? '1店1日あたり' : '1日あたり', wl = WR.map(r => r.label);
-      sub(s, `天気はCSVの天気コード（雨・雪が入る日＝雨・雪あり、晴で始まる日＝晴れ、それ以外＝曇り）。週別の金額は${per}・前年は同じ日付。廃棄高は${dp === 'FF' ? 'マチカフェを除く' : '弁当・調理パン・惣菜'}`, 0.98);
+      sub(s, `左上：最高気温（CSV）ごとの1日の販売高。今年${MO}/1〜${N}と前年${MO}月の日を合わせ、各年の平均＝100で比べる（100より上＝その気温の日によく売れる）。他の3つ：週別、${per}、前年は同じ日付`, 0.98);
       const q = (a, b) => b > 0 ? +(a / b * 100).toFixed(1) : null, pdv = (r, k) => r.sd ? Math.round(r[k] / r.sd) : null;
       const lo = (x, y, t, colors, fmt, extra = {}) => Object.assign(chartBase(), { x, y, w: 6.05, h: 2.72, chartColors: colors, lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 5, showLegend: true, legendPos: 't', showTitle: true, title: t,
         valAxisLabelFormatCode: fmt, catAxisLabelFontSize: 9, showValue: false }, extra);
-      // 左上：11月の天気別 1日あたり販売高（今年＝1日〜N日、前年＝前年11月の全日）。天気はCSVの天気コード
-      const WXN = { '001': '晴れ', '002': '晴/曇', '003': '晴→曇', '004': '曇/晴', '005': '曇→晴', '006': '晴/雨', '007': '晴→雨', '008': '雨/晴', '009': '雨→晴', '010': '晴/雪', '011': '晴→雪', '012': '雪→晴れ', '013': '雪→晴', '014': '曇',
-        '015': '曇/雨', '016': '曇→雨', '017': '雨→曇', '018': '曇/雪', '019': '曇→雪', '020': '雪→曇', '021': '雨', '022': '雨/雪', '023': '雨→雪', '024': '雪/雨', '025': '雪→雨', '026': '雪', '027': '雨/曇', '028': '雪/曇' };
-      const wg = c => { const n = WXN[c]; if (!n) return null; return /雨|雪/.test(n) ? '雨・雪あり' : n[0] === '晴' ? '晴れ' : '曇り'; };
-      const WG = ['晴れ', '曇り', '雨・雪あり'];
-      const wavg = (yr) => { const wx = yr === Y ? M.wx26 : M.wx25, cov = yr === Y ? S.cov26 : S.cov25, ser = yr === Y ? S.daily26.販売高 : S.daily25.販売高, last = yr === Y ? N : DIM;
-        const o = Object.fromEntries(WG.map(g => [g, { a: 0, n: 0, d: 0 }]));
-        wx.forEach(w => { if (w.d > last || !cov || !cov[w.d - 1]) return; const g = wg(w.code); if (!g) return; o[g].a += ser[w.d - 1] || 0; o[g].n += isAll ? 1 : cov[w.d - 1]; o[g].d++; });
-        return o; };
-      const W6 = wavg(Y), W5 = wavg(LY), wlab = WG.map(g => `${g}（今年${W6[g].d}日・前年${W5[g].d}日）`);
-      s.addChart(pres.charts.BAR, [{ name: `${LY}年${MO}月（全日）`, labels: wlab, values: WG.map(g => W5[g].n ? Math.round(W5[g].a / W5[g].n) : 0) }, { name: `${Y}年${MO}/1〜${N}`, labels: wlab, values: WG.map(g => W6[g].n ? Math.round(W6[g].a / W6[g].n) : 0) }],
-        Object.assign(chartBase(), { x: 0.5, y: 1.33, w: 6.05, h: 2.72, barDir: 'col', barGrouping: 'clustered', chartColors: [HEX.ly, HEX.ty], showLegend: true, legendPos: 't', showTitle: true,
-          title: `${MO}月 天気別 ${isAll ? '1日あたり販売高（全店合計）' : '1日あたり販売高'}`, valAxisLabelFormatCode: '#,##0', catAxisLabelFontSize: 9, showValue: true, dataLabelFormatCode: '#,##0', dataLabelPosition: 'outEnd', dataLabelFontSize: 9, barGapWidthPct: 60 }));
+      // 左上：最高気温と売上の関係（カテゴリー別）。今年（1〜N日）と前年同月（全日）の日を合わせ、各年・各カテゴリーの1日平均＝100の指数で比べる
+      const TB = [['〜15℃', t => t <= 15], ['16〜17℃', t => t >= 16 && t <= 17], ['18〜19℃', t => t >= 18 && t <= 19], ['20℃〜', t => t >= 20]];
+      const TC = D.tcat[dp][scope], acc = cats.map(() => TB.map(() => ({ v: 0, n: 0 }))), tn = TB.map(() => 0);
+      [[Y, M.wx26, S.cov26, N], [LY, M.wx25, S.cov25, DIM]].forEach(([yr, wx, cov, last]) => {
+        const days = wx.filter(w => w.d <= last && cov && cov[w.d - 1] && w.tmax != null);
+        days.forEach(w => { const b = TB.findIndex(([, f]) => f(w.tmax)); if (b >= 0) tn[b]++; });
+        cats.forEach((c, ci) => { const ser = TC[String(yr)][c], mean = days.reduce((a, w) => a + ser[w.d - 1], 0) / (days.length || 1); if (!(mean > 0)) return;
+          days.forEach(w => { const b = TB.findIndex(([, f]) => f(w.tmax)); if (b < 0) return; acc[ci][b].v += ser[w.d - 1] / mean * 100; acc[ci][b].n++; }); }); });
+      const tl = TB.map(([lb], b) => `${lb}（${tn[b]}日）`);
+      const tv = acc.flatMap(r => r.filter(o => o.n).map(o => o.v / o.n)), tlo = Math.floor((Math.min(...tv, 100) - 5) / 5) * 5, thi = Math.ceil((Math.max(...tv, 100) + 5) / 5) * 5;
+      s.addChart(pres.charts.LINE, cats.map((c, ci) => ({ name: c, labels: tl, values: acc[ci].map(o => o.n ? Math.round(o.v / o.n) : null) })),
+        Object.assign(chartBase(), { x: 0.5, y: 1.33, w: 6.05, h: 2.72, chartColors: cats.map(c => CATCOL[c]), lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 6, showLegend: true, legendPos: 'r', showTitle: true,
+          title: '最高気温と売上（カテゴリー別・1日平均＝100）', valAxisLabelFormatCode: '0', valAxisMinVal: tlo, valAxisMaxVal: thi, valAxisMajorUnit: 5, catAxisLabelFontSize: 9, legendFontSize: 9 }));
       const am = (x, y, k, ttl, col) => s.addChart(pres.charts.LINE, [{ name: `${LY}年（同じ日付）`, labels: wl, values: WR.map(r => pdv(r, k + '25')) }, { name: String(Y), labels: wl, values: WR.map(r => pdv(r, k + '26')) }],
         lo(x, y, `${ttl}（${per}）`, [HEX.ly, col], '#,##0'));
       am(6.78, 1.33, 's', '販売高', HEX.ty); am(0.5, 4.17, 'g', '荒利益高', '1F5FA6'); am(6.78, 4.17, 'w', '廃棄高', HEX.bad);

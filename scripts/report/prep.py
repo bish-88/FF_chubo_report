@@ -42,5 +42,26 @@ for dp in ['FF', '厨房']:
         D['ncd'][dp][sc] = {k: [float(g[k].get(d, 0)) for d in range(1, N + 1)] for k in ['販売数', '廃棄数']}
         for k in ['販売数', '廃棄数']:
             assert abs(sum(D['ncd'][dp][sc][k]) - D[dp][sc]['nc']['p26'][k]) < 0.5, (dp, sc, k)
+# 3) カテゴリー別の日別 販売高（今年・前年の同じ月）。気温と売上の関係のグラフに使う。月の集計と一致することを確認
+CMAP = {'販売）からあげクン他　ホット': 'からあげクン', '販売）マチカフェ': 'マチカフェ', 'ホットＦＦ': 'ホットFF', '常温ＦＦ': '常温FF', '販売）サーマル　常温': 'サーマル常温', '中華まん　什器販売': '中華まん'}
+D['tcat'] = {}
+for dp in ['FF', '厨房']:
+    fs = [f for f in glob.glob(os.path.join(ROOT, 'data', dp, '*.csv')) if pd.read_csv(f, encoding='cp932', dtype=str, nrows=1).年月日.iloc[0][:8].rstrip('/') in (f"{m['Y']}/{m['MO']}", f"{m['LY']}/{m['MO']}")]
+    df = pd.concat([pd.read_csv(f, encoding='cp932', dtype=str) for f in fs]).drop_duplicates()
+    for c in M: df[c] = pd.to_numeric(df[c].fillna('0').str.replace(',', '').replace('*', '0'), errors='coerce').fillna(0)
+    dt = pd.to_datetime(df.年月日); df = df[dt.dt.month == m['MO']].copy(); dt = pd.to_datetime(df.年月日)
+    df['y'] = dt.dt.year; df['d'] = dt.dt.day; df['s'] = df.店舗名.map(SN)
+    df['c'] = df.CLASS名.map(CMAP) if dp == 'FF' else df.SUBCLASS名.where(df.SUBCLASS名.isin(['弁当', '調理パン', '惣菜']))
+    df = df[df.c.isin(D[dp]['cats']) & (df[M] != 0).any(axis=1)]
+    D['tcat'][dp] = {}
+    for sc in scopes:
+        x = df if sc == 'ALL' else df[df.s == sc]; o = {}
+        for y, last in [(m['Y'], N), (m['LY'], m['DIM'])]:
+            g = x[x.y == y].groupby(['c', 'd']).販売高.sum()
+            o[str(y)] = {c: [float(g.get((c, d), 0)) for d in range(1, last + 1)] for c in D[dp]['cats']}
+        for c in D[dp]['cats']:
+            assert abs(sum(o[str(m['Y'])][c][:N]) - D[dp][sc]['cat']['p26'][c]['販売高']) < 0.5, (dp, sc, c, 'p26')
+            assert abs(sum(o[str(m['LY'])][c][:N]) - D[dp][sc]['cat']['p25'][c]['販売高']) < 0.5, (dp, sc, c, 'p25')
+        D['tcat'][dp][sc] = o
 json.dump(D, open(P, 'w'), ensure_ascii=False)
 print('ok', {dp: round(D['fc'][dp]['ALL']['販売高']['fc']) for dp in D['fc']})
