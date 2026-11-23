@@ -307,6 +307,7 @@ function build(scope) {
 
     // ===== 13 仕込みカレンダー =====
     s = add(T(`今後2週間の仕込みカレンダー（${SNAME}）`));
+    if (M.fc) s.addText(`天気予報：${M.fc}`, { x: 0.5, y: 0.92, w: 10.3, h: 0.22, fontSize: 10, color: HEX.ink3, margin: 0, isTextBox: true });
     const ctab = [[H('日付', { align: 'left' }), H('区分', { align: 'left' }), H('天気予報', { align: 'left' }), H('最高'), H('降水'), H('予想 販売高'), H('平日比（荒利）'), H('判定', { align: 'center' })]];
     const cal = S.cal.slice(0, 14);
     cal.forEach(r => { const sg = r.sig === 'chance' ? ['チャンス', HEX.good, HEX.goodBg] : r.sig === 'risk' ? ['リスク', HEX.bad, HEX.badBg] : ['通常', HEX.ink3, 'FFFFFF'];
