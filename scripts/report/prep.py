@@ -57,11 +57,13 @@ for dp in ['FF', '厨房']:
     for sc in scopes:
         x = df if sc == 'ALL' else df[df.s == sc]; o = {}
         for y, last in [(m['Y'], N), (m['LY'], m['DIM'])]:
-            g = x[x.y == y].groupby(['c', 'd']).販売高.sum()
+            g = x[x.y == y].groupby(['c', 'd']).販売高.sum(); gq = x[x.y == y].groupby(['c', 'd']).販売数.sum()
             o[str(y)] = {c: [float(g.get((c, d), 0)) for d in range(1, last + 1)] for c in D[dp]['cats']}
+            o['q' + str(y)] = {c: [float(gq.get((c, d), 0)) for d in range(1, last + 1)] for c in D[dp]['cats']}
         for c in D[dp]['cats']:
             assert abs(sum(o[str(m['Y'])][c][:N]) - D[dp][sc]['cat']['p26'][c]['販売高']) < 0.5, (dp, sc, c, 'p26')
             assert abs(sum(o[str(m['LY'])][c][:N]) - D[dp][sc]['cat']['p25'][c]['販売高']) < 0.5, (dp, sc, c, 'p25')
+            assert abs(sum(o['q' + str(m['Y'])][c][:N]) - D[dp][sc]['cat']['p26'][c]['販売数']) < 0.5, (dp, sc, c, 'q26')
         D['tcat'][dp][sc] = o
 json.dump(D, open(P, 'w'), ensure_ascii=False)
 print('ok', {dp: round(D['fc'][dp]['ALL']['販売高']['fc']) for dp in D['fc']})

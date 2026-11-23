@@ -170,25 +170,21 @@ function build(scope) {
     // ===== 週別の推移（前年比と 1日あたりの金額）。ダッシュボードの「販売高・荒利益高・廃棄高の推移（週別）」と同じデータ =====
     const WR = ((D.WTR || {})[dp] || {})[scope] || [];
     if (WR.length) {
-      s = add(T(`気温と売上（カテゴリー別）・週別の推移`));
+      s = add(T(`曜日別の販売数（カテゴリー別）・週別の推移`));
       const per = isAll ? '1店1日あたり' : '1日あたり', wl = WR.map(r => r.label);
-      sub(s, `左上：最高気温（CSV）ごとの1日の販売高。今年${MO}/1〜${N}と前年${MO}月の日を合わせ、各年の平均＝100で比べる（100より上＝その気温の日によく売れる）。他の3つ：週別、${per}、前年は同じ日付`, 0.98);
       const q = (a, b) => b > 0 ? +(a / b * 100).toFixed(1) : null, pdv = (r, k) => r.sd ? Math.round(r[k] / r.sd) : null;
       const lo = (x, y, t, colors, fmt, extra = {}) => Object.assign(chartBase(), { x, y, w: 6.05, h: 2.72, chartColors: colors, lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 5, showLegend: true, legendPos: 't', showTitle: true, title: t,
         valAxisLabelFormatCode: fmt, catAxisLabelFontSize: 9, showValue: false }, extra);
-      // 左上：最高気温と売上の関係（カテゴリー別）。今年（1〜N日）と前年同月（全日）の日を合わせ、各年・各カテゴリーの1日平均＝100の指数で比べる
-      const TB = [['〜15℃', t => t <= 15], ['16〜17℃', t => t >= 16 && t <= 17], ['18〜19℃', t => t >= 18 && t <= 19], ['20℃〜', t => t >= 20]];
-      const TC = D.tcat[dp][scope], acc = cats.map(() => TB.map(() => ({ v: 0, n: 0 }))), tn = TB.map(() => 0);
-      [[Y, M.wx26, S.cov26, N], [LY, M.wx25, S.cov25, DIM]].forEach(([yr, wx, cov, last]) => {
-        const days = wx.filter(w => w.d <= last && cov && cov[w.d - 1] && w.tmax != null);
-        days.forEach(w => { const b = TB.findIndex(([, f]) => f(w.tmax)); if (b >= 0) tn[b]++; });
-        cats.forEach((c, ci) => { const ser = TC[String(yr)][c], mean = days.reduce((a, w) => a + ser[w.d - 1], 0) / (days.length || 1); if (!(mean > 0)) return;
-          days.forEach(w => { const b = TB.findIndex(([, f]) => f(w.tmax)); if (b < 0) return; acc[ci][b].v += ser[w.d - 1] / mean * 100; acc[ci][b].n++; }); }); });
-      const tl = TB.map(([lb], b) => `${lb}（${tn[b]}日）`);
-      const tv = acc.flatMap(r => r.filter(o => o.n).map(o => o.v / o.n)), tlo = Math.floor((Math.min(...tv, 100) - 5) / 5) * 5, thi = Math.ceil((Math.max(...tv, 100) + 5) / 5) * 5;
-      s.addChart(pres.charts.LINE, cats.map((c, ci) => ({ name: c, labels: tl, values: acc[ci].map(o => o.n ? Math.round(o.v / o.n) : null) })),
+      // 左上：曜日別・カテゴリー別の 1日あたり販売数（今年 1日〜N日）。祝日は「日・祝」に入れる。全店は全店合計の1日あたり
+      const WDL = ['月', '火', '水', '木', '金', '土', '日・祝'], wdi = d => M.hol26[d] ? 6 : (DT(d).getDay() + 6) % 7;
+      const Q = D.tcat[dp][scope]['q' + Y], wcnt = WDL.map(() => 0);
+      for (let d = 1; d <= N; d++) if (S.cov26[d - 1]) wcnt[wdi(d)] += isAll ? 1 : S.cov26[d - 1];
+      const wq = cats.map(c => WDL.map((_, k) => { let a = 0; for (let d = 1; d <= N; d++) if (S.cov26[d - 1] && wdi(d) === k) a += Q[c][d - 1]; return wcnt[k] ? Math.round(a / wcnt[k]) : null; }));
+      const ndays = WDL.map((_, k) => { let n = 0; for (let d = 1; d <= N; d++) if (S.cov26[d - 1] && wdi(d) === k) n++; return n; });
+      s.addChart(pres.charts.LINE, cats.map((c, ci) => ({ name: c, labels: WDL, values: wq[ci] })),
         Object.assign(chartBase(), { x: 0.5, y: 1.33, w: 6.05, h: 2.72, chartColors: cats.map(c => CATCOL[c]), lineSize: 2, lineDataSymbol: 'circle', lineDataSymbolSize: 6, showLegend: true, legendPos: 'r', showTitle: true,
-          title: '最高気温と売上（カテゴリー別・1日平均＝100）', valAxisLabelFormatCode: '0', valAxisMinVal: tlo, valAxisMaxVal: thi, valAxisMajorUnit: 5, catAxisLabelFontSize: 9, legendFontSize: 9 }));
+          title: `曜日別 カテゴリー別の販売数（${isAll ? '全店合計・' : ''}1日あたり）`, valAxisLabelFormatCode: '#,##0', catAxisLabelFontSize: 9, legendFontSize: 9 }));
+      sub(s, `左上：${Y}年${MO}/1〜${N}の曜日ごとの1日あたり販売数（日数：${WDL.map((w, k) => w + ndays[k]).join('・')}日。祝日は「日・祝」）。他の3つ：週別、${per}、前年は同じ日付`, 0.98);
       const am = (x, y, k, ttl, col) => s.addChart(pres.charts.LINE, [{ name: `${LY}年（同じ日付）`, labels: wl, values: WR.map(r => pdv(r, k + '25')) }, { name: String(Y), labels: wl, values: WR.map(r => pdv(r, k + '26')) }],
         lo(x, y, `${ttl}（${per}）`, [HEX.ly, col], '#,##0'));
       am(6.78, 1.33, 's', '販売高', HEX.ty); am(0.5, 4.17, 'g', '荒利益高', '1F5FA6'); am(6.78, 4.17, 'w', '廃棄高', HEX.bad);
